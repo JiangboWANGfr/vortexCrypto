@@ -38,6 +38,10 @@ struct impl_t {
 
 const impl_t kImpls[] = {
   { "aes_gcm_sw_ttable", "sw_ttable" },
+  // Same host program, buffers, vectors, counter reduction and output format;
+  // only the device code differs, which is the whole point of selecting by -i
+  // rather than building a second application.
+  { "aes_gcm_hw_s1",     "hw_s1" },
 };
 
 const uint32_t kNumImpls = (uint32_t)(sizeof(kImpls) / sizeof(kImpls[0]));
@@ -248,10 +252,11 @@ int main(int argc, char** argv) {
                              &ref_tag[(size_t)GCM_TAG_BYTES * m]);
   }
 
-  vx_buffer_h rk_buf, te_buf, ht_buf, iv_buf, src_buf, dst_buf, tag_buf;
+  vx_buffer_h rk_buf, te_buf, ht_buf, h_buf, iv_buf, src_buf, dst_buf, tag_buf;
   CHECK(vx_buffer_create(dev, rk_words.size() * 4, VX_MEM_READ, &rk_buf));
   CHECK(vx_buffer_create(dev, te.size() * 4, VX_MEM_READ, &te_buf));
   CHECK(vx_buffer_create(dev, htable.size(), VX_MEM_READ, &ht_buf));
+  CHECK(vx_buffer_create(dev, 16, VX_MEM_READ, &h_buf));
   CHECK(vx_buffer_create(dev, h_iv.size(), VX_MEM_READ, &iv_buf));
   CHECK(vx_buffer_create(dev, data_bytes, VX_MEM_READ, &src_buf));
   CHECK(vx_buffer_create(dev, data_bytes, VX_MEM_WRITE, &dst_buf));
@@ -263,6 +268,7 @@ int main(int argc, char** argv) {
   CHECK(vx_buffer_address(rk_buf, &kernel_arg.rk_addr));
   CHECK(vx_buffer_address(te_buf, &kernel_arg.te_addr));
   CHECK(vx_buffer_address(ht_buf, &kernel_arg.htable_addr));
+  CHECK(vx_buffer_address(h_buf, &kernel_arg.h_addr));
   CHECK(vx_buffer_address(iv_buf, &kernel_arg.iv_addr));
   CHECK(vx_buffer_address(src_buf, &kernel_arg.src_addr));
   CHECK(vx_buffer_address(dst_buf, &kernel_arg.dst_addr));
@@ -283,6 +289,7 @@ int main(int argc, char** argv) {
                          nullptr, nullptr));
   CHECK(vx_enqueue_write(queue, ht_buf, 0, htable.data(), htable.size(), 0,
                          nullptr, nullptr));
+  CHECK(vx_enqueue_write(queue, h_buf, 0, h, 16, 0, nullptr, nullptr));
   CHECK(vx_enqueue_write(queue, iv_buf, 0, h_iv.data(), h_iv.size(), 0,
                          nullptr, nullptr));
   CHECK(vx_enqueue_write(queue, src_buf, 0, h_pt.data(), h_pt.size(), 0,

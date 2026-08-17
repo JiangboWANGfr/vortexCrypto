@@ -32,6 +32,11 @@ typedef struct {
   uint64_t rk_addr;
   uint64_t te_addr;
   uint64_t htable_addr;
+  // The hash subkey H = AES_K(0^128) as 16 raw bytes, used by the clmul GHASH.
+  // It cannot be recovered from htable: entry i there is (i << 4)·H, a nibble
+  // selector, not i·H. Host-provided for the same reason the key schedule is --
+  // a variant deriving it on-device would be measured against one that doesn't.
+  uint64_t h_addr;
   uint64_t iv_addr;
   uint64_t src_addr;
   uint64_t dst_addr;

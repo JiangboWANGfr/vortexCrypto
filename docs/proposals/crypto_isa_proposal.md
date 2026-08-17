@@ -385,3 +385,68 @@ id, module boundary, payload types, lane count and commit-beat count are
 identical across all three, so the measured difference is the instruction
 granularity and not the surrounding structure. Only the standard granularity
 exists today; the other two are new design work, not a port.
+
+## 7. Recorded: the S1 hardware variant
+
+`aes_gcm_hw_s1` is the same GCM in the same application, selected by `-i1`. It
+uses five ratified instructions — `aes32esi`, `aes32esmi` (Zkne) in `EX_SYM`,
+and `clmul`, `clmulh`, `brev8` (Zbkc + Zbkb) in `EX_AUTH` — and keeps no state
+in either unit: the GHASH accumulator and the hash subkey live in the register
+file. Both T-tables and the GHASH nibble table are gone; only the key schedule
+remains in local memory, read the same way by both variants so neither is
+advantaged by what it keeps resident.
+
+Same configuration and same command as section 5, `c1w4t32`, `-n128 -b64`:
+
+| | sw_ttable simx | sw_ttable rtlsim | hw_s1 simx | hw_s1 rtlsim |
+| --- | ---: | ---: | ---: | ---: |
+| cycles | 12,252,182 | 14,333,745 | 4,167,472 | 5,373,159 |
+| instrs | 1,229,052 | 1,229,052 | 134,872 | 134,872 |
+| cycles/block | 1495.63 | 1749.72 | 508.72 | 655.90 |
+| bytes/cycle | 0.0107 | 0.0091 | 0.0315 | 0.0244 |
+
+On rtlsim, which section 4 makes authoritative: **2.67x fewer cycles, 9.11x
+fewer retired instructions.**
+
+### The two numbers disagree, and that is the result
+
+The instruction count falls 9.11x while cycles fall only 2.67x, so IPC drops
+from 0.086 to 0.025. The hardware variant is latency-bound, not throughput-
+bound: each block is a ~40-deep serial chain of `aes32esmi` (ten rounds, four
+chained byte-steps per output word) followed by a GHASH whose reduction is
+itself serial, and at four warps there is not enough independent work to cover
+it. The software variant hid its own latency behind table gathers that gave the
+scheduler something else to issue.
+
+This bounds what a coarser-grained AES instruction can buy. Shortening the
+chain — a full-round or warp-cooperative instruction — attacks exactly the term
+that dominates here, whereas making each existing step cheaper does not. It
+also means the S1 result should be re-measured at higher warp counts before it
+is read as a ceiling; the number above is for the frozen configuration, not a
+statement about the design's limit.
+
+### The units do not perturb the baseline
+
+`sw_ttable` was measured with `VX_CFG_EXT_SYM_ENABLE`/`AUTH_ENABLE` off and on
+and returned **identical** cycle and instruction counts in both simulators
+(12,252,182 / 14,333,745). Widening `EX_BITS` from 2 to 3 and adding two
+dispatch queues therefore costs nothing measurable to code that does not use
+them, so the two rows above differ only in the device code.
+
+### Discrepancy against section 5, not yet attributed
+
+Section 5's numbers do not reproduce exactly in the current tree: simx moved
+12,255,505 -> 12,252,182 (-0.03%) and rtlsim 14,247,819 -> 14,333,745 (+0.60%),
+while retired instructions are unchanged at 1,229,052, so the compiled kernel is
+identical. The off/on comparison above rules out the crypto units as the cause.
+Something else between commit `6533ce29f` and now moved rtlsim timing slightly
+and has not been identified. The section 7 rows are all measured in one tree at
+one commit, so the comparison between them stands regardless; but section 5's
+numbers should not be quoted against section 7's until this is explained.
+
+Provenance for this section:
+
+- `VX_CFG_EXT_SYM_ENABLE` and `VX_CFG_EXT_AUTH_ENABLE` both on
+- `CONFIGS="-DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_NUM_WARPS=4 -DVX_CFG_NUM_THREADS=32"`
+- correctness: `tests/crypto/isa_check` passes 80/80 on both simulators, and
+  both GCM variants pass the two-level check in `main.cpp`
