@@ -391,6 +391,30 @@ static op_string_t op_string(const Instr &instr) {
         std::abort();
       }
     }
+#ifdef VX_CFG_EXT_SYM_ENABLE
+    ,[&](SymType sym_type)-> op_string_t {
+      auto symArgs = std::get<IntrSymArgs>(instrArgs);
+      std::stringstream ss;
+      ss << ", bs=" << symArgs.bs;
+      switch (sym_type) {
+      case SymType::AES32ESI:  return {"AES32ESI", ss.str()};
+      case SymType::AES32ESMI: return {"AES32ESMI", ss.str()};
+      default:
+        std::abort();
+      }
+    }
+#endif
+#ifdef VX_CFG_EXT_AUTH_ENABLE
+    ,[&](AuthType auth_type)-> op_string_t {
+      switch (auth_type) {
+      case AuthType::CLMUL:  return {"CLMUL", ""};
+      case AuthType::CLMULH: return {"CLMULH", ""};
+      case AuthType::BREV8:  return {"BREV8", ""};
+      default:
+        std::abort();
+      }
+    }
+#endif
 #ifdef VX_CFG_EXT_DXA_ENABLE
     ,[&](DxaType /*dxa_type*/)-> op_string_t {
       return {"DXA.ISSUE", ""};
@@ -521,6 +545,35 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
       instr->set_op_type(AluType::CZERO);
       instr->set_args(IntrAluArgs{0, 0, imm});
     } else
+#ifdef VX_CFG_EXT_AUTH_ENABLE
+    // Zbkc CLMUL/CLMULH. MUST precede the (funct7 & 0x1) test below: funct7
+    // 0x05 is odd, so that test would otherwise claim these as MULH/MULHU.
+    // The funct3 check is load-bearing -- this funct7 is shared with Zbb
+    // MIN/MINU/MAX/MAXU and with CLMULR, which stay on the existing path.
+    if (op == Opcode::R && funct7 == 0x05 && (funct3 == 0x1 || funct3 == 0x3)) {
+      instr->set_fu_type(FUType::AUTH);
+      instr->set_op_type(funct3 == 0x3 ? AuthType::CLMULH : AuthType::CLMUL);
+    } else
+    // Zbkb BREV8: OP-IMM, funct3 5, imm 0x687 = {funct7 0x34, rs2 field 0x07}.
+    // Tested on the raw fields because the shift path below overwrites imm with
+    // the 5-bit shamt for funct3 5; left as-is BREV8 decodes as SRL (its
+    // funct7>>1 is 0x1A, not the 0x10 the SRA test looks for).
+    if (op == Opcode::I && funct3 == 0x5 && funct7 == 0x34 && rs2 == 0x07) {
+      instr->set_fu_type(FUType::AUTH);
+      instr->set_op_type(AuthType::BREV8);
+    } else
+#endif
+#ifdef VX_CFG_EXT_SYM_ENABLE
+    // Zkne AES32ESI/AES32ESMI, funct7 = {bs[1:0], funct5[4:0]}. Same trap:
+    // all eight of these funct7 values are odd (funct5 bit 0 is 1 and bs<<5
+    // cannot clear it), so with funct3 == 0 they would all decode as MUL.
+    if (op == Opcode::R && funct3 == 0x0
+     && ((funct7 & 0x1F) == 0x11 || (funct7 & 0x1F) == 0x13)) {
+      instr->set_fu_type(FUType::SYM);
+      instr->set_op_type(((funct7 & 0x1F) == 0x13) ? SymType::AES32ESMI : SymType::AES32ESI);
+      instr->set_args(IntrSymArgs{(funct7 >> 5) & 0x3});
+    } else
+#endif
     if ((op == Opcode::R || op == Opcode::R_W) && (funct7 & 0x1)) {
       switch (funct3) {
       case 0: instr->set_op_type(MdvType::MUL); break;

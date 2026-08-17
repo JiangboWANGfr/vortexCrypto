@@ -298,8 +298,11 @@ things.
 
 An EX unit is a scheduling domain, not just a datapath. Splitting buys an
 independent dispatch queue, an independent dispatch credit, and an independent
-input port. The two mechanisms that make that matter here, both verified in
-this tree:
+input port.
+
+**The backpressure argument does not apply to the instructions actually built,
+and must not be claimed.** It was the original justification here and it was
+wrong. Both mechanisms an EX split buys are gated on a PE going busy:
 
 - The per-EX dispatch credit `fu_goingfull` (`VX_scoreboard.sv:44`, `:50-64`,
   `:189`) halts issue of every instruction bound for that EX, from every warp
@@ -307,9 +310,34 @@ this tree:
 - `VX_pe_switch`'s request side is a `VX_stream_switch` with `NUM_INPUTS=1`
   and `REQ_OUT_BUF=0`, so a ready PE is head-of-line blocked behind a busy one.
 
-With both PEs in one EX, a GHASH multiply — a blocking FSM whose `ST_MUL` runs
-`128 / GHASH_MUL_RADIX` cycles — stalls co-resident AES ops for the whole
-multiply.
+Every instruction implemented here is single-cycle and stateless behind a 1-deep
+output elastic buffer, so `execute_if.ready` is never low for more than a cycle
+and neither mechanism fires. `fu_goingfull` still asserts transiently under
+back-to-back issue, but that is a pipeline-depth rate limit shared by every EX
+in the design, not something a split changes.
+
+There is also a counterexample in-tree that makes backpressure insufficient on
+its own: `EX_ALU` already hosts a long-blocking PE. `VX_alu_muldiv.sv:320` ties
+`execute_if.ready` to the divider, and `VX_serial_div` is bit-serial over
+`WIDTHN-1` = 31 steps, so an integer divide head-of-line blocks the single-cycle
+integer ALU for ~32 cycles. The design ships that way and DIV was never given
+its own EX. An argument from backpressure would need a quantitative
+dispatch-stall budget to survive that.
+
+**The actual reason is measurement integrity.** The point of this work is to
+compare instruction granularities against each other. If a fine-grained variant
+lived inside `VX_alu_unit` and a later coarser or stateful variant lived in its
+own EX, a comparison between them would confound two changes — the instruction
+granularity and the scheduling domain — which is the class of confound the
+protocol in section 4 exists to remove. Fixing the EX id, module boundary,
+payload types, lane count and commit-beat count from the start means a later
+variant is measured against these numbers without the topology moving underneath
+it.
+
+That is not free, and the price is known and accepted: `EX_BITS` widens 2 to 3
+(widening `ex_type` in `decode_t`, `ibuffer_t`, `scoreboard_t`, `operands_t`),
+each unit adds a `DISPATCH_QSIZE`-deep dispatch queue per issue slice, and both
+land at the bottom of `VX_commit`'s static priority arbiter.
 
 Two things this argument must **not** claim, because the code says otherwise:
 

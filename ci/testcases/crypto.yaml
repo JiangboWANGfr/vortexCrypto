@@ -22,3 +22,25 @@ tests:
   - rtlsim
   dir: tests/crypto
   target: run-{driver}
+# isa_check is deliberately NOT in the tests/crypto family list: it is the only
+# app here that requires the crypto units to be enabled, and the family cases
+# above run at the shipped defaults where they are off. It would then execute
+# the encodings as whatever they alias to and fail. It gets its own cases with
+# the configs attached.
+#
+# Both drivers are run because this test's whole purpose is to prove RTL and
+# simx agree bit-exactly; dropping either one removes the comparison.
+- id: crypto-isa-check-1
+  via: make-run
+  drivers:
+  - simx
+  dir: tests/crypto/isa_check
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE
+- id: crypto-isa-check-2
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/isa_check
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE

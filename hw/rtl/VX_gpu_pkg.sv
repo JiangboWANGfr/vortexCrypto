@@ -231,8 +231,15 @@ package VX_gpu_pkg;
     localparam EX_SFU = 2;
     localparam EX_FPU = (EX_SFU + `VX_CFG_EXT_F_ENABLED);
     localparam EX_TCU = (EX_FPU + `VX_CFG_EXT_TCU_ENABLED);
+    // Crypto scheduling domains, named by role rather than by algorithm so the
+    // topology does not move as the family grows. They sit at the bottom of the
+    // cascade so that enabling one cannot renumber a pre-existing EX id: that
+    // would shift every other unit's slot in VX_commit's static priority
+    // arbiter and invalidate comparison against previously recorded numbers.
+    localparam EX_SYM  = (EX_TCU + `VX_CFG_EXT_SYM_ENABLED);
+    localparam EX_AUTH = (EX_SYM + `VX_CFG_EXT_AUTH_ENABLED);
 
-    localparam NUM_EX_UNITS = EX_TCU + 1;
+    localparam NUM_EX_UNITS = EX_AUTH + 1;
     localparam EX_BITS = `CLOG2(NUM_EX_UNITS);
     localparam EX_WIDTH = `UP(EX_BITS);
 
@@ -281,6 +288,10 @@ package VX_gpu_pkg;
     // Opcode extensions
     localparam INST_R_F7_MUL =   7'b0000001;
     localparam INST_R_F7_ZICOND= 7'b0000111;
+    // Zbkc CLMUL/CLMULH. This funct7 is SHARED with Zbb MIN/MINU/MAX/MAXU
+    // (funct3 100/101/110/111) and with CLMULR (funct3 010), so an arm keyed on
+    // funct7 alone would capture those encodings too: funct3 must be checked.
+    localparam INST_R_F7_CLMUL = 7'b0000101;
 
     ///////////////////////////////////////////////////////////////////////////
 
@@ -518,6 +529,23 @@ package VX_gpu_pkg;
     localparam INST_SFU_GFXW =   4'hE;  // shared graphics window (SETW/GETW/GETWF) + RTU trace ops
 `endif
     localparam INST_SFU_BITS =   4;
+
+`ifdef VX_CFG_EXT_SYM_ENABLE
+    localparam INST_SYM_AES32ESI  = 4'h0;
+    localparam INST_SYM_AES32ESMI = 4'h1;
+    localparam INST_SYM_BITS      = 4;
+`endif
+
+`ifdef VX_CFG_EXT_AUTH_ENABLE
+    localparam INST_AUTH_CLMUL    = 4'h0;
+    localparam INST_AUTH_CLMULH   = 4'h1;
+    localparam INST_AUTH_BREV8    = 4'h2;
+    // 4'h3 and 4'h4 are held for a fused GF(2^128) reduction (ghred32l/h) or a
+    // carry-less multiply-accumulate, if a later milestone measures one as
+    // worth an opcode. Reserved here so adding it cannot renumber the above and
+    // invalidate numbers recorded against these encodings.
+    localparam INST_AUTH_BITS     = 4;
+`endif
 
     function automatic logic [3:0] inst_sfu_csr(input logic [2:0] funct3);
         return (4'h6 + 4'(funct3[1:0]) - 4'h1);
@@ -834,6 +862,19 @@ package VX_gpu_pkg;
     `PACKAGE_ASSERT($bits(raster_args_t) == INST_ARGS_BITS)
 `endif
 
+`ifdef VX_CFG_EXT_SYM_ENABLE
+    // AES32ESI/AES32ESMI byte-select, from instr[31:30]. `bs` sits in the low
+    // two bits, which alias alu_args_t.imm20[1:0]: in VX_decode any later write
+    // to op_args.alu.* on the same path would silently clobber it, so the SYM
+    // arms must not fall through to a shared alu assignment. AUTH needs no args
+    // type -- clmul/clmulh/brev8 carry no immediate operand.
+    typedef struct packed {
+        logic [INST_ARGS_BITS-2-1:0] __padding;
+        logic [1:0]                  bs;
+    } sym_args_t;
+    `PACKAGE_ASSERT($bits(sym_args_t) == INST_ARGS_BITS)
+`endif
+
 `ifdef EXT_GFX_ANY_ENABLE
     // Graphics-window op args (op_args.gfxw). `op` is the window op selector
     // (VX_gfx_window_pkg GFXW_OP_*). `slot` is the start regfile slot (set/get/
@@ -875,6 +916,9 @@ package VX_gpu_pkg;
     `endif
     `ifdef EXT_GFX_ANY_ENABLE
         gfxw_args_t gfxw;
+    `endif
+    `ifdef VX_CFG_EXT_SYM_ENABLE
+        sym_args_t  sym;
     `endif
     } op_args_t;
     `PACKAGE_ASSERT($bits(op_args_t) == INST_ARGS_BITS)
@@ -1039,6 +1083,12 @@ package VX_gpu_pkg;
     `DECL_EXECUTE_T (alu, `VX_CFG_NUM_ALU_LANES);
     `DECL_EXECUTE_T (lsu, `VX_CFG_NUM_LSU_LANES);
     `DECL_EXECUTE_T (sfu, `VX_CFG_NUM_SFU_LANES);
+`ifdef VX_CFG_EXT_SYM_ENABLE
+    `DECL_EXECUTE_T (sym, `VX_CFG_NUM_SYM_LANES);
+`endif
+`ifdef VX_CFG_EXT_AUTH_ENABLE
+    `DECL_EXECUTE_T (auth, `VX_CFG_NUM_AUTH_LANES);
+`endif
 
     //////////////////////////// Perf counter types ///////////////////////////
 

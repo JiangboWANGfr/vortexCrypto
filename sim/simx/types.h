@@ -181,6 +181,12 @@ enum class FUType {
 #ifdef VX_CFG_EXT_TCU_ENABLE
   TCU,
 #endif
+#ifdef VX_CFG_EXT_SYM_ENABLE
+  SYM,
+#endif
+#ifdef VX_CFG_EXT_AUTH_ENABLE
+  AUTH,
+#endif
   Count
 };
 
@@ -192,6 +198,12 @@ inline std::ostream &operator<<(std::ostream &os, const FUType& type) {
   case FUType::SFU: os << "SFU"; break;
 #ifdef VX_CFG_EXT_TCU_ENABLE
   case FUType::TCU: os << "TCU"; break;
+#endif
+#ifdef VX_CFG_EXT_SYM_ENABLE
+  case FUType::SYM: os << "SYM"; break;
+#endif
+#ifdef VX_CFG_EXT_AUTH_ENABLE
+  case FUType::AUTH: os << "AUTH"; break;
 #endif
   default:
     assert(false);
@@ -216,6 +228,29 @@ enum class AluType {
   XOR,
   CZERO
 };
+
+#ifdef VX_CFG_EXT_SYM_ENABLE
+// Zkne RV32 encrypt transforms. Decrypt (AES32DSI/DSMI) is deliberately absent:
+// GCM runs AES in counter mode, which only ever encrypts.
+enum class SymType {
+  AES32ESI,
+  AES32ESMI
+};
+
+struct IntrSymArgs {
+  uint32_t bs : 2;   // byte select, from instr[31:30]
+};
+#endif
+
+#ifdef VX_CFG_EXT_AUTH_ENABLE
+// Zbkc carry-less multiply plus the Zbkb byte-wise bit reversal that GHASH
+// needs to convert between GCM's bit order and CLMUL's polynomial order.
+enum class AuthType {
+  CLMUL,
+  CLMULH,
+  BREV8
+};
+#endif
 
 struct IntrAluArgs {
   uint32_t is_imm : 1;
@@ -819,6 +854,12 @@ using OpType = std::variant<
 #ifdef VX_GFX_WINDOW_ENABLE
 , RtuType
 #endif
+#ifdef VX_CFG_EXT_SYM_ENABLE
+, SymType
+#endif
+#ifdef VX_CFG_EXT_AUTH_ENABLE
+, AuthType
+#endif
 >;
 
 using IntrArgs = std::variant<
@@ -845,6 +886,9 @@ using IntrArgs = std::variant<
 #endif
 #ifdef VX_GFX_WINDOW_ENABLE
 , IntrRtuArgs
+#endif
+#ifdef VX_CFG_EXT_SYM_ENABLE
+, IntrSymArgs
 #endif
 >;
 

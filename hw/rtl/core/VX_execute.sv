@@ -144,6 +144,31 @@ module VX_execute import VX_gpu_pkg::*; #(
     );
 `endif
 
+// The `ifdef guards below are load-bearing, not cosmetic: with SYM disabled
+// EX_SYM collapses onto EX_TCU, so an unguarded instance would silently alias
+// another unit's dispatch/commit slice instead of failing to elaborate.
+`ifdef VX_CFG_EXT_SYM_ENABLE
+    VX_sym_unit #(
+        .INSTANCE_ID (`SFORMATF(("%s-sym", INSTANCE_ID)))
+    ) sym_unit (
+        .clk            (clk),
+        .reset          (reset),
+        .dispatch_if    (dispatch_if[EX_SYM * `VX_CFG_ISSUE_WIDTH +: `VX_CFG_ISSUE_WIDTH]),
+        .commit_if      (commit_if[EX_SYM * `VX_CFG_ISSUE_WIDTH +: `VX_CFG_ISSUE_WIDTH])
+    );
+`endif
+
+`ifdef VX_CFG_EXT_AUTH_ENABLE
+    VX_auth_unit #(
+        .INSTANCE_ID (`SFORMATF(("%s-auth", INSTANCE_ID)))
+    ) auth_unit (
+        .clk            (clk),
+        .reset          (reset),
+        .dispatch_if    (dispatch_if[EX_AUTH * `VX_CFG_ISSUE_WIDTH +: `VX_CFG_ISSUE_WIDTH]),
+        .commit_if      (commit_if[EX_AUTH * `VX_CFG_ISSUE_WIDTH +: `VX_CFG_ISSUE_WIDTH])
+    );
+`endif
+
     VX_sfu_unit #(
         .INSTANCE_ID (`SFORMATF(("%s-sfu", INSTANCE_ID))),
         .CORE_ID (CORE_ID)

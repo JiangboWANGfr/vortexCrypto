@@ -37,6 +37,12 @@ package VX_trace_pkg;
         `ifdef VX_CFG_EXT_TCU_ENABLE
             EX_TCU: `TRACE(level, ("TCU"))
         `endif
+        `ifdef VX_CFG_EXT_SYM_ENABLE
+            EX_SYM: `TRACE(level, ("SYM"))
+        `endif
+        `ifdef VX_CFG_EXT_AUTH_ENABLE
+            EX_AUTH: `TRACE(level, ("AUTH"))
+        `endif
             default: `TRACE(level, ("?"))
         endcase
     endtask
@@ -432,6 +438,25 @@ package VX_trace_pkg;
             VX_tcu_pkg::trace_ex_op(level, op_type, op_args);
         end
     `endif
+    `ifdef VX_CFG_EXT_SYM_ENABLE
+        EX_SYM: begin
+            case (op_type)
+                INST_SYM_AES32ESI:  `TRACE(level, ("AES32ESI"))
+                INST_SYM_AES32ESMI: `TRACE(level, ("AES32ESMI"))
+                default:            `TRACE(level, ("?"))
+            endcase
+        end
+    `endif
+    `ifdef VX_CFG_EXT_AUTH_ENABLE
+        EX_AUTH: begin
+            case (op_type)
+                INST_AUTH_CLMUL:  `TRACE(level, ("CLMUL"))
+                INST_AUTH_CLMULH: `TRACE(level, ("CLMULH"))
+                INST_AUTH_BREV8:  `TRACE(level, ("BREV8"))
+                default:          `TRACE(level, ("?"))
+            endcase
+        end
+    `endif
         default: `TRACE(level, ("?"))
         endcase
     endtask
@@ -458,6 +483,12 @@ package VX_trace_pkg;
             `TRACE(level, (", fmt=0x%0h, frm=0x%0h", op_args.fpu.fmt, op_args.fpu.frm))
         end
     `endif
+    `ifdef VX_CFG_EXT_SYM_ENABLE
+        EX_SYM: begin
+            `TRACE(level, (", bs=%0d", op_args.sym.bs))
+        end
+    `endif
+        // EX_AUTH falls through: CLMUL/CLMULH/BREV8 carry no args.
         default:;
         endcase
     endtask

@@ -206,15 +206,30 @@ module VX_decode import
 
         case (opcode)
             INST_I: begin
-                ex_type = EX_ALU;
-                op_type = INST_OP_BITS'(r_type);
-                op_args.alu.xtype = ALU_TYPE_ARITH;
-                op_args.alu.is_w = 0;
-                op_args.alu.use_PC = 0;
-                op_args.alu.use_imm = 1;
-                op_args.alu.imm20 = `SEXT(20, i_imm);
-                `USED_IREG (rd);
-                `USED_IREG (rs1);
+            `ifdef VX_CFG_EXT_AUTH_ENABLE
+                // Zbkb BREV8 is an OP-IMM encoding (funct3 101, imm 0x687). The
+                // fallback below decodes OP-IMM on funct3 alone, so without this
+                // arm BREV8 executes silently as a shift. Match on u_12, the raw
+                // instr[31:20]: i_imm is NOT usable here because is_itype_sh is
+                // true for funct3 101 and replaces it with the 5-bit shamt.
+                if (funct3 == 3'b101 && u_12 == 12'h687) begin
+                    ex_type = EX_AUTH;
+                    op_type = INST_OP_BITS'(INST_AUTH_BREV8);
+                    `USED_IREG (rd);
+                    `USED_IREG (rs1);
+                end else
+            `endif
+                begin
+                    ex_type = EX_ALU;
+                    op_type = INST_OP_BITS'(r_type);
+                    op_args.alu.xtype = ALU_TYPE_ARITH;
+                    op_args.alu.is_w = 0;
+                    op_args.alu.use_PC = 0;
+                    op_args.alu.use_imm = 1;
+                    op_args.alu.imm20 = `SEXT(20, i_imm);
+                    `USED_IREG (rd);
+                    `USED_IREG (rs1);
+                end
             end
             INST_R: begin
                 ex_type = EX_ALU;
@@ -224,12 +239,50 @@ module VX_decode import
                 `USED_IREG (rd);
                 `USED_IREG (rs1);
                 `USED_IREG (rs2);
-                case (funct7)
+                // casez, not case: the AES32 arms below need a masked funct7
+                // (its top two bits are the bs operand). Every other arm is an
+                // exact constant with no wildcard, so their matching is
+                // unchanged, and no AES32 pattern overlaps one of them.
+                casez (funct7)
                 `ifdef VX_CFG_EXT_M_ENABLE
                     INST_R_F7_MUL: begin
                         // MUL, MULH, MULHSU, MULHU
                         op_type = INST_OP_BITS'(m_type);
                         op_args.alu.xtype = ALU_TYPE_MULDIV;
+                    end
+                `endif
+                `ifdef VX_CFG_EXT_AUTH_ENABLE
+                    INST_R_F7_CLMUL: begin
+                        // Zbkc CLMUL (funct3 001) / CLMULH (funct3 011). This
+                        // funct7 is shared with Zbb MIN/MINU/MAX/MAXU and with
+                        // CLMULR, none of which this design implements: they
+                        // must keep the pre-existing r_type fallback, so the
+                        // funct3 test here is load-bearing, not defensive.
+                        if (funct3 == 3'b001 || funct3 == 3'b011) begin
+                            ex_type = EX_AUTH;
+                            op_type = INST_OP_BITS'(funct3[1] ? INST_AUTH_CLMULH : INST_AUTH_CLMUL);
+                        end else begin
+                            op_type = INST_OP_BITS'(r_type);
+                            op_args.alu.xtype = ALU_TYPE_ARITH;
+                        end
+                    end
+                `endif
+                `ifdef VX_CFG_EXT_SYM_ENABLE
+                    7'b??10001,
+                    7'b??10011: begin
+                        // Zkne AES32ESI (funct5 10001) / AES32ESMI (funct5 10011),
+                        // where funct7 = {bs[1:0], funct5[4:0]} and funct3 = 000.
+                        if (funct3 == 3'b000) begin
+                            ex_type = EX_SYM;
+                            op_type = INST_OP_BITS'(funct7[1] ? INST_SYM_AES32ESMI : INST_SYM_AES32ESI);
+                            // Written last on this path: bs aliases the low bits
+                            // of the alu view of op_args, which the INST_R
+                            // preamble above has already assigned.
+                            op_args.sym.bs = funct7[6:5];
+                        end else begin
+                            op_type = INST_OP_BITS'(r_type);
+                            op_args.alu.xtype = ALU_TYPE_ARITH;
+                        end
                     end
                 `endif
                 `ifdef VX_CFG_EXT_ZICOND_ENABLE

@@ -36,6 +36,12 @@
 #include "fpu_unit.h"
 #include "lsu_unit.h"
 #include "sfu_unit.h"
+#ifdef VX_CFG_EXT_SYM_ENABLE
+#include "sym_unit.h"
+#endif
+#ifdef VX_CFG_EXT_AUTH_ENABLE
+#include "auth_unit.h"
+#endif
 #include "csr_unit.h"
 #include "mem_coalescer.h"
 #include "socket.h"
@@ -230,6 +236,12 @@ public:
   #ifdef VX_CFG_EXT_TCU_ENABLE
     dispatchers_.at((int)FUType::TCU) = SimPlatform::instance().create_object<Dispatcher>(name.c_str(), simobject_, VX_CFG_DISPATCH_QUEUE_SIZE, VX_CFG_NUM_TCU_BLOCKS, VX_CFG_NUM_TCU_LANES);
   #endif
+  #ifdef VX_CFG_EXT_SYM_ENABLE
+    dispatchers_.at((int)FUType::SYM) = SimPlatform::instance().create_object<Dispatcher>(name.c_str(), simobject_, VX_CFG_DISPATCH_QUEUE_SIZE, VX_CFG_NUM_SYM_BLOCKS, VX_CFG_NUM_SYM_LANES);
+  #endif
+  #ifdef VX_CFG_EXT_AUTH_ENABLE
+    dispatchers_.at((int)FUType::AUTH) = SimPlatform::instance().create_object<Dispatcher>(name.c_str(), simobject_, VX_CFG_DISPATCH_QUEUE_SIZE, VX_CFG_NUM_AUTH_BLOCKS, VX_CFG_NUM_AUTH_LANES);
+  #endif
 
     // initialize execute units
     snprintf(sname, 100, "%s-alu", name.c_str());
@@ -240,6 +252,14 @@ public:
     func_units_.at((int)FUType::LSU) = SimPlatform::instance().create_object<LsuUnit>(sname, simobject_);
     snprintf(sname, 100, "%s-sfu", name.c_str());
     func_units_.at((int)FUType::SFU) = SimPlatform::instance().create_object<SfuUnit>(sname, simobject_);
+  #ifdef VX_CFG_EXT_SYM_ENABLE
+    snprintf(sname, 100, "%s-sym", name.c_str());
+    func_units_.at((int)FUType::SYM) = SimPlatform::instance().create_object<SymUnit>(sname, simobject_);
+  #endif
+  #ifdef VX_CFG_EXT_AUTH_ENABLE
+    snprintf(sname, 100, "%s-auth", name.c_str());
+    func_units_.at((int)FUType::AUTH) = SimPlatform::instance().create_object<AuthUnit>(sname, simobject_);
+  #endif
   #ifdef VX_CFG_EXT_TCU_ENABLE
     snprintf(sname, 100, "%s-tcu", name.c_str());
     tcu_unit_ = SimPlatform::instance().create_object<TcuUnit>(sname, simobject_);

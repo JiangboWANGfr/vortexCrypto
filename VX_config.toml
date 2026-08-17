@@ -37,6 +37,15 @@ VX_CFG_EXT_TEX_ENABLE = false
 VX_CFG_EXT_RASTER_ENABLE = false
 VX_CFG_EXT_OM_ENABLE = false
 VX_CFG_EXT_RTU_ENABLE = false
+# Symmetric-cipher transforms (AES today, ChaCha later) and authentication MACs
+# (GHASH today, Poly1305 later), as separate scheduling domains named by role.
+# The split is for topology stability, not for backpressure: these instructions
+# are single-cycle and stateless, so they would not stall a shared unit. Holding
+# the EX id, module boundary, payload types, lane count and commit-beat count
+# fixed is what lets a later, coarser-grained variant be compared against these
+# numbers without the scheduling domain moving underneath the measurement.
+VX_CFG_EXT_SYM_ENABLE = false
+VX_CFG_EXT_AUTH_ENABLE = false
 VX_CFG_VLEN = "expr: $VX_CFG_XLEN * 4"
 
 [pipeline]
@@ -83,6 +92,19 @@ VX_CFG_NUM_ALU_BLOCKS = 1
 [sfu]
 VX_CFG_NUM_SFU_LANES = "expr: $VX_CFG_SIMD_WIDTH"
 VX_CFG_NUM_SFU_BLOCKS = 1
+
+# Both crypto units mirror [alu]/[sfu], not [tcu]: taking NUM_THREADS as the lane
+# count would pin SIMD_WIDTH == NUM_THREADS core-wide through VX_lane_dispatch's
+# divisibility assertion. Lanes at SIMD_WIDTH also keep NUM_PACKETS at 1, so each
+# uop is a single commit beat -- which is what makes bottom-of-priority placement
+# in VX_commit's static arbiter survivable.
+[sym]
+VX_CFG_NUM_SYM_LANES = "expr: $VX_CFG_SIMD_WIDTH"
+VX_CFG_NUM_SYM_BLOCKS = 1
+
+[auth]
+VX_CFG_NUM_AUTH_LANES = "expr: $VX_CFG_SIMD_WIDTH"
+VX_CFG_NUM_AUTH_BLOCKS = 1
 
 [lsu]
 VX_CFG_NUM_LSU_LANES = "expr: $VX_CFG_SIMD_WIDTH"

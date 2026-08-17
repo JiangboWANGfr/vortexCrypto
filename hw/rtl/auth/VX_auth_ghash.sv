@@ -1,0 +1,100 @@
+// Copyright © 2019-2023
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+`include "VX_define.vh"
+
+// GHASH processing element: the ratified carry-less multiply (Zbkc) and the
+// byte-wise bit reversal (Zbkb) that a GF(2^128) GHASH is built from.
+//
+//   CLMUL  rd, rs1, rs2   rd = low  XLEN bits of the carry-less product
+//   CLMULH rd, rs1, rs2   rd = high XLEN bits of the carry-less product
+//   BREV8  rd, rs1        rd = rs1 with the bits of each byte reversed
+//
+// BREV8 is here rather than in the integer ALU because it exists in this design
+// for GHASH: GCM numbers the bits of each byte in the opposite order to the
+// polynomial convention CLMUL assumes, so every operand entering the multiply
+// is reflected first. Keeping it in the same unit keeps the whole GHASH inner
+// loop inside one scheduling domain.
+//
+// All three are single-cycle, stateless and lane-local. No accumulator lives
+// here: the running Y and the hash subkey H stay in the register file, which is
+// what makes this unit context-switch safe and free of hidden state.
+
+module VX_auth_ghash import VX_gpu_pkg::*; #(
+    parameter `STRING INSTANCE_ID = "",
+    parameter NUM_LANES = 1
+) (
+    input wire              clk,
+    input wire              reset,
+
+    // Inputs
+    VX_execute_if.slave     execute_if,
+
+    // Outputs
+    VX_result_if.master     result_if
+);
+    `UNUSED_SPARAM (INSTANCE_ID)
+
+    localparam XLEN = `VX_CFG_XLEN;
+
+    wire is_clmulh = (execute_if.data.op_type == INST_AUTH_CLMULH);
+    wire is_brev8  = (execute_if.data.op_type == INST_AUTH_BREV8);
+
+    wire [NUM_LANES-1:0][XLEN-1:0] auth_result;
+
+    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_lanes
+        wire [XLEN-1:0] a = execute_if.data.rs1_data[i];
+        wire [XLEN-1:0] b = execute_if.data.rs2_data[i];
+
+        // Carry-less product: XOR of shifted copies of a, selected by bits of b.
+        // Written as a reduction tree so synthesis flattens it rather than
+        // inferring a carry chain.
+        logic [2*XLEN-1:0] clmul_prod;
+        always @(*) begin
+            clmul_prod = '0;
+            for (int k = 0; k < XLEN; ++k) begin
+                if (b[k]) begin
+                    clmul_prod ^= ({{XLEN{1'b0}}, a} << k);
+                end
+            end
+        end
+
+        // Bit reversal within each byte.
+        wire [XLEN-1:0] brev8_res;
+        for (genvar j = 0; j < XLEN / 8; ++j) begin : g_brev8_bytes
+            for (genvar k = 0; k < 8; ++k) begin : g_brev8_bits
+                assign brev8_res[8*j + k] = a[8*j + (7 - k)];
+            end
+        end
+
+        assign auth_result[i] = is_brev8  ? brev8_res
+                              : is_clmulh ? clmul_prod[2*XLEN-1:XLEN]
+                                          : clmul_prod[XLEN-1:0];
+    end
+
+    `UNUSED_VAR (execute_if.data.rs3_data)
+
+    VX_elastic_buffer #(
+        .DATAW ($bits(auth_header_t) + (NUM_LANES * XLEN))
+    ) rsp_buf (
+        .clk       (clk),
+        .reset     (reset),
+        .valid_in  (execute_if.valid),
+        .ready_in  (execute_if.ready),
+        .data_in   ({execute_if.data.header, auth_result}),
+        .data_out  ({result_if.data.header,  result_if.data.data}),
+        .valid_out (result_if.valid),
+        .ready_out (result_if.ready)
+    );
+
+endmodule
