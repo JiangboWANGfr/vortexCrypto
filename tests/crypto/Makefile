@@ -6,7 +6,8 @@ include $(ROOT_DIR)/config.mk
 # only the test list differs. See ../regression/common.mk for the
 # per-test build/run rules (shared via ./common.mk).
 TESTS := \
-    aes_gcm
+    aes_gcm \
+    chacha_poly
 
 # --- common exclude list ---------------------------------------------
 EXCLUDE :=

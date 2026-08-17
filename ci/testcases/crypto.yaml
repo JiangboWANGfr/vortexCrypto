@@ -1,21 +1,22 @@
 # Test cases for `crypto`: software cryptography baselines. Driven through the
-# tests/crypto family Makefile rather than blackbox, because ci/blackbox.sh's
-# set_app_path has no branch for tests/crypto and this milestone does not add
-# one. Each case runs every app in the family at its Makefile OPTS default,
-# which is sized for CI rather than for measurement.
+# tests/crypto family Makefile so one case covers every app in the family and
+# gains new ones for free. blackbox also reaches them, as `--app=crypto/<app>`
+# via its generic tests/<app> branch, which is the route to use when a case
+# needs per-app shape flags. Each case here runs at the app's Makefile OPTS
+# default, which is sized for CI rather than for measurement.
 category: crypto
 defaults:
   xlen:
   - 32
   tier: smoke
 tests:
-- id: aes-gcm-1
+- id: crypto-family-1
   via: make-run
   drivers:
   - simx
   dir: tests/crypto
   target: run-{driver}
-- id: aes-gcm-2
+- id: crypto-family-2
   via: make-run
   drivers:
   - rtlsim
