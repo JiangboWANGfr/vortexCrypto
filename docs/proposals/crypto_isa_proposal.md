@@ -715,3 +715,40 @@ truth rather than a configuration choice, behind `DCACHE_NUM_BANKS=1` with L2
 and L3 off. A simulation modelling more banks describes a machine that does not
 exist on this board. The remaining `scrb` stall is that wall, and it now caps a
 kernel that is otherwise clean.
+
+### Retracted: the warp-scan conclusion, and the S2 decision that rested on it
+
+The warp scan above was run on the kernel **before** the inlining and
+word-access fixes, i.e. on a kernel whose memory traffic was 57%
+non-algorithmic and 8 KB-strided. Re-run on the fixed kernel at the same points
+(`c1w{4,8,16}t4`, `-b64`, one message per lane, rtlsim, no `PERF_ENABLE`), the
+trend does not merely weaken. **It inverts.**
+
+| warps | cycles/block, pre-fix | cycles/block, post-fix |
+| ---: | ---: | ---: |
+| 4 | 338.97 | 255.75 |
+| 8 | **254.97** (recorded as the peak) | 254.75 |
+| 16 | 324.11 (recorded as a 27% regression) | **152.77** |
+
+Post-fix IPC: 0.407, 0.407, **0.680**. More warps keep helping; sixteen is the
+best point measured, not the worst. The "peaks at eight warps and regresses at
+sixteen" finding was an artifact of the stack traffic, which grew with warp
+count because each `sp`-relative access was `NUM_THREADS` distinct lines 8 KB
+apart. Remove it and the machine is no longer saturated at eight warps.
+
+Note also that post-fix `w4` (255.75) lands on pre-fix `w8` (254.97): the kernel
+fix bought at four warps exactly what doubling the warp count used to buy.
+
+**Consequently the S2 recommendation above is withdrawn, not merely weakened.**
+It read: a coarser-grained AES instruction shortens the dependency chain, the
+dependency chain is not binding, therefore S2 hits the same wall. That inference
+was drawn from a scan that was measuring stack-gather latency, so it establishes
+nothing about dependency chains. S2 is undecided again, and deciding it needs a
+pipeline breakdown on the fixed kernel.
+
+Both endpoints of the new scan were re-run with build output visible and are
+reproduced above; the application's own counters and the runtime's `PERF:` line
+agree at each, as section 4 requires. A first attempt at the accompanying
+pipeline breakdown produced all-zero counters and instruction counts a quarter
+of the non-PERF run's, and is discarded rather than reported -- the cause is
+unidentified and the numbers were not used.
