@@ -1338,6 +1338,16 @@ rtlsim, `-n128 -b64`, both variants, `num_cores=2` confirmed in the banner:
 | cycles/block | 945.41 | 80.04 | |
 | bytes/cycle | 0.0169 | **0.1999** | |
 
+Superseded once partial-block support landed, which changed both kernels:
+**7,841,847 against 653,277, a ratio of 12.00x.** The software baseline costs
+1.25% more cycles for 1.20% more instructions (the tail branch and the strided
+addressing) and the hardware kernel 0.37% fewer for 0.39% fewer (its length
+block now reuses an already-computed byte count). Cycle and instruction changes
+move together in sign and magnitude on both sides, so this is the price of the
+feature rather than layout noise -- which a cycle change alone could not have
+distinguished, given floor samples at the neighbouring configuration range up to
+2.89%.
+
 Against `c1w4t32`, the hardware kernel gains 62% throughput (0.1235 to 0.1999
 bytes/cycle) and the software baseline gains 86%, **so the ratio falls from
 13.54x to 11.81x**. The shape change helps the memory-bound software variant

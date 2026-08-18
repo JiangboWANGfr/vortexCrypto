@@ -24,6 +24,7 @@ namespace {
 const char* g_kernel_file = "kernel.vxbin";
 uint32_t g_num_msgs = 256;
 uint32_t g_blocks_per_msg = 16;
+uint32_t g_tail_bytes = 0;
 uint32_t g_impl = 0;
 
 // Every implementation is a separate entry point in the same binary, sharing
@@ -117,7 +118,7 @@ const uint8_t kKatAesCt[16] = {
 void show_usage() {
   std::printf(
       "AES-128-GCM\n"
-      "Usage: [-n msgs] [-b blocks_per_msg] [-i impl] [-k kernel] [-h]\n");
+      "Usage: [-n msgs] [-b blocks_per_msg] [-t tail_bytes] [-i impl] [-k kernel] [-h]\n");
   for (uint32_t i = 0; i < kNumImpls; ++i) {
     std::printf("  -i%u  %s\n", i, kImpls[i].label);
   }
@@ -125,10 +126,11 @@ void show_usage() {
 
 void parse_args(int argc, char** argv) {
   int c;
-  while ((c = getopt(argc, argv, "n:b:i:k:h")) != -1) {
+  while ((c = getopt(argc, argv, "n:b:t:i:k:h")) != -1) {
     switch (c) {
     case 'n': g_num_msgs = (uint32_t)std::atoi(optarg); break;
     case 'b': g_blocks_per_msg = (uint32_t)std::atoi(optarg); break;
+    case 't': g_tail_bytes = (uint32_t)std::atoi(optarg); break;
     case 'i': g_impl = (uint32_t)std::atoi(optarg); break;
     case 'k': g_kernel_file = optarg; break;
     case 'h': show_usage(); std::exit(0); break;
@@ -171,7 +173,7 @@ int self_check_reference() {
     aes_gcm_ref::encrypt_block(rk, zero, h);
     uint8_t ct[64];
     uint8_t tag[GCM_TAG_BYTES];
-    aes_gcm_ref::gcm_encrypt(rk, h, v.iv, v.pt, v.blocks, ct, tag);
+    aes_gcm_ref::gcm_encrypt(rk, h, v.iv, v.pt, v.blocks, 0, ct, tag);
     if (std::memcmp(ct, v.ct, AES_BLOCK_BYTES * v.blocks) != 0) {
       std::printf("reference ciphertext does not match %s\n", v.name);
       return 1;
@@ -230,8 +232,19 @@ int main(int argc, char** argv) {
   CHECK(vx_device_query(dev, VX_CAPS_NUM_WARPS, &num_warps));
   CHECK(vx_device_query(dev, VX_CAPS_NUM_THREADS, &num_threads));
 
-  const uint32_t msg_bytes = AES_BLOCK_BYTES * g_blocks_per_msg;
-  const size_t data_bytes = (size_t)msg_bytes * g_num_msgs;
+  if (g_tail_bytes > 15) {
+    std::printf("FAILED: -t must be 0..15 (a tail is what is left after whole "
+                "blocks); got %u\n", g_tail_bytes);
+    return 1;
+  }
+  const uint32_t msg_bytes = AES_BLOCK_BYTES * g_blocks_per_msg + g_tail_bytes;
+  // Device buffers are strided by whole blocks so every message base stays
+  // 4-byte aligned for the word-wise streaming path; only msg_bytes of each
+  // slot carries data. Host-side reference buffers use the same stride so the
+  // comparison is index-for-index.
+  const uint32_t msg_stride =
+      AES_BLOCK_BYTES * (g_blocks_per_msg + (g_tail_bytes != 0 ? 1u : 0u));
+  const size_t data_bytes = (size_t)msg_stride * g_num_msgs;
 
   std::printf("messages=%u blocks/msg=%u bytes=%zu cores=%lu warps=%lu "
               "threads=%lu\n",
@@ -268,8 +281,9 @@ int main(int argc, char** argv) {
   std::vector<uint8_t> ref_tag((size_t)GCM_TAG_BYTES * g_num_msgs);
   for (uint32_t m = 0; m < g_num_msgs; ++m) {
     aes_gcm_ref::gcm_encrypt(rk, h, &h_iv[(size_t)GCM_IV_BYTES * m],
-                             &h_pt[(size_t)msg_bytes * m], g_blocks_per_msg,
-                             &ref_ct[(size_t)msg_bytes * m],
+                             &h_pt[(size_t)msg_stride * m], g_blocks_per_msg,
+                             g_tail_bytes,
+                             &ref_ct[(size_t)msg_stride * m],
                              &ref_tag[(size_t)GCM_TAG_BYTES * m]);
   }
 
@@ -286,6 +300,7 @@ int main(int argc, char** argv) {
   kernel_arg_t kernel_arg;
   kernel_arg.num_msgs = g_num_msgs;
   kernel_arg.blocks_per_msg = g_blocks_per_msg;
+  kernel_arg.tail_bytes = g_tail_bytes;
   CHECK(vx_buffer_address(rk_buf, &kernel_arg.rk_addr));
   CHECK(vx_buffer_address(te_buf, &kernel_arg.te_addr));
   CHECK(vx_buffer_address(ht_buf, &kernel_arg.htable_addr));
@@ -365,8 +380,11 @@ int main(int argc, char** argv) {
 
   int errors = 0;
   for (uint32_t m = 0; m < g_num_msgs && errors < 8; ++m) {
-    errors += compare("ciphertext", m, &dev_ct[(size_t)msg_bytes * m],
-                      &ref_ct[(size_t)msg_bytes * m], msg_bytes);
+    // Index by stride, compare msg_bytes: the padding in each slot is not
+    // ciphertext and is not authenticated, so comparing it would be comparing
+    // uninitialised memory.
+    errors += compare("ciphertext", m, &dev_ct[(size_t)msg_stride * m],
+                      &ref_ct[(size_t)msg_stride * m], msg_bytes);
     errors += compare("tag", m, &dev_tag[(size_t)GCM_TAG_BYTES * m],
                       &ref_tag[(size_t)GCM_TAG_BYTES * m], GCM_TAG_BYTES);
   }

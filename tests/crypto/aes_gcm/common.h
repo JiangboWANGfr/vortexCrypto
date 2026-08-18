@@ -28,7 +28,13 @@
 
 typedef struct {
   uint32_t num_msgs;
-  uint32_t blocks_per_msg;
+  uint32_t blocks_per_msg;   // FULL 16-byte blocks
+  // Trailing bytes after the full blocks, 0..15. GCM is defined over arbitrary
+  // byte lengths (SP 800-38D 7.1); without this the ABI can only express
+  // multiples of 16, and the only way to attempt a short message would be to
+  // round the block count up and pass a shorter buffer -- which nothing here
+  // would reject. Message length is 16 * blocks_per_msg + tail_bytes.
+  uint32_t tail_bytes;
   uint64_t rk_addr;
   uint64_t te_addr;
   uint64_t htable_addr;

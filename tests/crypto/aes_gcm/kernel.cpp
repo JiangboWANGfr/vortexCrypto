@@ -153,6 +153,9 @@ __kernel void aes_gcm_sw_ttable(kernel_arg_t* __UNIFORM__ arg) {
 
   const uint32_t num_msgs = arg->num_msgs;
   const uint32_t blocks = arg->blocks_per_msg;
+  const uint32_t tail = arg->tail_bytes;
+  const uint32_t msg_bytes = 16u * blocks + tail;
+  const uint32_t msg_stride = 16u * (blocks + (tail != 0u ? 1u : 0u));
   const uint8_t* iv_base = (const uint8_t*)arg->iv_addr;
   const uint8_t* src_base = (const uint8_t*)arg->src_addr;
   uint8_t* dst_base = (uint8_t*)arg->dst_addr;
@@ -174,8 +177,8 @@ __kernel void aes_gcm_sw_ttable(kernel_arg_t* __UNIFORM__ arg) {
     }
 
     uint8_t y[16] = {0};
-    const uint8_t* pt = src_base + (size_t)AES_BLOCK_BYTES * blocks * msg;
-    uint8_t* ct = dst_base + (size_t)AES_BLOCK_BYTES * blocks * msg;
+    const uint8_t* pt = src_base + (size_t)msg_stride * msg;
+    uint8_t* ct = dst_base + (size_t)msg_stride * msg;
     for (uint32_t b = 0; b < blocks; ++b) {
       inc32(ctr);
       uint8_t ks[16];
@@ -188,7 +191,21 @@ __kernel void aes_gcm_sw_ttable(kernel_arg_t* __UNIFORM__ arg) {
       ghash_mul(lm->htable, y);
     }
 
-    const uint64_t cbits = (uint64_t)blocks * 128u;
+    // Partial final block, SP 800-38D 7.1 step 4: `tail` bytes of keystream
+    // consumed, ciphertext fragment zero-padded before GHASH absorbs it.
+    if (tail != 0) {
+      inc32(ctr);
+      uint8_t ks[16];
+      aes128_encrypt(lm, ctr, ks);
+      for (uint32_t i = 0; i < tail; ++i) {
+        const uint8_t c = (uint8_t)(pt[16 * blocks + i] ^ ks[i]);
+        ct[16 * blocks + i] = c;
+        y[i] ^= c;
+      }
+      ghash_mul(lm->htable, y);
+    }
+
+    const uint64_t cbits = (uint64_t)msg_bytes * 8u;
     for (int i = 0; i < 8; ++i) {
       y[15 - i] ^= (uint8_t)(cbits >> (8 * i));
     }
@@ -350,6 +367,15 @@ __kernel void aes_gcm_hw_s1(kernel_arg_t* __UNIFORM__ arg) {
 
   const uint32_t num_msgs = arg->num_msgs;
   const uint32_t blocks = arg->blocks_per_msg;
+  const uint32_t tail = arg->tail_bytes;
+  const uint32_t msg_bytes = 16u * blocks + tail;
+  // Buffer stride is the message length rounded UP to a whole block, and is
+  // deliberately not the message length. The word-wise streaming path below is
+  // only valid while each message base is 4-byte aligned; a byte-granular
+  // stride breaks that the moment a tail makes it odd, and RISC-V traps on the
+  // unaligned word access rather than fixing it up. The padding bytes are never
+  // read and never authenticated -- msg_bytes is what GCM sees.
+  const uint32_t msg_stride = 16u * (blocks + (tail != 0u ? 1u : 0u));
   const uint8_t* iv_base = (const uint8_t*)arg->iv_addr;
   const uint8_t* src_base = (const uint8_t*)arg->src_addr;
   uint8_t* dst_base = (uint8_t*)arg->dst_addr;
@@ -368,8 +394,8 @@ __kernel void aes_gcm_hw_s1(kernel_arg_t* __UNIFORM__ arg) {
     uint32_t ctr[4] = {j0[0], j0[1], j0[2], j0[3]};
     uint32_t y[4] = {0, 0, 0, 0};
 
-    const uint8_t* pt = src_base + (size_t)AES_BLOCK_BYTES * blocks * msg;
-    uint8_t* ct = dst_base + (size_t)AES_BLOCK_BYTES * blocks * msg;
+    const uint8_t* pt = src_base + (size_t)msg_stride * msg;
+    uint8_t* ct = dst_base + (size_t)msg_stride * msg;
 
     for (uint32_t b = 0; b < blocks; ++b) {
       // inc32 on the trailing big-endian counter word
@@ -392,9 +418,33 @@ __kernel void aes_gcm_hw_s1(kernel_arg_t* __UNIFORM__ arg) {
       ghash_mul_hw(h, y);
     }
 
+    // Partial final block, SP 800-38D section 7.1 step 4. Only `tail` bytes of
+    // keystream are consumed and the ciphertext fragment is zero-padded to a
+    // full block before GHASH absorbs it -- padding with the surrounding
+    // plaintext instead would change the tag. Byte-wise on purpose: the
+    // word-wise fast path above is justified by 16-byte alignment, which a tail
+    // by definition does not have, and a word store here would write up to 15
+    // bytes past the caller's buffer.
+    if (tail != 0) {
+      ctr[3] = bswap32(bswap32(ctr[3]) + 1);
+      uint32_t ks[4];
+      aes128_encrypt_hw(lm->rk, ctr, ks);
+      uint8_t padded[16] = {0};
+      for (uint32_t i = 0; i < tail; ++i) {
+        const uint8_t k = (uint8_t)(ks[i >> 2] >> (8 * (i & 3)));
+        const uint8_t c = (uint8_t)(pt[16 * blocks + i] ^ k);
+        ct[16 * blocks + i] = c;
+        padded[i] = c;
+      }
+      for (int i = 0; i < 4; ++i) {
+        y[i] ^= vx_brev8(load_le32(padded + 4 * i));
+      }
+      ghash_mul_hw(h, y);
+    }
+
     // Length block: [len(A)]64 || [len(C)]64, big-endian, so the two 32-bit
     // halves land byte-swapped in the little-endian limbs before reflection.
-    const uint64_t cbits = (uint64_t)blocks * 128u;
+    const uint64_t cbits = (uint64_t)msg_bytes * 8u;
     y[2] ^= vx_brev8(bswap32((uint32_t)(cbits >> 32)));
     y[3] ^= vx_brev8(bswap32((uint32_t)cbits));
     ghash_mul_hw(h, y);

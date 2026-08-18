@@ -141,7 +141,7 @@ inline void inc32(uint8_t ctr[16]) {
 inline void gcm_encrypt(const uint8_t rk[AES128_RK_BYTES],
                         const uint8_t h[16],
                         const uint8_t iv[GCM_IV_BYTES],
-                        const uint8_t* pt, uint32_t blocks,
+                        const uint8_t* pt, uint32_t blocks, uint32_t tail,
                         uint8_t* ct, uint8_t tag[GCM_TAG_BYTES]) {
   uint8_t j0[16];
   std::memcpy(j0, iv, GCM_IV_BYTES);
@@ -164,9 +164,30 @@ inline void gcm_encrypt(const uint8_t rk[AES128_RK_BYTES],
     std::memcpy(y, next, 16);
   }
 
+  // Partial final block, SP 800-38D section 7.1 step 4: only `tail` bytes of
+  // keystream are consumed, and the ciphertext fragment is zero-padded to a
+  // full block before GHASH absorbs it. Padding with anything else -- including
+  // the surrounding plaintext -- changes the tag.
+  if (tail != 0) {
+    inc32(ctr);
+    uint8_t ks[16];
+    encrypt_block(rk, ctr, ks);
+    uint8_t padded[16] = {0};
+    for (uint32_t i = 0; i < tail; ++i) {
+      ct[16 * blocks + i] = (uint8_t)(pt[16 * blocks + i] ^ ks[i]);
+      padded[i] = ct[16 * blocks + i];
+    }
+    for (int i = 0; i < 16; ++i) {
+      y[i] ^= padded[i];
+    }
+    uint8_t next[16];
+    gf_mul(y, h, next);
+    std::memcpy(y, next, 16);
+  }
+
   // Length block: [len(A)]64 || [len(C)]64, in bits, big-endian. A is empty.
   uint8_t lenblk[16] = {0};
-  const uint64_t cbits = (uint64_t)blocks * 128u;
+  const uint64_t cbits = ((uint64_t)blocks * 16u + tail) * 8u;
   for (int i = 0; i < 8; ++i) {
     lenblk[15 - i] = (uint8_t)(cbits >> (8 * i));
   }
