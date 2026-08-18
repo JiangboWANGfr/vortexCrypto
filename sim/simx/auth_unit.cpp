@@ -93,6 +93,14 @@ void AuthUnit::execute(instr_trace_t* trace) {
     case AuthType::BREV8:
       res = brev8(a, width);
       break;
+    case AuthType::GHRED32L:
+    case AuthType::GHRED32H: {
+      // 0x87 is the GF(2^128) reduction constant; carry-less multiply by it is
+      // x ^ (x<<1) ^ (x<<2) ^ (x<<7). Must match VX_auth_ghash.sv bit for bit.
+      uint64_t p = b ^ (b << 1) ^ (b << 2) ^ (b << 7);
+      res = a ^ ((auth_type == AuthType::GHRED32H) ? (p >> width) : p);
+      break;
+    }
     case AuthType::CLMUL:
     case AuthType::CLMULH: {
       uint64_t lo, hi;

@@ -64,6 +64,35 @@ inline uint32_t vx_brev8(uint32_t a) {
     return out;
 }
 
+// Fused GF(2^128) reduction step -- CUSTOM, not ratified.
+//
+//   rd = rs1 ^ clmul_{lo,hi}(rs2, 0x87)
+//
+// The GHASH modulus is x^128 + x^7 + x^2 + x + 1, so folding the high half of a
+// 256-bit product down means multiplying each limb by the constant 0x87 and
+// accumulating. With clmul that is a multiply plus a separate XOR per limb;
+// these fuse the pair. Because the constant is known, the hardware does not need
+// a general carry-less multiplier for it either -- 0x87 is 0b10000111, so the
+// product is x ^ (x<<1) ^ (x<<2) ^ (x<<7).
+//
+// Encoded on RISCV_EXT3, which was entirely undecoded before, so unlike the
+// ratified encodings above these cannot alias an existing instruction.
+#define RISCV_EXT3      0x5B
+
+__attribute__((always_inline))
+inline uint32_t vx_ghred32l(uint32_t acc, uint32_t x) {
+    uint32_t out;
+    __asm__ (".insn r %1, 0, 0, %0, %2, %3" : "=r"(out) : "i"(RISCV_EXT3), "r"(acc), "r"(x));
+    return out;
+}
+
+__attribute__((always_inline))
+inline uint32_t vx_ghred32h(uint32_t acc, uint32_t x) {
+    uint32_t out;
+    __asm__ (".insn r %1, 1, 0, %0, %2, %3" : "=r"(out) : "i"(RISCV_EXT3), "r"(acc), "r"(x));
+    return out;
+}
+
 #ifdef __cplusplus
 }
 #endif

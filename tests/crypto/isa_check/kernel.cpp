@@ -52,6 +52,8 @@ __kernel void isa_check(kernel_arg_t* __UNIFORM__ arg) {
       default: r = vx_rori(a, 25); break;
       }
       break;
+    case ISA_OP_GHRED32L: r = vx_ghred32l(a, b); break;
+    case ISA_OP_GHRED32H: r = vx_ghred32h(a, b); break;
     default: break;
     }
 

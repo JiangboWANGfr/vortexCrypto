@@ -454,6 +454,8 @@ package VX_trace_pkg;
                 INST_AUTH_CLMUL:  `TRACE(level, ("CLMUL"))
                 INST_AUTH_CLMULH: `TRACE(level, ("CLMULH"))
                 INST_AUTH_BREV8:  `TRACE(level, ("BREV8"))
+                INST_AUTH_GHRED32L: `TRACE(level, ("GHRED32L"))
+                INST_AUTH_GHRED32H: `TRACE(level, ("GHRED32H"))
                 default:          `TRACE(level, ("?"))
             endcase
         end

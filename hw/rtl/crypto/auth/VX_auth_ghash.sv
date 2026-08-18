@@ -19,6 +19,12 @@
 //   CLMUL  rd, rs1, rs2   rd = low  XLEN bits of the carry-less product
 //   CLMULH rd, rs1, rs2   rd = high XLEN bits of the carry-less product
 //   BREV8  rd, rs1        rd = rs1 with the bits of each byte reversed
+//   GHRED32L/H rd,rs1,rs2 rd = rs1 ^ clmul_{lo,hi}(rs2, 0x87)   [custom]
+//
+// GHRED32L/H are the only non-ratified instructions here. They fuse the
+// multiply-by-the-reduction-constant with its accumulate, which is the shape
+// the GF(2^128) fold takes: 0x87 is a compile-time constant, so the multiply
+// collapses to four shifted XORs instead of a general carry-less multiply.
 //
 // BREV8 is here rather than in the integer ALU because it exists in this design
 // for GHASH: GCM numbers the bits of each byte in the opposite order to the
@@ -49,6 +55,8 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
 
     wire is_clmulh = (execute_if.data.op_type == INST_AUTH_CLMULH);
     wire is_brev8  = (execute_if.data.op_type == INST_AUTH_BREV8);
+    wire is_ghred_l = (execute_if.data.op_type == INST_AUTH_GHRED32L);
+    wire is_ghred_h = (execute_if.data.op_type == INST_AUTH_GHRED32H);
 
     wire [NUM_LANES-1:0][XLEN-1:0] auth_result;
 
@@ -77,9 +85,21 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
             end
         end
 
-        assign auth_result[i] = is_brev8  ? brev8_res
-                              : is_clmulh ? clmul_prod[2*XLEN-1:XLEN]
-                                          : clmul_prod[XLEN-1:0];
+        // Fused reduction: the GF(2^128) modulus x^128+x^7+x^2+x+1 reduces to
+        // the constant 0x87 = 0b10000111, so multiplying by it carry-lessly is
+        // just x ^ (x<<1) ^ (x<<2) ^ (x<<7). With a constant operand this is
+        // four shifted XORs rather than the full 32-term reduction tree the
+        // generic clmul needs, and the accumulate is folded in for free.
+        wire [2*XLEN-1:0] b_ext = {{XLEN{1'b0}}, b};
+        wire [2*XLEN-1:0] ghred_prod = b_ext ^ (b_ext << 1) ^ (b_ext << 2) ^ (b_ext << 7);
+        wire [XLEN-1:0] ghred_lo = a ^ ghred_prod[XLEN-1:0];
+        wire [XLEN-1:0] ghred_hi = a ^ ghred_prod[2*XLEN-1:XLEN];
+
+        assign auth_result[i] = is_brev8    ? brev8_res
+                              : is_ghred_l  ? ghred_lo
+                              : is_ghred_h  ? ghred_hi
+                              : is_clmulh   ? clmul_prod[2*XLEN-1:XLEN]
+                                            : clmul_prod[XLEN-1:0];
     end
 
     `UNUSED_VAR (execute_if.data.rs3_data)

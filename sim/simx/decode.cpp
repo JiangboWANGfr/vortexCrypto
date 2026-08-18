@@ -411,6 +411,8 @@ static op_string_t op_string(const Instr &instr) {
       case AuthType::CLMUL:  return {"CLMUL", ""};
       case AuthType::CLMULH: return {"CLMULH", ""};
       case AuthType::BREV8:  return {"BREV8", ""};
+      case AuthType::GHRED32L: return {"GHRED32L", ""};
+      case AuthType::GHRED32H: return {"GHRED32H", ""};
       default:
         std::abort();
       }
@@ -1016,6 +1018,21 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
       std::abort();
     }
   } break;
+#ifdef VX_CFG_EXT_AUTH_ENABLE
+  case Opcode::EXT3: {
+    // Custom fused GF(2^128) reduction. EXT3 was entirely undecoded, so unlike
+    // the ratified crypto encodings this cannot collide: funct3 0 = GHRED32L,
+    // 1 = GHRED32H.
+    if (funct3 != 0x0 && funct3 != 0x1) {
+      std::abort();
+    }
+    instr->set_fu_type(FUType::AUTH);
+    instr->set_op_type(funct3 == 0x1 ? AuthType::GHRED32H : AuthType::GHRED32L);
+    instr->set_dest_reg(rd, RegType::Integer);
+    instr->set_src_reg(0, rs1, RegType::Integer);
+    instr->set_src_reg(1, rs2, RegType::Integer);
+  } break;
+#endif
   case Opcode::EXT2: {
     switch (funct3) {
     case 0: { // WGATHER

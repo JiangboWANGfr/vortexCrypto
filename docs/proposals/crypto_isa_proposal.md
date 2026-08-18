@@ -777,9 +777,13 @@ Evidence the mechanism is what moved, rather than codegen luck (a fair caution:
 a peer session measured 24% swings in both directions from `always_inline`
 alone on a different kernel):
 
-- `sp`-relative memory operations in the whole binary: **zero**. Both helper
-  symbols are gone; `aes_gcm_hw_s1` is one 566-instruction function. The traffic
-  class named above went to zero, and the cycles moved with it.
+- Static `sp`-relative memory operations across the hardware path fall from
+  **103 to 47**: 91 in `aes_gcm_hw_s1` plus 12 in the out-of-line `ghash_mul_hw`
+  before, 47 after, with both helper symbols gone and `aes_gcm_hw_s1` now one
+  566-instruction function. (An earlier version of this line claimed **zero**.
+  That was a measurement error, not a result: the counting regex matched only
+  decimal stack offsets and objdump emits them in hex, so every `lw a6, 0x4c(sp)`
+  was invisible to it. The halving is real; the elimination was not.)
 - Three rtlsim runs return identical cycles and instructions, per section 4.
 - The residual 44 `lbu`/`sb` in `hw_s1` are the per-*message* IV load and tag
   store, amortised over 64 blocks, not per-block traffic.
@@ -890,3 +894,45 @@ What these counters cannot separate is operand stall caused by memory latency
 from operand stall caused by arithmetic dependency, since `scrb` counts both.
 Deciding S2 needs that separation -- a critical-path measurement, or a
 prototype -- not another warp scan.
+
+
+### Measured: the custom fused reduction does not pay
+
+`ghred32l` / `ghred32h` are the one non-ratified instruction pair in this work:
+`rd = rs1 ^ clmul_{lo,hi}(rs2, 0x87)`, fusing the multiply by the GF(2^128)
+reduction constant with its accumulate. They occupy the two `INST_AUTH_*` slots
+reserved for them and a previously undecoded opcode (`INST_EXT3`), so they
+displace nothing. Both pass `isa_check` 16/16 on RTL and simx against a
+reference written from the definition.
+
+Predicted before measuring: the reduction is 9 clmul-class + 8 XOR = 17
+instructions and becomes 9, saving 8 of roughly 415 per warp-block, so **1.93%
+fewer instructions and 1.5-2.5% fewer cycles**.
+
+Measured at `c1w4t32`, `-n128 -b64`, rtlsim:
+
+| | clmul reduction | ghred32 | |
+| --- | ---: | ---: | --- |
+| instructions | 106,356 | 104,276 | **-1.96%** |
+| cycles | 1,061,573 | 1,169,373 | **+10.2%** |
+| IPC | 0.100 | 0.089 | |
+
+At `w16t4` the same change costs +4.4% cycles for the same -1.96% instructions.
+
+**The instruction prediction was almost exact and the cycle prediction had the
+wrong sign.** Fewer instructions, more cycles, in both configurations.
+
+Why, as far as the counters show: `crypto` backpressure stays at 0%, so the unit
+is not the problem. Static `sp`-relative operations rise 47 to 50 and dynamic
+loads rise ~2 per block per thread, with average load latency up 16.62 to 21.05
+at `w16t4`. The fused form also serialises what the unfused form left parallel
+-- `r1 = ghred32h(r1, p4); r1 = ghred32l(r1, p5)` is a two-deep chain on `r1`,
+where `r1 ^= clmulh(p4,R) ^ clmul(p5,R)` issues two independent multiplies and
+combines them. Trading instruction count for instruction-level parallelism is a
+bad trade on a machine whose stall is already 99% operand-wait.
+
+The instructions are kept -- they are verified, they cost nothing when unused,
+and the negative result is the finding -- but the recorded kernel uses the
+ratified `clmul` form. **The useful claim is that ratified Zbkc plus Zbkb
+captures essentially all of the available win here, and a custom fused
+instruction on top of them is worse than nothing.**

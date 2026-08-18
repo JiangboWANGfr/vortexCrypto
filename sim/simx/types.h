@@ -252,7 +252,9 @@ struct IntrSymArgs {
 enum class AuthType {
   CLMUL,
   CLMULH,
-  BREV8
+  BREV8,
+  GHRED32L,   // rd = rs1 ^ clmul_lo(rs2, 0x87)  -- custom
+  GHRED32H    // rd = rs1 ^ clmul_hi(rs2, 0x87)  -- custom
 };
 #endif
 

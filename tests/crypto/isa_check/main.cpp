@@ -87,8 +87,21 @@ static uint32_t ref_aes32(uint32_t a, uint32_t b, uint32_t bs, bool mix) {
   return a ^ ref_rol32(so, 8 * bs);
 }
 
+// Reference for the fused reduction, written from its definition rather than
+// from either model: carry-less multiply by the GF(2^128) reduction constant
+// 0x87, then accumulate into rs1.
+static uint32_t ref_ghred(uint32_t acc, uint32_t x, bool high) {
+  uint64_t p = 0;
+  for (int k = 0; k < 32; ++k) {
+    if ((0x87u >> k) & 1) {
+      p ^= ((uint64_t)x << k);
+    }
+  }
+  return acc ^ (high ? (uint32_t)(p >> 32) : (uint32_t)p);
+}
+
 static const char* kOpNames[ISA_NUM_OPS] = {
-  "clmul", "clmulh", "brev8", "aes32esi", "aes32esmi", "rori"
+  "clmul", "clmulh", "brev8", "aes32esi", "aes32esmi", "rori", "ghred32l", "ghred32h"
 };
 
 // The four shamt values the kernel uses, indexed by vector.
@@ -101,6 +114,8 @@ static uint32_t ref_op(uint32_t op, uint32_t v, uint32_t a, uint32_t b) {
   case ISA_OP_BREV8:     return ref_brev8(a);
   case ISA_OP_AES32ESI:  return ref_aes32(a, b, v & 3, false);
   case ISA_OP_AES32ESMI: return ref_aes32(a, b, v & 3, true);
+  case ISA_OP_GHRED32L:  return ref_ghred(a, b, false);
+  case ISA_OP_GHRED32H:  return ref_ghred(a, b, true);
   case ISA_OP_RORI:      return ref_rol32(a, (32 - kRoriShamt[v & 3]) & 31);
   default:               return 0;
   }

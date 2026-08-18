@@ -541,10 +541,11 @@ package VX_gpu_pkg;
     localparam INST_AUTH_CLMUL    = 4'h0;
     localparam INST_AUTH_CLMULH   = 4'h1;
     localparam INST_AUTH_BREV8    = 4'h2;
-    // 4'h3 and 4'h4 are held for a fused GF(2^128) reduction (ghred32l/h) or a
-    // carry-less multiply-accumulate, if a later milestone measures one as
-    // worth an opcode. Reserved here so adding it cannot renumber the above and
-    // invalidate numbers recorded against these encodings.
+    // Fused GF(2^128) reduction step: rd = rs1 ^ clmul_{lo,hi}(rs2, 0x87).
+    // These take the two slots reserved for them, so nothing above renumbers
+    // and numbers recorded against the earlier encodings stay valid.
+    localparam INST_AUTH_GHRED32L = 4'h3;
+    localparam INST_AUTH_GHRED32H = 4'h4;
     localparam INST_AUTH_BITS     = 4;
 `endif
 

@@ -805,6 +805,20 @@ module VX_decode import
                     default:;
                 endcase
             end
+        `ifdef VX_CFG_EXT_AUTH_ENABLE
+            INST_EXT3: begin
+                // Custom fused GF(2^128) reduction. INST_EXT3 was entirely
+                // undecoded, so unlike the ratified crypto encodings this arm
+                // cannot collide with anything: funct3 0 = GHRED32L, 1 = GHRED32H.
+                if (funct3 == 3'h0 || funct3 == 3'h1) begin
+                    ex_type = EX_AUTH;
+                    op_type = INST_OP_BITS'(funct3[0] ? INST_AUTH_GHRED32H : INST_AUTH_GHRED32L);
+                    `USED_IREG (rd);
+                    `USED_IREG (rs1);
+                    `USED_IREG (rs2);
+                end
+            end
+        `endif
             INST_EXT2: begin
                 case (funct3)
                 3'h0: begin // WGATHER: R4-type, funct2=src_lane
