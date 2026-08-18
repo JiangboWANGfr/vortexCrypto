@@ -141,6 +141,7 @@ inline void inc32(uint8_t ctr[16]) {
 inline void gcm_encrypt(const uint8_t rk[AES128_RK_BYTES],
                         const uint8_t h[16],
                         const uint8_t iv[GCM_IV_BYTES],
+                        const uint8_t* aad, uint32_t aad_bytes,
                         const uint8_t* pt, uint32_t blocks, uint32_t tail,
                         uint8_t* ct, uint8_t tag[GCM_TAG_BYTES]) {
   uint8_t j0[16];
@@ -151,6 +152,20 @@ inline void gcm_encrypt(const uint8_t rk[AES128_RK_BYTES],
   std::memcpy(ctr, j0, 16);
 
   uint8_t y[16] = {0};
+
+  // AAD is absorbed by GHASH before any ciphertext, and is NOT encrypted
+  // (SP 800-38D 7.1 step 5). A partial final AAD block is zero-padded to 16
+  // bytes, exactly as a partial ciphertext block is.
+  for (uint32_t off = 0; off < aad_bytes; off += 16) {
+    const uint32_t n = (aad_bytes - off < 16) ? (aad_bytes - off) : 16;
+    for (uint32_t i = 0; i < n; ++i) {
+      y[i] ^= aad[off + i];
+    }
+    uint8_t next[16];
+    gf_mul(y, h, next);
+    std::memcpy(y, next, 16);
+  }
+
   for (uint32_t b = 0; b < blocks; ++b) {
     inc32(ctr);
     uint8_t ks[16];
@@ -185,10 +200,12 @@ inline void gcm_encrypt(const uint8_t rk[AES128_RK_BYTES],
     std::memcpy(y, next, 16);
   }
 
-  // Length block: [len(A)]64 || [len(C)]64, in bits, big-endian. A is empty.
+  // Length block: [len(A)]64 || [len(C)]64, in bits, big-endian.
   uint8_t lenblk[16] = {0};
+  const uint64_t abits = (uint64_t)aad_bytes * 8u;
   const uint64_t cbits = ((uint64_t)blocks * 16u + tail) * 8u;
   for (int i = 0; i < 8; ++i) {
+    lenblk[7 - i] = (uint8_t)(abits >> (8 * i));
     lenblk[15 - i] = (uint8_t)(cbits >> (8 * i));
   }
   for (int i = 0; i < 16; ++i) {

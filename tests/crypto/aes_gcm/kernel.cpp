@@ -154,6 +154,8 @@ __kernel void aes_gcm_sw_ttable(kernel_arg_t* __UNIFORM__ arg) {
   const uint32_t num_msgs = arg->num_msgs;
   const uint32_t blocks = arg->blocks_per_msg;
   const uint32_t tail = arg->tail_bytes;
+  const uint32_t aad_bytes = arg->aad_bytes;
+  const uint8_t* aad = (const uint8_t*)arg->aad_addr;
   const uint32_t msg_bytes = 16u * blocks + tail;
   const uint32_t msg_stride = 16u * (blocks + (tail != 0u ? 1u : 0u));
   const uint8_t* iv_base = (const uint8_t*)arg->iv_addr;
@@ -177,6 +179,16 @@ __kernel void aes_gcm_sw_ttable(kernel_arg_t* __UNIFORM__ arg) {
     }
 
     uint8_t y[16] = {0};
+
+    // AAD, absorbed before any ciphertext and never encrypted.
+    for (uint32_t off = 0; off < aad_bytes; off += 16) {
+      const uint32_t n = (aad_bytes - off < 16u) ? (aad_bytes - off) : 16u;
+      for (uint32_t i = 0; i < n; ++i) {
+        y[i] ^= aad[off + i];
+      }
+      ghash_mul(lm->htable, y);
+    }
+
     const uint8_t* pt = src_base + (size_t)msg_stride * msg;
     uint8_t* ct = dst_base + (size_t)msg_stride * msg;
     for (uint32_t b = 0; b < blocks; ++b) {
@@ -205,8 +217,10 @@ __kernel void aes_gcm_sw_ttable(kernel_arg_t* __UNIFORM__ arg) {
       ghash_mul(lm->htable, y);
     }
 
+    const uint64_t abits = (uint64_t)aad_bytes * 8u;
     const uint64_t cbits = (uint64_t)msg_bytes * 8u;
     for (int i = 0; i < 8; ++i) {
+      y[7 - i] ^= (uint8_t)(abits >> (8 * i));
       y[15 - i] ^= (uint8_t)(cbits >> (8 * i));
     }
     ghash_mul(lm->htable, y);
@@ -368,6 +382,8 @@ __kernel void aes_gcm_hw_s1(kernel_arg_t* __UNIFORM__ arg) {
   const uint32_t num_msgs = arg->num_msgs;
   const uint32_t blocks = arg->blocks_per_msg;
   const uint32_t tail = arg->tail_bytes;
+  const uint32_t aad_bytes = arg->aad_bytes;
+  const uint8_t* aad = (const uint8_t*)arg->aad_addr;
   const uint32_t msg_bytes = 16u * blocks + tail;
   // Buffer stride is the message length rounded UP to a whole block, and is
   // deliberately not the message length. The word-wise streaming path below is
@@ -393,6 +409,22 @@ __kernel void aes_gcm_hw_s1(kernel_arg_t* __UNIFORM__ arg) {
 
     uint32_t ctr[4] = {j0[0], j0[1], j0[2], j0[3]};
     uint32_t y[4] = {0, 0, 0, 0};
+
+    // AAD first, and it is not encrypted (SP 800-38D 7.1 step 5). Byte-wise
+    // because the AAD length is arbitrary and its base carries no alignment
+    // guarantee; it runs once per message, not once per block, so the word-wise
+    // path is not worth the precondition it would impose.
+    for (uint32_t off = 0; off < aad_bytes; off += 16) {
+      const uint32_t n = (aad_bytes - off < 16u) ? (aad_bytes - off) : 16u;
+      uint8_t padded[16] = {0};
+      for (uint32_t i = 0; i < n; ++i) {
+        padded[i] = aad[off + i];
+      }
+      for (int i = 0; i < 4; ++i) {
+        y[i] ^= vx_brev8(load_le32(padded + 4 * i));
+      }
+      ghash_mul_hw(h, y);
+    }
 
     const uint8_t* pt = src_base + (size_t)msg_stride * msg;
     uint8_t* ct = dst_base + (size_t)msg_stride * msg;
@@ -444,7 +476,10 @@ __kernel void aes_gcm_hw_s1(kernel_arg_t* __UNIFORM__ arg) {
 
     // Length block: [len(A)]64 || [len(C)]64, big-endian, so the two 32-bit
     // halves land byte-swapped in the little-endian limbs before reflection.
+    const uint64_t abits = (uint64_t)aad_bytes * 8u;
     const uint64_t cbits = (uint64_t)msg_bytes * 8u;
+    y[0] ^= vx_brev8(bswap32((uint32_t)(abits >> 32)));
+    y[1] ^= vx_brev8(bswap32((uint32_t)abits));
     y[2] ^= vx_brev8(bswap32((uint32_t)(cbits >> 32)));
     y[3] ^= vx_brev8(bswap32((uint32_t)cbits));
     ghash_mul_hw(h, y);

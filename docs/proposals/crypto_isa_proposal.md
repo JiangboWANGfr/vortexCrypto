@@ -1361,3 +1361,54 @@ throughput is recorded alongside the ratio from here on.
 
 **11.81x is therefore the number to quote.** It is smaller than 13.54x and it
 corresponds to a bitstream that meets timing.
+
+
+## 12. AAD, partial blocks, and a measurement that stopped resolving
+
+`aes_gcm` now implements the parts of SP 800-38D it previously did not: AAD
+absorbed by GHASH before any ciphertext and never encrypted, partial final
+blocks zero-padded before absorption, and a length block carrying both
+`[len(A)]64` and `[len(C)]64`. Both kernels and the host reference. Level 1 gains
+**GCM test case 4** -- 20 bytes of AAD over 60 bytes of plaintext, so it
+exercises AAD and a partial tail together -- with its published tag; corrupting
+one bit of that tag fails the check, so it is genuinely validated rather than
+merely present. Level 2 passes 20/20 across AAD lengths 0/1/16/20/33 crossed
+with tails 0/5 and both implementations.
+
+**The performance numbers stopped being comparable, and this is the honest
+record of that rather than a set of new numbers.**
+
+At `c2w4t16`, `-n128 -b64`, no AAD, against the figures recorded in section 11:
+
+| | before | after | instructions |
+| --- | ---: | ---: | ---: |
+| sw_ttable | 7,841,847 | 9,338,582 (**+19.1%**) | **-0.56%** |
+| hw_s1 | 653,277 | 597,233 (**-8.6%**) | **+0.11%** |
+
+Cycles and instructions move in **opposite** directions on both kernels, and the
+hardware kernel got 8.6% faster from a change that only adds work. That is not
+what the price of a feature looks like.
+
+A floor probe at this configuration -- the four reduction statements reversed,
+instruction count **exactly unchanged** at 212,162 -- gives:
+
+- **hardware kernel: 4.68%.** Wider than every sample taken at `c1w4t32`, where
+  five perturbations across problem size ranged 0.126% to 2.893%. So `c2w4t16`
+  is the noisier shape, and the hardware kernel's -8.6% is **1.8x a single floor
+  sample**: not attributable.
+- **software kernel: 0.00%, byte-identical.** The probe touches only
+  `ghash_mul_hw`, which that kernel never calls, so its +19.1% is at least not
+  cross-contamination from the hardware-side edits.
+
+What that leaves: the software baseline's +19.1% is real enough not to be
+explained by an unrelated code change, and its mechanism is **unidentified** --
+instructions fell while cycles rose by a fifth. No probe exists inside that
+kernel's own hot path, so layout cannot be ruled out either. Recorded as open
+rather than attributed.
+
+**Consequence for the recorded ratio.** 9,338,582 / 597,233 is 15.64x, against
+12.00x before. Both numbers are arithmetic on measurements that reproduce; what
+does not survive is any claim that the difference between them means something.
+Until the software kernel has a floor probe of its own, the ratio at this
+configuration should be treated as bounded below by roughly 12x rather than
+quoted at a point.

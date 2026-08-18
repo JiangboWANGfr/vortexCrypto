@@ -35,6 +35,13 @@ typedef struct {
   // round the block count up and pass a shorter buffer -- which nothing here
   // would reject. Message length is 16 * blocks_per_msg + tail_bytes.
   uint32_t tail_bytes;
+  // Additional authenticated data: authenticated but not encrypted
+  // (SP 800-38D 7.1). Absorbed by GHASH before any ciphertext, with a partial
+  // final AAD block zero-padded exactly as a partial ciphertext block is.
+  // Shared by every message, which is the TLS/IPsec shape -- a per-record
+  // header authenticated alongside a per-record payload.
+  uint32_t aad_bytes;
+  uint64_t aad_addr;
   uint64_t rk_addr;
   uint64_t te_addr;
   uint64_t htable_addr;
