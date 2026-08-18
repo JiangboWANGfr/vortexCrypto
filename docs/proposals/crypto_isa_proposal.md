@@ -750,5 +750,44 @@ Both endpoints of the new scan were re-run with build output visible and are
 reproduced above; the application's own counters and the runtime's `PERF:` line
 agree at each, as section 4 requires. A first attempt at the accompanying
 pipeline breakdown produced all-zero counters and instruction counts a quarter
-of the non-PERF run's, and is discarded rather than reported -- the cause is
-unidentified and the numbers were not used.
+of the non-PERF run's. It was discarded rather than reported, and the cause is
+now identified: two measurement scripts were running concurrently in the same
+`build32` tree, each invoking `make` on the runtime and the application, so the
+binaries were being rebuilt underneath the running measurement. `build32` is a
+single shared tree -- shared with other sessions working in this repository as
+well -- and build-and-measure runs in it have to be serial.
+
+### Where that leaves S2
+
+Re-run serially, the breakdown at the new best point is clean:
+
+| | w4 | w16 |
+| --- | ---: | ---: |
+| IPC | 0.407 | **0.680** |
+| scheduler idle | 60% | 32% |
+| scoreboard stall | 48% | 100% |
+| crypto backpressure | 0% | 0% |
+| average load latency | 10.47 | 16.62 |
+| instruction mix, `sym` | 39% | 39% |
+
+Against pre-fix `w16`, average load latency falls 45.81 to 16.62 and idle falls
+57% to 32%. With `ISSUE_WIDTH = 1` the ceiling on IPC is 1, so the machine has
+gone from roughly 3% of peak issue to 68%.
+
+**S2 remains undecided, but the reasons have changed sign.** The argument
+against it -- that the dependency chain is not binding -- is retracted above and
+does not come back. What the new numbers say instead:
+
+- `aes32` is **39% of the instruction stream**, the largest single category. A
+  round-granular instruction replacing sixteen `aes32` with one attacks exactly
+  that.
+- The crypto units still show **0% backpressure at every point measured**, so
+  a wider or deeper unit has headroom in the scheduling domain it already owns.
+- But the machine is now at 68% of peak issue rather than 3%, so removing
+  instructions is closer to removing the actual limit than it was -- and equally,
+  there is less slack left for a coarser instruction to claim.
+
+What these counters cannot separate is operand stall caused by memory latency
+from operand stall caused by arithmetic dependency, since `scrb` counts both.
+Deciding S2 needs that separation -- a critical-path measurement, or a
+prototype -- not another warp scan.
