@@ -47,6 +47,11 @@ const impl_t kImpls[] = {
   { "chacha_poly_rori", "rori" },
   // Bit-identical to sw; see kernel.cpp. Measures the apparatus, not the cipher.
   { "chacha_poly_sw_perm", "sw_perm" },
+  // Rejected as instruments; see kernel.cpp. Correct, bit-identical by
+  // construction, and the compiler emits a different instruction count anyway,
+  // so their deltas are code differences rather than floor readings.
+  { "chacha_poly_sw_perm2", "sw_perm2(rejected)" },
+  { "chacha_poly_sw_perm3", "sw_perm3(rejected)" },
 };
 
 const uint32_t kNumImpls = (uint32_t)(sizeof(kImpls) / sizeof(kImpls[0]));

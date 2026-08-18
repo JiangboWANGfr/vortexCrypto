@@ -649,13 +649,39 @@ perturbation per size gives one draw from each size's distribution, not that
 size's floor, and `-b4` shows this same perturbation reaching 2.28% somewhere in
 this application. Nothing measured here says `-b16` is safe from that.
 
-Settling it needs several *different* perturbations at one size, which is the
-sample not taken. Reversing the diagonal round independently of the column
-round, and reordering the four Poly1305 limb products, are both bit-identical
-by the same disjointness argument and touch different regions of the kernel.
-Until that exists, **no result under about 3% should be quoted from this
-application**, and the instruction counts -- which are exact -- carry whatever
-argument is being made.
+Settling it needs several *different* perturbations at one size. That was
+attempted and it failed, which is itself the more useful finding.
+
+Two further perturbations were built, both bit-identical by construction and
+both verified to compute the correct AEAD: the diagonal round reversed
+independently of the column round, and the five Poly1305 limb products computed
+in reverse. Neither is a valid instrument.
+
+| probe | instr delta, -b4 | instr delta, -b16 | verdict |
+| --- | ---: | ---: | --- |
+| column round reversed | -4 | -4 | fixed, **valid** |
+| diagonal round reversed | +28 | +124 | scales, rejected |
+| Poly1305 limbs reversed | +340 | +292 | 0.67% and 0.17%, rejected |
+
+**Bit-identical by construction is necessary for a floor probe and nowhere near
+sufficient: the compiler has to agree, and in three of the four perturbations
+tried here it did not.** All three compute the same ciphertext and tag. The
+column-round reversal is the only one whose instruction stream is comparable,
+and its four-instruction difference is fixed across a sixteenfold change in
+problem size, which is the signature of a probe measuring layout rather than
+work.
+
+The rejected pair is kept in the tree, labelled `(rejected)` in the
+implementation table and annotated at the entry points, so that the rejection is
+not rediscovered by someone who notices the same two perturbations are available
+and assumes nobody tried them.
+
+The question the Poly1305 probe was built to answer therefore stays open: the
+tight samples may belong to this application, or only to the
+disjoint-quarter-round structure, which is about the most reorder-tolerant thing
+a compiler can be handed. Until a valid second perturbation exists, **no result
+under about 3% should be quoted from this application**, and the instruction
+counts -- which are exact -- carry whatever argument is being made.
 
 This is a different property from determinism, and the distinction cost a
 retraction elsewhere before it was drawn. Byte-identical repeat runs, agreement

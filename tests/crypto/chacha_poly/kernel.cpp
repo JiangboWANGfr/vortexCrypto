@@ -65,7 +65,7 @@ __attribute__((always_inline)) inline void quarter_round(uint32_t x[16], int a, 
 // so that the two callers can consume x[] differently without the rounds being
 // written twice: the once-per-message Poly1305 key wants the raw words, the
 // per-block path wants them XORed and gone.
-template <typename R, bool PERM>
+template <typename R, int PERM>
 __attribute__((always_inline)) inline void chacha20_keystream(
     const uint32_t k[8], uint32_t n0, uint32_t n1, uint32_t n2,
     uint32_t counter, uint32_t x[16]) {
@@ -77,7 +77,7 @@ __attribute__((always_inline)) inline void chacha20_keystream(
   x[12] = counter; x[13] = n0; x[14] = n1; x[15] = n2;
 
   for (int i = 0; i < CHACHA_ROUNDS / 2; ++i) {
-    if (PERM) {
+    if (PERM == 1) {
       // The four quarter-rounds of a column round touch disjoint columns, and
       // likewise the diagonal round, so issuing them in the reverse order is
       // bit-identical by construction rather than merely equivalent. This
@@ -88,6 +88,18 @@ __attribute__((always_inline)) inline void chacha20_keystream(
       quarter_round<R>(x, 2, 6, 10, 14);
       quarter_round<R>(x, 1, 5, 9, 13);
       quarter_round<R>(x, 0, 4, 8, 12);
+      quarter_round<R>(x, 3, 4, 9, 14);
+      quarter_round<R>(x, 2, 7, 8, 13);
+      quarter_round<R>(x, 1, 6, 11, 12);
+      quarter_round<R>(x, 0, 5, 10, 15);
+    } else if (PERM == 2) {
+      // Diagonal round reversed, column round left alone. The four diagonal
+      // quarter-rounds touch {0,5,10,15}, {1,6,11,12}, {2,7,8,13}, {3,4,9,14},
+      // which are disjoint, so this is bit-identical for the same reason.
+      quarter_round<R>(x, 0, 4, 8, 12);
+      quarter_round<R>(x, 1, 5, 9, 13);
+      quarter_round<R>(x, 2, 6, 10, 14);
+      quarter_round<R>(x, 3, 7, 11, 15);
       quarter_round<R>(x, 3, 4, 9, 14);
       quarter_round<R>(x, 2, 7, 8, 13);
       quarter_round<R>(x, 1, 6, 11, 12);
@@ -149,6 +161,7 @@ __attribute__((always_inline)) inline void poly1305_init(poly1305_t& st, const u
 }
 
 // h = (h + block) * r mod 2^130-5, for a full sixteen-byte block.
+template <int PERM = 0>
 __attribute__((always_inline)) inline void poly1305_block(poly1305_t& st, uint32_t t0, uint32_t t1,
                            uint32_t t2, uint32_t t3) {
   uint32_t h0 = st.h0 + (t0 & 0x3ffffff);
@@ -157,21 +170,45 @@ __attribute__((always_inline)) inline void poly1305_block(poly1305_t& st, uint32
   uint32_t h3 = st.h3 + (((t2 >> 14) | (t3 << 18)) & 0x3ffffff);
   uint32_t h4 = st.h4 + ((t3 >> 8) | (1u << 24)); // the appended 0x01 byte
 
-  uint64_t d0 = (uint64_t)h0 * st.r0 + (uint64_t)h1 * st.s4
-              + (uint64_t)h2 * st.s3 + (uint64_t)h3 * st.s2
-              + (uint64_t)h4 * st.s1;
-  uint64_t d1 = (uint64_t)h0 * st.r1 + (uint64_t)h1 * st.r0
-              + (uint64_t)h2 * st.s4 + (uint64_t)h3 * st.s3
-              + (uint64_t)h4 * st.s2;
-  uint64_t d2 = (uint64_t)h0 * st.r2 + (uint64_t)h1 * st.r1
-              + (uint64_t)h2 * st.r0 + (uint64_t)h3 * st.s4
-              + (uint64_t)h4 * st.s3;
-  uint64_t d3 = (uint64_t)h0 * st.r3 + (uint64_t)h1 * st.r2
-              + (uint64_t)h2 * st.r1 + (uint64_t)h3 * st.r0
-              + (uint64_t)h4 * st.s4;
-  uint64_t d4 = (uint64_t)h0 * st.r4 + (uint64_t)h1 * st.r3
-              + (uint64_t)h2 * st.r2 + (uint64_t)h3 * st.r1
-              + (uint64_t)h4 * st.r0;
+  // PERM == 3 computes these five in reverse. Each reads h0..h4 and the r and
+  // s limbs and writes only its own d, so they are independent and the order is
+  // bit-identical -- a probe in a different region from the quarter-round
+  // reorderings, with a different liveness pattern and integer multiplies
+  // rather than ARX.
+  uint64_t d0, d1, d2, d3, d4;
+  if (PERM == 3) {
+    d4 = (uint64_t)h0 * st.r4 + (uint64_t)h1 * st.r3
+       + (uint64_t)h2 * st.r2 + (uint64_t)h3 * st.r1
+       + (uint64_t)h4 * st.r0;
+    d3 = (uint64_t)h0 * st.r3 + (uint64_t)h1 * st.r2
+       + (uint64_t)h2 * st.r1 + (uint64_t)h3 * st.r0
+       + (uint64_t)h4 * st.s4;
+    d2 = (uint64_t)h0 * st.r2 + (uint64_t)h1 * st.r1
+       + (uint64_t)h2 * st.r0 + (uint64_t)h3 * st.s4
+       + (uint64_t)h4 * st.s3;
+    d1 = (uint64_t)h0 * st.r1 + (uint64_t)h1 * st.r0
+       + (uint64_t)h2 * st.s4 + (uint64_t)h3 * st.s3
+       + (uint64_t)h4 * st.s2;
+    d0 = (uint64_t)h0 * st.r0 + (uint64_t)h1 * st.s4
+       + (uint64_t)h2 * st.s3 + (uint64_t)h3 * st.s2
+       + (uint64_t)h4 * st.s1;
+  } else {
+    d0 = (uint64_t)h0 * st.r0 + (uint64_t)h1 * st.s4
+       + (uint64_t)h2 * st.s3 + (uint64_t)h3 * st.s2
+       + (uint64_t)h4 * st.s1;
+    d1 = (uint64_t)h0 * st.r1 + (uint64_t)h1 * st.r0
+       + (uint64_t)h2 * st.s4 + (uint64_t)h3 * st.s3
+       + (uint64_t)h4 * st.s2;
+    d2 = (uint64_t)h0 * st.r2 + (uint64_t)h1 * st.r1
+       + (uint64_t)h2 * st.r0 + (uint64_t)h3 * st.s4
+       + (uint64_t)h4 * st.s3;
+    d3 = (uint64_t)h0 * st.r3 + (uint64_t)h1 * st.r2
+       + (uint64_t)h2 * st.r1 + (uint64_t)h3 * st.r0
+       + (uint64_t)h4 * st.s4;
+    d4 = (uint64_t)h0 * st.r4 + (uint64_t)h1 * st.r3
+       + (uint64_t)h2 * st.r2 + (uint64_t)h3 * st.r1
+       + (uint64_t)h4 * st.r0;
+  }
 
   uint32_t c = (uint32_t)(d0 >> 26); h0 = (uint32_t)d0 & 0x3ffffff;
   d1 += c; c = (uint32_t)(d1 >> 26); h1 = (uint32_t)d1 & 0x3ffffff;
@@ -228,7 +265,7 @@ __attribute__((always_inline)) inline void poly1305_finish(poly1305_t& st, uint3
 // entry points below: dropping it on this side costs 1304 retired instructions
 // at the recorded point, because the per-message argument loads stop being
 // hoisted as uniform. Measured, not assumed.
-template <typename R, bool PERM>
+template <typename R, int PERM>
 __attribute__((always_inline)) inline void chacha20_xor_absorb(
     const uint32_t k[8], uint32_t n0, uint32_t n1, uint32_t n2,
     uint32_t counter, const uint32_t* pb, uint32_t* cb, poly1305_t& st) {
@@ -244,7 +281,7 @@ __attribute__((always_inline)) inline void chacha20_xor_absorb(
     cb[4 * q + 1] = c1;
     cb[4 * q + 2] = c2;
     cb[4 * q + 3] = c3;
-    poly1305_block(st, c0, c1, c2, c3);
+    poly1305_block<PERM>(st, c0, c1, c2, c3);
   }
 }
 
@@ -252,7 +289,7 @@ __attribute__((always_inline)) inline void chacha20_xor_absorb(
 // a 32x32 multiply and the carries out of five of them still fit 64 bits.
 // RV32 has no multiply-accumulate, so each partial product is a mul/mulhu
 // pair; that is the cost the S1 work has to beat.
-template <typename R, bool PERM = false>
+template <typename R, int PERM = 0>
 inline void chacha_poly_body(kernel_arg_t* __UNIFORM__ arg) {
   const uint32_t* key = (const uint32_t*)arg->key_addr;
   const uint8_t* nonce_base = (const uint8_t*)arg->nonce_addr;
@@ -309,7 +346,7 @@ inline void chacha_poly_body(kernel_arg_t* __UNIFORM__ arg) {
 } // namespace
 
 __kernel void chacha_poly_sw(kernel_arg_t* __UNIFORM__ arg) {
-  chacha_poly_body<rot_sw, false>(arg);
+  chacha_poly_body<rot_sw, 0>(arg);
 }
 
 // Bit-identical to chacha_poly_sw. Its only purpose is to measure the distance
@@ -317,23 +354,54 @@ __kernel void chacha_poly_sw(kernel_arg_t* __UNIFORM__ arg) {
 // result from this application is not legible.
 //
 // The probe has a validity condition and it must be checked on every use: the
-// two entry points must report instruction counts within about 0.01% of each
-// other. Semantic equivalence does not imply instruction identity -- an
-// equivalent reordering elsewhere in this family produced 1.24% more
-// instructions, which would have been reported as a floor two orders of
-// magnitude too large. At the recorded point these differ by 4 instructions in
-// 175,512, or 0.002%. A probe that fails silently is worse than no probe.
+// entry points must differ by a SMALL FIXED number of instructions that does
+// not grow with the block count. Absolute, not proportional -- a valid probe
+// perturbs the count by a constant, so a percentage threshold rejects it at
+// small problem sizes and accepts a scaling perturbation at large ones. These
+// differ by exactly 4 instructions at every size from -b4 to -b64.
+//
+// Semantic equivalence does not imply instruction identity, and the failures
+// are not subtle. In this same family, reordering an XOR accumulation that is
+// bit-identical by associativity moved the count 1.24%; reversing four
+// independent statement groups moved it 0.24%; reversing a loop moved it 2.9%
+// and would have reported a 66% floor. A probe that fails silently is worse
+// than no probe, because it fails toward ending the inquiry.
 //
 // The floor is also specific to a configuration and an application, not a
 // property of the machine: the equivalent probe on aes_gcm measures 0.3% at
 // c1w16t4 and 2.9% at c1w4t32. Measure it where the result is quoted.
 __kernel void chacha_poly_sw_perm(kernel_arg_t* __UNIFORM__ arg) {
-  chacha_poly_body<rot_sw, true>(arg);
+  chacha_poly_body<rot_sw, 1>(arg);
+}
+
+// REJECTED AS AN INSTRUMENT -- kept so the rejection is not rediscovered.
+// Arithmetically bit-identical and it computes the correct AEAD, but the
+// compiler does not agree: the instruction count moves +28 at -b4 and +124 at
+// -b16, so the perturbation SCALES with the workload and its cycle delta is a
+// real code difference rather than a floor reading. Do not quote its numbers.
+__kernel void chacha_poly_sw_perm2(kernel_arg_t* __UNIFORM__ arg) {
+  chacha_poly_body<rot_sw, 2>(arg);
+}
+
+// ALSO REJECTED. This was the one that mattered: a different region from the
+// quarter-rounds, integer multiplies rather than ARX, a different liveness
+// pattern -- the probe that would have said whether the tight floor belongs to
+// this application or only to the disjoint-quarter-round structure. It computes
+// the correct AEAD and is bit-identical by construction, and the compiler still
+// emits +340 instructions at -b4 and +292 at -b16. Do not quote its numbers.
+//
+// So the question it was built to answer remains open, and the reason is worth
+// stating: three of the four perturbations tried here are arithmetically
+// bit-identical and only one produces a comparable instruction stream.
+// Bit-identical by construction is NECESSARY for a floor probe and nowhere near
+// sufficient; the compiler has to agree, and usually it does not.
+__kernel void chacha_poly_sw_perm3(kernel_arg_t* __UNIFORM__ arg) {
+  chacha_poly_body<rot_sw, 3>(arg);
 }
 
 // Same code with RORI. This is not a cryptographic instruction, so this row is
 // a stronger software baseline rather than an instruction-set extension --
 // see sw/kernel/include/crypto/vx_chacha.h.
 __kernel void chacha_poly_rori(kernel_arg_t* __UNIFORM__ arg) {
-  chacha_poly_body<rot_hw, false>(arg);
+  chacha_poly_body<rot_hw, 0>(arg);
 }
