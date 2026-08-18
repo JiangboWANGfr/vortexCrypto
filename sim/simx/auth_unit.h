@@ -19,8 +19,8 @@
 
 namespace vortex {
 
-// Authentication-MAC unit: the simx counterpart of hw/rtl/auth/VX_auth_unit.sv.
-// Must stay bit-exact with hw/rtl/auth/VX_auth_ghash.sv.
+// Authentication-MAC unit: the simx counterpart of hw/rtl/crypto/VX_auth_unit.sv.
+// Must stay bit-exact with hw/rtl/crypto/VX_auth_ghash.sv.
 class AuthUnit : public FuncUnit<VX_CFG_NUM_AUTH_BLOCKS> {
 public:
   AuthUnit(const SimContext& ctx, const char* name, Core*);

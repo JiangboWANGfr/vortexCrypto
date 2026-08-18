@@ -88,14 +88,12 @@ ifneq (,$(filter -DVX_CFG_EXT_TCU_ENABLE, $(XCONFIGS)))
 	endif
 endif
 
-# Add SYM/AUTH crypto extension sources (no package file: payload types come
-# from DECL_EXECUTE_T in VX_gpu_pkg, so only an include path is needed)
-ifneq (,$(filter -DVX_CFG_EXT_SYM_ENABLE, $(XCONFIGS)))
-	RTL_INCLUDE += -I$(RTL_DIR)/sym
-endif
-
-ifneq (,$(filter -DVX_CFG_EXT_AUTH_ENABLE, $(XCONFIGS)))
-	RTL_INCLUDE += -I$(RTL_DIR)/auth
+# Add crypto extension sources (EX_SYM and EX_AUTH share hw/rtl/crypto). Neither
+# needs a package file: their payload types come from DECL_EXECUTE_T in
+# VX_gpu_pkg, so only an include path is added and RTL_PKGS is untouched. One
+# filter over both flags, so the path is added once if either unit is enabled.
+ifneq (,$(filter -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE, $(XCONFIGS)))
+	RTL_INCLUDE += -I$(RTL_DIR)/crypto
 endif
 
 # Add DXA extension sources
