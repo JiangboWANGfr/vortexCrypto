@@ -1412,3 +1412,129 @@ does not survive is any claim that the difference between them means something.
 Until the software kernel has a floor probe of its own, the ratio at this
 configuration should be treated as bounded below by roughly 12x rather than
 quoted at a point.
+
+## 13. Should S2 be built? Measured answer: no for GHASH, and not in the S2 shape for AES
+
+S2 in this taxonomy means coarser instructions holding hidden context in the
+unit. The two candidates are a round-granular AES and a blocking GHASH that
+keeps the subkey H and the accumulator Y. Both were assessed against
+measurement rather than argued from instruction counts.
+
+### 13.1 GHASH: negative, and independently replicated
+
+`ghred32`, the fused GF(2^128) reduction, removed **1.96% of instructions** and
+cycles rose **4.4-10.2%**. That result stood alone and unexplained.
+
+It is no longer alone. `myvortex/docs/results/ghash_design_space.csv` sweeps a
+*built* S2 GHASH's multiplier radix on cycle-accurate rtlsim at 1 warp/core,
+i.e. with no warp-level latency hiding at all:
+
+| radix | MUL cycles | total cycles |
+| ---: | ---: | ---: |
+| 1 | 130 | 60,157 |
+| 128 | 3 | 60,137 |
+
+**A 43x faster multiply moves total cycles by 0.03%.** That repository's own
+conclusion, `docs/results/summary.md:5`: *"the MUL is off the critical path
+(dwarfed by per-block memory), so the cheap bit-serial multiplier suffices."*
+Line 7 reports the identical signature for the ChaCha20 quarter round -- an 80x
+faster QR moves per-block cycles ~0.6%.
+
+Two independent designs, two independent measurements, one conclusion: **the
+finite-field arithmetic is not where the cycles are.** S2 GHASH accelerates the
+part that was already free.
+
+Three further defects, each independently disqualifying:
+
+- **Storage.** Held state at c2w4t16 is 23,172 flops/core, 46,344 across two
+  cores. The c2w4t16 GPR file is 65,536 bits/core, so the shadow state is **25%
+  of a whole register file re-implemented in flops** -- and it cannot become
+  RAM, because the design resets every bit and reads 4,096 bits combinationally
+  in one cycle to load the multiplier. S2 does not remove storage; it duplicates
+  it in the worst available technology, to hold what the current design keeps in
+  the register file for free.
+- **Issue rate.** `execute_if.ready = (state_r == ST_IDLE)` de-asserts during
+  `ST_RESP` as well, so even SETH/XOR/RD accept **one op every two cycles**. The
+  stateless `VX_auth_ghash` here accepts one per cycle through its elastic
+  buffer. S2 halves the issue rate of exactly the cheap ops that the radix sweep
+  identifies as the ones that matter.
+- **H is write-only, which is the worst of both properties.** No op reads H. The
+  legitimate owner therefore cannot checkpoint a GHASH-using warp, since
+  H = E_K(0^128) exists nowhere else. An attacker is not correspondingly
+  blocked: state is aliased by (warp, lane) with no owner tag and no clear at a
+  context boundary, so a tenant inheriting a slot can zero Y using the design's
+  own documented idiom, XOR in a chosen block B, MUL, and RD to obtain B·H, then
+  divide in GF(2^128). Write-only H prevents saving and does not prevent
+  extraction. Keeping Y and H in the GPRs, as here, has neither problem and
+  needs no new mechanism.
+
+### 13.2 A claim from section 9 is withdrawn
+
+It was suggested that a blocking S2 GHASH would finally make the EX_SYM/EX_AUTH
+split earn its keep by producing real head-of-line blocking. **That is wrong.**
+`VX_auth_unit.sv:36` sets `PE_COUNT = 1` with `pe_select` hardwired, so the
+`VX_pe_switch` behind EX_AUTH is degenerate -- GHASH is the only PE there and
+there is nothing co-resident to block.
+
+The split's actual value runs the other way and is prophylactic: because AES and
+GHASH sit in different scheduling domains, a blocking GHASH could not stall AES.
+That is a property worth having, but it is not evidence for building one.
+
+### 13.3 AES: the lever is round-key loads, and it does not need S2
+
+An instruction-identical probe pins `k = rk` for every round, so the `aes32`
+count is bit-identical and only 40 of the 44 per-block LMEM key loads disappear.
+The result is cryptographically wrong by construction; it measures load cost.
+
+| | cycles | instructions |
+| --- | ---: | ---: |
+| current | 597,233 | 212,162 |
+| key loads removed | 512,782 | 176,298 |
+| | **-14.14%** | -16.90% |
+
+At 3.0x the measured 4.68% floor for this configuration, the effect is real.
+**But read why it is real:** the probe saves 2.35 cycles per instruction removed
+against an average CPI of 2.81, so the round-key loads are *cheaper* than the
+average instruction. They hit the 16-bank LMEM, not the single-channel DRAM. The
+14% is a linear instruction-count return, not a recovered stall.
+
+That splits the two halves of an S2 AES cleanly:
+
+- **160 `aes32` -> 10 round instructions.** ALU-instruction removal. The one
+  time that was measured here (`ghred32`) it went negative, and the myvortex
+  sweeps show the same not-compute-bound signature twice. Unlikely to convert.
+- **44 key loads -> 0.** Measured at -14.1%. Converts.
+
+**The half that converts does not need round granularity**, and the cost of S2
+falls almost entirely on the half that does not. Key storage is the cheap part:
+`main.cpp:305-308` expands one key for every message and `kernel.cpp:437,463,488`
+pass `lm->rk` with no per-thread index, so the schedule is **uniform across the
+grid** and a per-core key register is both the cheapest and the *correct*
+granularity -- 1,408 flops/core, 0.75% of the design's registers, versus 22,528
+for per-lane. The blocker is operand width: a round needs 4 state words plus 4
+key words in and 4 words out, against `NUM_SRC_OPDS = 3` and a single `rd`. Uop
+splitting does not rescue the read side, because every output word depends on
+all four input state words; supplying keys from GPRs instead forces the *state*
+into the unit, 8,192 flops/core of per-lane per-warp context -- precisely the
+property that makes S1 cheap and safe.
+
+Caveat for any generality claim: uniform-key is a property of this benchmark,
+not of AES-GCM. A per-connection-key workload would need per-lane keys and the
+cost table inverts.
+
+### 13.4 What to build instead: fuse the round key into `aes32`
+
+Each round's first instruction is `t0 = k[0]`, a load, followed by three
+`aes32`. Fusing the key as an implicit source of that first operation removes
+the load without touching operand width:
+
+```
+aes32esmi_k rd, rs1, {keyidx[5:0], bs[1:0]}
+    rd = keyreg[keyidx] ^ MixColumns(SubBytes(rs1 >> 8*bs))
+```
+
+Still 2R1W, still lane-local, still single-cycle, still no memory port -- every
+S1 property preserved. The only new state is a per-core 1,408-bit key register
+written once per CTA and amortised over 8,192 blocks, and unlike myvortex's H it
+is **readable**, so context remains saveable. It collects the measured 14%
+without the uop sequencer, the operand-path widening, or the per-lane state.
