@@ -44,3 +44,28 @@ tests:
   dir: tests/crypto/isa_check
   target: run-{driver}
   configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE
+# The hardware AES-GCM kernel. Without these it has NO regression coverage:
+# tests/crypto/aes_gcm defaults to `-i0` (main.cpp g_impl = 0) and the family
+# cases above run at the Makefile's OPTS default, so every case so far exercises
+# only the software baseline. isa_check covers the five instructions
+# individually; nothing covered the kernel that composes them, which is exactly
+# where the byte-order bugs were -- the AES state packing and the GHASH bit
+# reflection are both silent when wrong.
+- id: crypto-aes-gcm-hw-1
+  via: make-run
+  drivers:
+  - simx
+  dir: tests/crypto/aes_gcm
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE
+  vars:
+    OPTS: -n64 -b4 -i1
+- id: crypto-aes-gcm-hw-2
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/aes_gcm
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE
+  vars:
+    OPTS: -n64 -b4 -i1
