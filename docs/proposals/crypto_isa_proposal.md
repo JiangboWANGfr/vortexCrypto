@@ -966,10 +966,24 @@ instruction count as the fastest.
 instructions, 47 static `sp`-relative operations, same reduction arithmetic.
 They differ by **7.4% of cycles**.
 
-That is the finding. **A pair of variants that differ in no measured static
-property differ by more than the effect being investigated**, so at a ±2%
-instruction change this method cannot resolve the question. The variance between
-semantically equivalent codegen exceeds the signal.
+That is the finding, with one important qualification on how far it goes.
+**A pair of variants that differ in no measured static property differ by more
+than the effect being investigated.** But `ilp` is not a true no-op against
+`clmul`: it has the same instruction count and the same static stack traffic,
+yet it executes *different* instructions -- `ghred32` where `clmul` was. So the
+7.4% conflates two things this experiment did not separate: layout and
+scheduling variance, and any genuine difference between the two instructions.
+
+**7.4% is therefore an upper bound on the resolution floor, not a measurement of
+it.** The floor may be well below that, in which case part of the 7.4% is real
+signal about `ghred32` rather than noise.
+
+Measuring the floor properly needs a perturbation that is bit-identical by
+construction rather than merely semantically equivalent -- same instructions,
+different order. Two exist in this kernel: the four AES state words `t0..t3` in
+a round are computed from disjoint inputs, so reordering them changes nothing;
+and the sixteen schoolbook partial products accumulate into `p[]` by XOR, so
+reordering the accumulation is exact. That test is not yet run.
 
 So the honest answer to "when does ghred32 pay" is: not measurable here, and the
 reason is not the instruction. On a machine 99-100% stalled on operands, with
@@ -985,4 +999,13 @@ Two consequences worth carrying forward:
   is unsound: -1.96% instructions produced +4.4% to +10.2% cycles.
 - Any recorded result smaller than roughly 7% on this configuration should be
   treated as unresolved rather than as a small win, unless it is accompanied by
-  a mechanism that was independently measured.
+  a mechanism that was independently measured. This threshold is provisional and
+  is an upper bound; the bit-identical reordering test above would replace it
+  with a real one, and would likely lower it.
+
+A distinction worth stating because it was being conflated here: byte-identical
+results across repeated runs, across simx and rtlsim, across units-off and
+units-on, and across separate rebuilds all establish **determinism** -- the same
+input gives the same output. None of them establishes a **floor**, which is how
+far apart two different inputs that should be equivalent actually land. This
+document treated the first as evidence for the second.
