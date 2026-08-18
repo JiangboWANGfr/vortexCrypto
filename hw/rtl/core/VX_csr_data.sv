@@ -187,6 +187,11 @@ import VX_fpu_pkg::*;
     assign sched_csr_if.csr_rd_wid = read_wid;
     assign sched_csr_if.csr_rd_cta_id = read_cta_id;
 
+// PERF_ENABLE as well as EXT_CRYPTO_ANY_ENABLE: pipeline_perf is only a port
+// under PERF_ENABLE (see the port list above), so guarding on the crypto flag
+// alone references a port that was never declared. Crypto-on with PERF-off is
+// the normal case for an FPGA image, not a corner.
+`ifdef PERF_ENABLE
 `ifdef EXT_CRYPTO_ANY_ENABLE
     // SYM and AUTH dispatch stalls, summed. The MPM core-class CSR window is
     // full, so both units share its last slot; a sum of zero still establishes
@@ -201,6 +206,7 @@ import VX_fpu_pkg::*;
         pipeline_perf.issue.dispatch_stalls[EX_AUTH]
     `endif
         ;
+`endif
 `endif
 
     reg [`VX_CFG_XLEN-1:0] read_data_ro_w;
