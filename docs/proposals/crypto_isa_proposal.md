@@ -1021,10 +1021,35 @@ within 0.008%, which is what makes it a probe rather than a variant.
 | `c1w4t32` rtlsim | 1,061,573 | 1,092,285 | **+2.89%** |
 | `c1w4t32` simx | 888,983 | 885,313 | **-0.41%** |
 
-The floor is **configuration-dependent**: about 0.3% at `t4` and about 2.9% at
-`c1w4t32` on rtlsim, an order of magnitude apart. simx moves the opposite way at
-the same point, which is the shape scheduling variance should have and a
-systematic effect should not.
+simx moves the opposite way at the same point, which is the shape scheduling
+variance should have and a systematic effect should not.
+
+**But a single probe point is a sample, not a floor.** Repeating the probe
+across problem size at one configuration (`c1w4t32`, rtlsim, `-n128`):
+
+| blocks/msg | floor | instruction delta |
+| ---: | ---: | ---: |
+| 4 | -0.335% | -0.090% |
+| 8 | **-1.301%** | -0.052% |
+| 16 | **-0.126%** | -0.028% |
+| 32 | -0.751% | -0.015% |
+| 64 | **+2.893%** | -0.008% |
+
+The floor is not a number even at a fixed application and fixed configuration.
+It ranges over a factor of 23 across problem size, from 0.126% to 2.893%, and
+changes sign. The 2.893% quoted above is the most extreme of five samples, not a
+representative value.
+
+It also refutes a plausible explanation. If the floor were driven by pressure on
+a queueing-sensitive memory system -- `aes_gcm` streams eight times the memory
+instructions per byte that `chacha_poly` does, which would explain why its probe
+is ten times wider at the same configuration -- then reducing the block count
+should narrow it monotonically. It does not.
+
+What follows for anyone using these numbers: **a floor has to be measured at the
+application, the configuration AND the problem size where the result is
+quoted**, and from more than one sample. Neither axis transfers on its own, and
+one probe establishes only that the floor is at least that wide.
 
 Against those floors the `ghred32` results are **real, not noise**:
 
@@ -1032,7 +1057,7 @@ Against those floors the `ghred32` results are **real, not noise**:
 | --- | ---: | ---: | ---: |
 | ghred, `w8t4` | +4.4% | 0.30% | 14.5x |
 | ghred, `w16t4` | +4.4% | 0.30% | 14.5x |
-| ghred, `c1w4t32` | +10.2% | 2.89% | 3.5x |
+| ghred, `c1w4t32` | +10.2% | 2.89% (worst of 5) | 3.5x |
 | ilp, `w16t4` | +7.4% | 0.30% | 24x |
 | ghred, `w4t4` | -0.06% | 0.30% | 0.2x -- the only one inside the floor |
 
