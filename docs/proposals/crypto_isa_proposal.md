@@ -605,6 +605,38 @@ two identical numbers are equally consistent with the second build never having
 happened; the driver `.so` mtime changed across that build and the `CONFIGS`
 banner reported both units enabled, so it did.
 
+### What this apparatus can resolve
+
+Both numbers above are small, and a small number is only a result if the
+apparatus can tell it from nothing. `chacha_poly_sw_perm` exists to answer
+that: it issues the four quarter-rounds of each round in reverse order, which
+is bit-identical by construction rather than merely equivalent, since the four
+touch disjoint columns. Two kernels that cannot differ, so the distance between
+them is the floor.
+
+| | sw | sw_perm | distance |
+| --- | ---: | ---: | ---: |
+| cycles, rtlsim | 2,548,408 | 2,541,483 | -0.272% |
+| cycles, simx | 2,258,400 | 2,260,762 | +0.105% |
+| instrs | 175,512 | 175,508 | 0.002% |
+
+**The floor is about 0.3%**, and the two signs are opposite, which is the shape
+scheduling variance should have rather than a systematic effect. Against it,
+`rori`'s 1.5% is roughly five times the floor and the keystream fusion's 5.7%
+roughly twenty; both are resolved rather than small. A change worth less than
+about 1% is not measurable here and should not be recorded as a result.
+
+This is a different property from determinism, and the distinction cost a
+retraction elsewhere before it was drawn. Byte-identical repeat runs, agreement
+across simx and rtlsim, and agreement across units-off and units-on builds all
+say that the same input gives the same output. None of them says how far apart
+two different inputs that should agree will land. Only this row does.
+
+One caveat: 0.3% is a single perturbation at a single point, so it establishes
+that the floor is at least that rather than that no perturbation lands further
+out. If a future result lands under about 1%, two or three more reorderings
+should be measured before it is believed.
+
 ### The ratio to watch is the divergence, not the speedup
 
 1.014x cycles against 1.332x instructions. Those two ratios should track each

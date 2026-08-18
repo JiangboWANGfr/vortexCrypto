@@ -65,7 +65,7 @@ __attribute__((always_inline)) inline void quarter_round(uint32_t x[16], int a, 
 // so that the two callers can consume x[] differently without the rounds being
 // written twice: the once-per-message Poly1305 key wants the raw words, the
 // per-block path wants them XORed and gone.
-template <typename R>
+template <typename R, bool PERM>
 __attribute__((always_inline)) inline void chacha20_keystream(
     const uint32_t k[8], uint32_t n0, uint32_t n1, uint32_t n2,
     uint32_t counter, uint32_t x[16]) {
@@ -77,14 +77,31 @@ __attribute__((always_inline)) inline void chacha20_keystream(
   x[12] = counter; x[13] = n0; x[14] = n1; x[15] = n2;
 
   for (int i = 0; i < CHACHA_ROUNDS / 2; ++i) {
-    quarter_round<R>(x, 0, 4, 8, 12);
-    quarter_round<R>(x, 1, 5, 9, 13);
-    quarter_round<R>(x, 2, 6, 10, 14);
-    quarter_round<R>(x, 3, 7, 11, 15);
-    quarter_round<R>(x, 0, 5, 10, 15);
-    quarter_round<R>(x, 1, 6, 11, 12);
-    quarter_round<R>(x, 2, 7, 8, 13);
-    quarter_round<R>(x, 3, 4, 9, 14);
+    if (PERM) {
+      // The four quarter-rounds of a column round touch disjoint columns, and
+      // likewise the diagonal round, so issuing them in the reverse order is
+      // bit-identical by construction rather than merely equivalent. This
+      // exists to measure the apparatus, not the cipher: two kernels that must
+      // produce the same cycles, so that the distance between them is the
+      // floor below which no result here is legible.
+      quarter_round<R>(x, 3, 7, 11, 15);
+      quarter_round<R>(x, 2, 6, 10, 14);
+      quarter_round<R>(x, 1, 5, 9, 13);
+      quarter_round<R>(x, 0, 4, 8, 12);
+      quarter_round<R>(x, 3, 4, 9, 14);
+      quarter_round<R>(x, 2, 7, 8, 13);
+      quarter_round<R>(x, 1, 6, 11, 12);
+      quarter_round<R>(x, 0, 5, 10, 15);
+    } else {
+      quarter_round<R>(x, 0, 4, 8, 12);
+      quarter_round<R>(x, 1, 5, 9, 13);
+      quarter_round<R>(x, 2, 6, 10, 14);
+      quarter_round<R>(x, 3, 7, 11, 15);
+      quarter_round<R>(x, 0, 5, 10, 15);
+      quarter_round<R>(x, 1, 6, 11, 12);
+      quarter_round<R>(x, 2, 7, 8, 13);
+      quarter_round<R>(x, 3, 4, 9, 14);
+    }
   }
 
   // Feedforward in place. The initial state is not held live across the rounds:
@@ -211,12 +228,12 @@ __attribute__((always_inline)) inline void poly1305_finish(poly1305_t& st, uint3
 // entry points below: dropping it on this side costs 1304 retired instructions
 // at the recorded point, because the per-message argument loads stop being
 // hoisted as uniform. Measured, not assumed.
-template <typename R>
+template <typename R, bool PERM>
 __attribute__((always_inline)) inline void chacha20_xor_absorb(
     const uint32_t k[8], uint32_t n0, uint32_t n1, uint32_t n2,
     uint32_t counter, const uint32_t* pb, uint32_t* cb, poly1305_t& st) {
   uint32_t x[16];
-  chacha20_keystream<R>(k, n0, n1, n2, counter, x);
+  chacha20_keystream<R, PERM>(k, n0, n1, n2, counter, x);
 
   for (int q = 0; q < 4; ++q) {
     const uint32_t c0 = pb[4 * q + 0] ^ x[4 * q + 0];
@@ -235,7 +252,7 @@ __attribute__((always_inline)) inline void chacha20_xor_absorb(
 // a 32x32 multiply and the carries out of five of them still fit 64 bits.
 // RV32 has no multiply-accumulate, so each partial product is a mul/mulhu
 // pair; that is the cost the S1 work has to beat.
-template <typename R>
+template <typename R, bool PERM = false>
 inline void chacha_poly_body(kernel_arg_t* __UNIFORM__ arg) {
   const uint32_t* key = (const uint32_t*)arg->key_addr;
   const uint8_t* nonce_base = (const uint8_t*)arg->nonce_addr;
@@ -263,15 +280,15 @@ inline void chacha_poly_body(kernel_arg_t* __UNIFORM__ arg) {
     // The one-time Poly1305 key is the keystream at counter zero. It depends
     // on the nonce, so it is per message and cannot be hoisted to the host.
     uint32_t ks[16];
-    chacha20_keystream<R>(k, n0, n1, n2, 0, ks);
+    chacha20_keystream<R, PERM>(k, n0, n1, n2, 0, ks);
     poly1305_t st;
     poly1305_init(st, ks);
 
     const uint32_t* pt = src_base + (size_t)words * msg;
     uint32_t* ct = dst_base + (size_t)words * msg;
     for (uint32_t b = 0; b < blocks; ++b) {
-      chacha20_xor_absorb<R>(k, n0, n1, n2, b + 1, pt + 16 * b, ct + 16 * b,
-                             st);
+      chacha20_xor_absorb<R, PERM>(k, n0, n1, n2, b + 1, pt + 16 * b,
+                                   ct + 16 * b, st);
     }
 
     // The AAD is empty and the ciphertext is a whole number of Poly1305
@@ -292,12 +309,19 @@ inline void chacha_poly_body(kernel_arg_t* __UNIFORM__ arg) {
 } // namespace
 
 __kernel void chacha_poly_sw(kernel_arg_t* __UNIFORM__ arg) {
-  chacha_poly_body<rot_sw>(arg);
+  chacha_poly_body<rot_sw, false>(arg);
+}
+
+// Bit-identical to chacha_poly_sw. Its only purpose is to measure the distance
+// between two kernels that cannot differ, which is the floor below which a
+// result from this application is not legible.
+__kernel void chacha_poly_sw_perm(kernel_arg_t* __UNIFORM__ arg) {
+  chacha_poly_body<rot_sw, true>(arg);
 }
 
 // Same code with RORI. This is not a cryptographic instruction, so this row is
 // a stronger software baseline rather than an instruction-set extension --
 // see sw/kernel/include/crypto/vx_chacha.h.
 __kernel void chacha_poly_rori(kernel_arg_t* __UNIFORM__ arg) {
-  chacha_poly_body<rot_hw>(arg);
+  chacha_poly_body<rot_hw, false>(arg);
 }

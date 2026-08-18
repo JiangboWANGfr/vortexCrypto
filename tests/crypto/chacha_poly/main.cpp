@@ -45,6 +45,8 @@ const impl_t kImpls[] = {
   // baseline, not an instruction-set extension: the ChaCha20 speedup it shows
   // is what any RV32 with the B extension already has.
   { "chacha_poly_rori", "rori" },
+  // Bit-identical to sw; see kernel.cpp. Measures the apparatus, not the cipher.
+  { "chacha_poly_sw_perm", "sw_perm" },
 };
 
 const uint32_t kNumImpls = (uint32_t)(sizeof(kImpls) / sizeof(kImpls[0]));
