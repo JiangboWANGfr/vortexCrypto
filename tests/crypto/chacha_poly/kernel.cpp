@@ -19,6 +19,19 @@ inline uint32_t load_le32(const uint8_t* p) {
        | ((uint32_t)p[3] << 24);
 }
 
+// always_inline on the helpers below is load-bearing rather than decoration.
+// Their array parameters -- the sixteen-word ChaCha state, the sixteen-word
+// keystream, the Poly1305 context -- make LLVM decline to inline them at -O3
+// despite the `inline`, which forces those arrays into stack slots. That is the
+// worst-shaped traffic on this machine: vx_start.S puts each hart's stack 8 KB
+// from the next, so one stack access in a warp is NUM_THREADS distinct cache
+// lines, and with DCACHE_NUM_BANKS = 1, one DDR4 channel and no L2 or L3 there
+// is nothing behind the L1 to absorb them.
+//
+// Verified statically rather than assumed: without these attributes the binary
+// carries an out-of-line chacha20_block of 252 instructions and the kernels
+// hold 235 stack references; with them the out-of-line copies are gone.
+//
 // The two entry points below differ in exactly one thing: how a 32-bit left
 // rotate is spelled. The round schedule, the Poly1305 limbs and the memory
 // access pattern are shared code, so a comparison between the two rows
@@ -41,7 +54,7 @@ struct rot_hw {
 
 // RFC 8439 section 2.1. Four adds, four xors and four rotates.
 template <typename R>
-inline void quarter_round(uint32_t x[16], int a, int b, int c, int d) {
+__attribute__((always_inline)) inline void quarter_round(uint32_t x[16], int a, int b, int c, int d) {
   x[a] += x[b]; x[d] ^= x[a]; x[d] = R::template rotl<16>(x[d]);
   x[c] += x[d]; x[b] ^= x[c]; x[b] = R::template rotl<12>(x[b]);
   x[a] += x[b]; x[d] ^= x[a]; x[d] = R::template rotl<8>(x[d]);
@@ -53,7 +66,7 @@ inline void quarter_round(uint32_t x[16], int a, int b, int c, int d) {
 // are still in registers at the end, so the final addition rebuilds them
 // instead of holding a second sixteen-word copy.
 template <typename R>
-inline void chacha20_block(const uint32_t k[8], uint32_t n0, uint32_t n1,
+__attribute__((always_inline)) inline void chacha20_block(const uint32_t k[8], uint32_t n0, uint32_t n1,
                            uint32_t n2, uint32_t counter, uint32_t out[16]) {
   uint32_t x[16];
   x[0] = 0x61707865; x[1] = 0x3320646e;
@@ -97,7 +110,7 @@ struct poly1305_t {
 };
 
 // The masks do the clamping of RFC 8439 section 2.5 as they repack.
-inline void poly1305_init(poly1305_t& st, const uint32_t pk[8]) {
+__attribute__((always_inline)) inline void poly1305_init(poly1305_t& st, const uint32_t pk[8]) {
   const uint32_t t0 = pk[0], t1 = pk[1], t2 = pk[2], t3 = pk[3];
   st.r0 = t0 & 0x3ffffff;
   st.r1 = ((t0 >> 26) | (t1 << 6)) & 0x3ffff03;
@@ -111,7 +124,7 @@ inline void poly1305_init(poly1305_t& st, const uint32_t pk[8]) {
 }
 
 // h = (h + block) * r mod 2^130-5, for a full sixteen-byte block.
-inline void poly1305_block(poly1305_t& st, uint32_t t0, uint32_t t1,
+__attribute__((always_inline)) inline void poly1305_block(poly1305_t& st, uint32_t t0, uint32_t t1,
                            uint32_t t2, uint32_t t3) {
   uint32_t h0 = st.h0 + (t0 & 0x3ffffff);
   uint32_t h1 = st.h1 + (((t0 >> 26) | (t1 << 6)) & 0x3ffffff);
@@ -146,7 +159,7 @@ inline void poly1305_block(poly1305_t& st, uint32_t t0, uint32_t t1,
   st.h0 = h0; st.h1 = h1; st.h2 = h2; st.h3 = h3; st.h4 = h4;
 }
 
-inline void poly1305_finish(poly1305_t& st, uint32_t tag[4]) {
+__attribute__((always_inline)) inline void poly1305_finish(poly1305_t& st, uint32_t tag[4]) {
   uint32_t h0 = st.h0, h1 = st.h1, h2 = st.h2, h3 = st.h3, h4 = st.h4;
 
   uint32_t c = h1 >> 26; h1 &= 0x3ffffff;
