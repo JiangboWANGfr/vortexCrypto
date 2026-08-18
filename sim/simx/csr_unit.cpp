@@ -147,6 +147,9 @@ Word CsrUnit::get_csr(uint32_t addr, uint32_t wid, uint32_t tid) {
       #ifdef VX_CFG_EXT_TCU_ENABLE
         CSR_READ_64(VX_CSR_MPM_STALL_TCU, core_perf.tcu_stalls);
       #endif
+      #if defined(VX_CFG_EXT_SYM_ENABLE) || defined(VX_CFG_EXT_AUTH_ENABLE)
+        CSR_READ_64(VX_CSR_MPM_STALL_CRYPTO, core_perf.crypto_stalls());
+      #endif
         CSR_READ_64(VX_CSR_MPM_BRANCHES, core_perf.branches);
         CSR_READ_64(VX_CSR_MPM_DIVERGENCE, core_perf.divergence);
         CSR_READ_64(VX_CSR_MPM_INSTR_ALU, core_perf.alu_instrs);
@@ -155,6 +158,12 @@ Word CsrUnit::get_csr(uint32_t addr, uint32_t wid, uint32_t tid) {
         CSR_READ_64(VX_CSR_MPM_INSTR_SFU, core_perf.sfu_instrs);
       #ifdef VX_CFG_EXT_TCU_ENABLE
         CSR_READ_64(VX_CSR_MPM_INSTR_TCU, core_perf.tcu_instrs);
+      #endif
+      #ifdef VX_CFG_EXT_SYM_ENABLE
+        CSR_READ_64(VX_CSR_MPM_INSTR_SYM, core_perf.sym_instrs);
+      #endif
+      #ifdef VX_CFG_EXT_AUTH_ENABLE
+        CSR_READ_64(VX_CSR_MPM_INSTR_AUTH, core_perf.auth_instrs);
       #endif
         CSR_READ_64(VX_CSR_MPM_IFETCHES, core_perf.ifetches);
         CSR_READ_64(VX_CSR_MPM_IFETCH_LT, core_perf.ifetch_latency);

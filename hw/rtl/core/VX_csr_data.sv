@@ -187,6 +187,22 @@ import VX_fpu_pkg::*;
     assign sched_csr_if.csr_rd_wid = read_wid;
     assign sched_csr_if.csr_rd_cta_id = read_cta_id;
 
+`ifdef EXT_CRYPTO_ANY_ENABLE
+    // SYM and AUTH dispatch stalls, summed. The MPM core-class CSR window is
+    // full, so both units share its last slot; a sum of zero still establishes
+    // that neither backpressures, which is what this counter exists to show.
+    wire [PERF_CTR_BITS-1:0] crypto_dispatch_stalls =
+    `ifdef VX_CFG_EXT_SYM_ENABLE
+        pipeline_perf.issue.dispatch_stalls[EX_SYM]
+        `ifdef VX_CFG_EXT_AUTH_ENABLE
+            + pipeline_perf.issue.dispatch_stalls[EX_AUTH]
+        `endif
+    `else
+        pipeline_perf.issue.dispatch_stalls[EX_AUTH]
+    `endif
+        ;
+`endif
+
     reg [`VX_CFG_XLEN-1:0] read_data_ro_w;
     reg [`VX_CFG_XLEN-1:0] read_data_rw_w;
     reg read_addr_valid_w;
@@ -289,6 +305,15 @@ import VX_fpu_pkg::*;
                     `ifdef VX_CFG_EXT_TCU_ENABLE
                         `CSR_READ_64(`VX_CSR_MPM_STALL_TCU, read_data_ro_w, pipeline_perf.issue.dispatch_stalls[EX_TCU]);
                         `CSR_READ_64(`VX_CSR_MPM_INSTR_TCU, read_data_ro_w, pipeline_perf.issue.dispatch_instrs[EX_TCU]);
+                    `endif
+                    `ifdef VX_CFG_EXT_SYM_ENABLE
+                        `CSR_READ_64(`VX_CSR_MPM_INSTR_SYM, read_data_ro_w, pipeline_perf.issue.dispatch_instrs[EX_SYM]);
+                    `endif
+                    `ifdef VX_CFG_EXT_AUTH_ENABLE
+                        `CSR_READ_64(`VX_CSR_MPM_INSTR_AUTH, read_data_ro_w, pipeline_perf.issue.dispatch_instrs[EX_AUTH]);
+                    `endif
+                    `ifdef EXT_CRYPTO_ANY_ENABLE
+                        `CSR_READ_64(`VX_CSR_MPM_STALL_CRYPTO, read_data_ro_w, crypto_dispatch_stalls);
                     `endif
                         // PERF: branches
                         `CSR_READ_64(`VX_CSR_MPM_BRANCHES, read_data_ro_w, pipeline_perf.sched.branches);

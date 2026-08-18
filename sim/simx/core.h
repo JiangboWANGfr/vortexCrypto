@@ -54,6 +54,23 @@ public:
   #ifdef VX_CFG_EXT_TCU_ENABLE
     uint64_t tcu_stalls = 0;
   #endif
+  #ifdef VX_CFG_EXT_SYM_ENABLE
+    uint64_t sym_stalls = 0;
+  #endif
+  #ifdef VX_CFG_EXT_AUTH_ENABLE
+    uint64_t auth_stalls = 0;
+  #endif
+    // Reported as one CSR: the MPM core-class window has a single slot left.
+    uint64_t crypto_stalls() const {
+      uint64_t v = 0;
+    #ifdef VX_CFG_EXT_SYM_ENABLE
+      v += sym_stalls;
+    #endif
+    #ifdef VX_CFG_EXT_AUTH_ENABLE
+      v += auth_stalls;
+    #endif
+      return v;
+    }
     uint64_t branches   = 0;
     uint64_t divergence = 0;
     uint64_t alu_instrs = 0;
@@ -62,6 +79,12 @@ public:
     uint64_t sfu_instrs = 0;
   #ifdef VX_CFG_EXT_TCU_ENABLE
     uint64_t tcu_instrs = 0;
+  #endif
+  #ifdef VX_CFG_EXT_SYM_ENABLE
+    uint64_t sym_instrs = 0;
+  #endif
+  #ifdef VX_CFG_EXT_AUTH_ENABLE
+    uint64_t auth_instrs = 0;
   #endif
     uint64_t ifetches = 0;
     uint64_t loads = 0;

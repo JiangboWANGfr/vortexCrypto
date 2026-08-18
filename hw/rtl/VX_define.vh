@@ -75,6 +75,15 @@
     `define EXT_GFX_ANY_ENABLED 0
 `endif
 
+// Convenience flag: any crypto extension is enabled. Gates the shared
+// SYM+AUTH dispatch-stall MPM counter, which is summed across both units
+// because the MPM core-class CSR window has only one slot left.
+`ifdef VX_CFG_EXT_SYM_ENABLE
+    `define EXT_CRYPTO_ANY_ENABLE
+`elsif VX_CFG_EXT_AUTH_ENABLE
+    `define EXT_CRYPTO_ANY_ENABLE
+`endif
+
 // Early-Z occlusion cull requires BOTH the rasterizer (produces the covered-quad
 // waves + depth plane) and the OM (owns the ocache the depth read is coherent
 // with). It is illegal without them — reading committed depth needs the ocache.

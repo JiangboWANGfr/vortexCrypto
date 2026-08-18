@@ -128,6 +128,7 @@ struct CoreCounters {
   uint64_t stall_lsu = 0;
   uint64_t stall_sfu = 0;
   uint64_t stall_tcu = 0;
+  uint64_t stall_crypto = 0;
 
   // workload mix
   uint64_t instr_alu = 0;
@@ -135,6 +136,8 @@ struct CoreCounters {
   uint64_t instr_lsu = 0;
   uint64_t instr_sfu = 0;
   uint64_t instr_tcu = 0;
+  uint64_t instr_sym = 0;
+  uint64_t instr_auth = 0;
 
   // branches
   uint64_t branches = 0;
@@ -317,12 +320,15 @@ extern "C" vx_result_t vx_device_dump_perf(vx_device_h hdevice, FILE *stream) {
       CHECK_ERR(vx_device_mpm_query(hdevice, mpm_class, VX_CSR_MPM_STALL_LSU, core_id, &c.stall_lsu), { return err; });
       CHECK_ERR(vx_device_mpm_query(hdevice, mpm_class, VX_CSR_MPM_STALL_SFU, core_id, &c.stall_sfu), { return err; });
       CHECK_ERR(vx_device_mpm_query(hdevice, mpm_class, VX_CSR_MPM_STALL_TCU, core_id, &c.stall_tcu), { return err; });
+      CHECK_ERR(vx_device_mpm_query(hdevice, mpm_class, VX_CSR_MPM_STALL_CRYPTO, core_id, &c.stall_crypto), { return err; });
 
       CHECK_ERR(vx_device_mpm_query(hdevice, mpm_class, VX_CSR_MPM_INSTR_ALU, core_id, &c.instr_alu), { return err; });
       CHECK_ERR(vx_device_mpm_query(hdevice, mpm_class, VX_CSR_MPM_INSTR_FPU, core_id, &c.instr_fpu), { return err; });
       CHECK_ERR(vx_device_mpm_query(hdevice, mpm_class, VX_CSR_MPM_INSTR_LSU, core_id, &c.instr_lsu), { return err; });
       CHECK_ERR(vx_device_mpm_query(hdevice, mpm_class, VX_CSR_MPM_INSTR_SFU, core_id, &c.instr_sfu), { return err; });
       CHECK_ERR(vx_device_mpm_query(hdevice, mpm_class, VX_CSR_MPM_INSTR_TCU, core_id, &c.instr_tcu), { return err; });
+      CHECK_ERR(vx_device_mpm_query(hdevice, mpm_class, VX_CSR_MPM_INSTR_SYM, core_id, &c.instr_sym), { return err; });
+      CHECK_ERR(vx_device_mpm_query(hdevice, mpm_class, VX_CSR_MPM_INSTR_AUTH, core_id, &c.instr_auth), { return err; });
 
       // Branches
       CHECK_ERR(vx_device_mpm_query(hdevice, mpm_class, VX_CSR_MPM_BRANCHES, core_id, &c.branches), { return err; });
@@ -360,7 +366,8 @@ extern "C" vx_result_t vx_device_dump_perf(vx_device_h hdevice, FILE *stream) {
           {"lsu", calc_percent(c.stall_lsu, cycles_wide), true},
           {"sfu", calc_percent(c.stall_sfu, cycles_wide), true},
           {"fpu", calc_percent(c.stall_fpu, cycles_wide), fpu_en},
-          {"tcu", calc_percent(c.stall_tcu, cycles_wide), tcu_en}
+          {"tcu", calc_percent(c.stall_tcu, cycles_wide), tcu_en},
+          {"crypto", calc_percent(c.stall_crypto, cycles_wide), (c.instr_sym | c.instr_auth | c.stall_crypto) != 0}
         };
         print_metric_list(stream, "stalls", core_id, stall_metrics);
 
@@ -370,7 +377,9 @@ extern "C" vx_result_t vx_device_dump_perf(vx_device_h hdevice, FILE *stream) {
           {"lsu", calc_percent(c.instr_lsu, c.instrs), true},
           {"sfu", calc_percent(c.instr_sfu, c.instrs), true},
           {"fpu", calc_percent(c.instr_fpu, c.instrs), fpu_en},
-          {"tcu", calc_percent(c.instr_tcu, c.instrs), tcu_en}
+          {"tcu", calc_percent(c.instr_tcu, c.instrs), tcu_en},
+          {"sym", calc_percent(c.instr_sym, c.instrs), c.instr_sym != 0},
+          {"auth", calc_percent(c.instr_auth, c.instrs), c.instr_auth != 0}
         };
         print_metric_list(stream, "inst_mix", core_id, mix_metrics);
 
@@ -406,12 +415,15 @@ extern "C" vx_result_t vx_device_dump_perf(vx_device_h hdevice, FILE *stream) {
       tot.stall_lsu += c.stall_lsu;
       tot.stall_sfu += c.stall_sfu;
       tot.stall_tcu += c.stall_tcu;
+      tot.stall_crypto += c.stall_crypto;
 
       tot.instr_alu += c.instr_alu;
       tot.instr_fpu += c.instr_fpu;
       tot.instr_lsu += c.instr_lsu;
       tot.instr_sfu += c.instr_sfu;
       tot.instr_tcu += c.instr_tcu;
+      tot.instr_sym += c.instr_sym;
+      tot.instr_auth += c.instr_auth;
 
       tot.branches += c.branches;
       tot.divergence += c.divergence;
@@ -445,7 +457,8 @@ extern "C" vx_result_t vx_device_dump_perf(vx_device_h hdevice, FILE *stream) {
       {"lsu", calc_percent(tot.stall_lsu, tot_cycles_wide), true},
       {"sfu", calc_percent(tot.stall_sfu, tot_cycles_wide), true},
       {"fpu", calc_percent(tot.stall_fpu, tot_cycles_wide), fpu_en},
-      {"tcu", calc_percent(tot.stall_tcu, tot_cycles_wide), tcu_en}
+      {"tcu", calc_percent(tot.stall_tcu, tot_cycles_wide), tcu_en},
+      {"crypto", calc_percent(tot.stall_crypto, tot_cycles_wide), (tot.instr_sym | tot.instr_auth | tot.stall_crypto) != 0}
     };
     print_metric_list(stream, "stalls", -1, global_stalls);
 
@@ -455,7 +468,9 @@ extern "C" vx_result_t vx_device_dump_perf(vx_device_h hdevice, FILE *stream) {
       {"lsu", calc_percent(tot.instr_lsu, tot.instrs), true},
       {"sfu", calc_percent(tot.instr_sfu, tot.instrs), true},
       {"fpu", calc_percent(tot.instr_fpu, tot.instrs), fpu_en},
-      {"tcu", calc_percent(tot.instr_tcu, tot.instrs), tcu_en}
+      {"tcu", calc_percent(tot.instr_tcu, tot.instrs), tcu_en},
+      {"sym", calc_percent(tot.instr_sym, tot.instrs), tot.instr_sym != 0},
+      {"auth", calc_percent(tot.instr_auth, tot.instrs), tot.instr_auth != 0}
     };
     print_metric_list(stream, "inst_mix", -1, global_mix);
 

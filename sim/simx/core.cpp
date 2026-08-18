@@ -697,6 +697,12 @@ public:
         #ifdef VX_CFG_EXT_TCU_ENABLE
           case FUType::TCU: ++perf_stats_.tcu_stalls; break;
         #endif
+        #ifdef VX_CFG_EXT_SYM_ENABLE
+          case FUType::SYM: ++perf_stats_.sym_stalls; break;
+        #endif
+        #ifdef VX_CFG_EXT_AUTH_ENABLE
+          case FUType::AUTH: ++perf_stats_.auth_stalls; break;
+        #endif
           default: assert(false);
           }
         }
@@ -768,6 +774,12 @@ public:
         case FUType::SFU: ++perf_stats_.sfu_instrs; break;
       #ifdef VX_CFG_EXT_TCU_ENABLE
         case FUType::TCU: ++perf_stats_.tcu_instrs; break;
+      #endif
+      #ifdef VX_CFG_EXT_SYM_ENABLE
+        case FUType::SYM: ++perf_stats_.sym_instrs; break;
+      #endif
+      #ifdef VX_CFG_EXT_AUTH_ENABLE
+        case FUType::AUTH: ++perf_stats_.auth_instrs; break;
       #endif
         default: assert(false);
         }

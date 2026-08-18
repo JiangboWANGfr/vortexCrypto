@@ -641,10 +641,10 @@ VX_CSR_MPM_INSTR_TCU = 0xB17  # total TCU instructions
 VX_CSR_MPM_INSTR_TCU_H = 0xB97
 
 # PERF: memory
-# reserved: VX_CSR_MPM_MEM_READS = 0xB18  # total reads
-# reserved: VX_CSR_MPM_MEM_READS_H = 0xB98
-# reserved: VX_CSR_MPM_MEM_WRITES = 0xB19  # total writes
-# reserved: VX_CSR_MPM_MEM_WRITES_H = 0xB99
+VX_CSR_MPM_INSTR_SYM = 0xB18  # total SYM (cipher) instructions
+VX_CSR_MPM_INSTR_SYM_H = 0xB98
+VX_CSR_MPM_INSTR_AUTH = 0xB19  # total AUTH (MAC) instructions
+VX_CSR_MPM_INSTR_AUTH_H = 0xB99
 VX_CSR_MPM_IFETCHES     = 0xB1A # total instruction fetch requests
 VX_CSR_MPM_IFETCHES_H   = 0xB9A
 VX_CSR_MPM_IFETCH_LT    = 0xB1B # total instruction fetch latency
@@ -655,6 +655,13 @@ VX_CSR_MPM_LOAD_LT      = 0xB1D # total LSU load latency
 VX_CSR_MPM_LOAD_LT_H    = 0xB9D
 VX_CSR_MPM_STORES       = 0xB1E # total LSU store requests
 VX_CSR_MPM_STORES_H     = 0xB9E
+# SYM and AUTH stalls are SUMMED into one counter: the MPM core class window is
+# [VX_CSR_MPM_BASE, +32) and this is its last free slot. Per-unit instruction
+# counts above are kept separate because the mix genuinely differs; the stall
+# counter exists to establish that neither unit ever backpressures, and a sum of
+# zero establishes that for both.
+VX_CSR_MPM_STALL_CRYPTO   = 0xB1F # dispatch stalled due to SYM or AUTH pipeline full
+VX_CSR_MPM_STALL_CRYPTO_H = 0xB9F
 
 # VM/MMU counters are part of the MEM class (see [csr_mpm_mem] below).
 
