@@ -814,14 +814,23 @@ non-algorithmic and 8 KB-strided. Re-run on the fixed kernel at the same points
 (`c1w{4,8,16}t4`, `-b64`, one message per lane, rtlsim, no `PERF_ENABLE`), the
 trend does not merely weaken. **It inverts.**
 
-| warps | cycles/block, pre-fix | cycles/block, post-fix |
-| ---: | ---: | ---: |
-| 4 | 338.97 | 255.75 |
-| 8 | **254.97** (recorded as the peak) | 254.75 |
-| 16 | 324.11 (recorded as a 27% regression) | **152.77** |
+| warps | cycles/block, pre-fix | cycles/block, post-fix | hw IPC | speedup |
+| ---: | ---: | ---: | ---: | ---: |
+| 4 | 338.97 | 255.75 | 0.407 | 11.13x |
+| 8 | **254.97** (recorded as the peak) | 169.53 | 0.613 | 13.72x |
+| 16 | 324.11 (recorded as a 27% regression) | **152.77** | **0.680** | **15.05x** |
 
-Post-fix IPC: 0.407, 0.407, **0.680**. More warps keep helping; sixteen is the
-best point measured, not the worst. The "peaks at eight warps and regresses at
+Every post-fix row above was re-measured under the full check: build exit
+status recorded, driver `.so` mtime confirmed to change, `CONFIGS` banner
+checked for the intended warp count, and the application's counters agreed with
+the runtime's `PERF:` line. The `w8` figure first published here was **254.75**
+and was wrong -- corrupted by a concurrent build in the shared tree, 50% high on
+cycles. The verified value is 169.53.
+
+Post-fix cycles/block, IPC and speedup are all **monotonic** in warp count.
+More warps keep helping; sixteen is the best point measured, not the worst. The
+first version of this table showed w4 and w8 as flat and w16 as a sudden jump,
+which was noted as odd at the time; the oddity was the corrupted row. The "peaks at eight warps and regresses at
 sixteen" finding was an artifact of the stack traffic, which grew with warp
 count because each `sp`-relative access was `NUM_THREADS` distinct lines 8 KB
 apart. Remove it and the machine is no longer saturated at eight warps.
