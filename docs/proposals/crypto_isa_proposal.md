@@ -1552,7 +1552,8 @@ into local memory -- four 1 KB T-tables, the key schedule, the GHASH table -- an
 `LMEM_NUM_BANKS = SIMD_WIDTH`. Reversing four reduction statements leaves the
 instruction stream bit-identical but changes which addresses are in flight in the
 same cycle, hence the bank-conflict pattern, hence cycles. A kernel with no local
-memory has nothing for a layout perturbation to perturb.
+memory has nothing for a *bank* conflict to form in -- which, per 14.1, is not
+the same as having nothing to perturb.
 
 **So the floor here has a sign.** Part of the 4.68% is an access order not yet
 chosen, not irreducible uncertainty. Using it as a symmetric error bar
@@ -1576,3 +1577,27 @@ section 12 is a candidate for the same mechanism: AAD support did not change
 shift register allocation and therefore spill addresses and therefore the bank
 pattern. If that is the cause, the regression should be *smaller* at c1w4t32,
 where `LMEM_NUM_BANKS = SIMD_WIDTH` gives 32 banks against 16. Not yet run.
+
+### 14.1 Correction: this explains the gap, not the spread
+
+The section above shaded into claiming that local memory is *the* source of
+layout sensitivity. It is not, and the peer session that supplied the mechanism
+also supplied the counterexample: their floor spread across problem sizes runs
+**0.05% to 2.28%**, and they have no local memory at any of those points. A
+2.28% instruction-identical swing with zero LMEM traffic has to come from
+somewhere else -- D-cache set aliasing, DRAM row behaviour, or warp interleave.
+
+So the correct scope is narrower. LMEM bank conflicts explain **why 4.68% here
+is larger than 0.051% there at the same configuration and problem size**. They
+do not explain layout sensitivity in general, and they are not the whole of the
+4.68% either. Treating them as a complete account would repeat an error this
+document has already made twice: taking a mechanism that explains a difference
+and promoting it into an explanation of the quantity.
+
+**And the reframing is recorded without taking the relief.** If part of the
+floor is directional, the arithmetically permitted move is to narrow the error
+bar. That move happens to flatter every result here, which is reason enough to
+decline it absent a measurement that isolates the directional part. The
+conservative two-sided bound stays. What changes is only the forward-looking
+claim that a deliberately chosen access order is worth measuring -- a statement
+about opportunity, not a relaxation of any bound already published.
