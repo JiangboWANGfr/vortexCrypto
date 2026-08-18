@@ -709,12 +709,24 @@ alone on a different kernel):
 `PERF_ENABLE` was checked rather than assumed: the counters do not perturb
 timing here, and the numbers above are byte-identical to a PERF build.
 
-**The memory wall is still there and is not a knob.** On the DE10-Pro image
-DDR4 B/C/D were removed outright, so `PLATFORM_MEMORY_NUM_BANKS=1` is hardware
-truth rather than a configuration choice, behind `DCACHE_NUM_BANKS=1` with L2
-and L3 off. A simulation modelling more banks describes a machine that does not
-exist on this board. The remaining `scrb` stall is that wall, and it now caps a
-kernel that is otherwise clean.
+**The memory wall is still there, and the rows above understate it.** These
+numbers were measured with `VX_CFG_PLATFORM_MEMORY_NUM_BANKS = 2`
+(`VX_config.toml:81`) behind `DCACHE_NUM_BANKS = 1` with L2 and L3 off. The
+DE10-Pro image has **one** memory bank, not two: DDR4 B/C/D were removed
+outright and only one channel was ever on the Vortex path, which is a property
+of the bitstream rather than a configuration choice.
+
+Those are two different machines and an earlier version of this section
+conflated them, citing the board's single channel as the condition these rows
+were taken under. They were not. The direction matters: the simulated
+configuration is the **more** generous of the two, so a board measurement should
+be expected to come out worse than what is recorded here, not better. Nothing
+above is invalidated -- both variants ran on the same configuration, so their
+ratio stands -- but the absolute cycles/block and bytes/cycle figures are for a
+two-bank memory system.
+
+The remaining `scrb` stall is that wall, and it now caps a kernel that is
+otherwise clean.
 
 ### Retracted: the warp-scan conclusion, and the S2 decision that rested on it
 
