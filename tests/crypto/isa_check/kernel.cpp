@@ -42,6 +42,16 @@ __kernel void isa_check(kernel_arg_t* __UNIFORM__ arg) {
       default: r = vx_aes32esmi(a, b, 3); break;
       }
       break;
+    case ISA_OP_RORI:
+      // shamt is an instruction field too. The four values are the ones
+      // ChaCha20 uses, addressed as rotate-right: 32-16, 32-12, 32-8, 32-7.
+      switch (v & 3) {
+      case 0:  r = vx_rori(a, 16); break;
+      case 1:  r = vx_rori(a, 20); break;
+      case 2:  r = vx_rori(a, 24); break;
+      default: r = vx_rori(a, 25); break;
+      }
+      break;
     default: break;
     }
 

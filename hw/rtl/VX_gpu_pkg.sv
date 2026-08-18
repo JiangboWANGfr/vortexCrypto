@@ -533,6 +533,7 @@ package VX_gpu_pkg;
 `ifdef VX_CFG_EXT_SYM_ENABLE
     localparam INST_SYM_AES32ESI  = 4'h0;
     localparam INST_SYM_AES32ESMI = 4'h1;
+    localparam INST_SYM_RORI      = 4'h2;
     localparam INST_SYM_BITS      = 4;
 `endif
 
@@ -863,14 +864,19 @@ package VX_gpu_pkg;
 `endif
 
 `ifdef VX_CFG_EXT_SYM_ENABLE
-    // AES32ESI/AES32ESMI byte-select, from instr[31:30]. `bs` sits in the low
-    // two bits, which alias alu_args_t.imm20[1:0]: in VX_decode any later write
-    // to op_args.alu.* on the same path would silently clobber it, so the SYM
-    // arms must not fall through to a shared alu assignment. AUTH needs no args
-    // type -- clmul/clmulh/brev8 carry no immediate operand.
+    // Immediate operands of the SYM instructions. `bs` is the AES32ESI/ESMI
+    // byte-select from instr[31:30]; `shamt` is the RORI rotate amount from
+    // instr[24:20]. They occupy disjoint fields rather than a union because
+    // only one is ever live and the cost is five bits of a 27-bit space.
+    //
+    // Both alias alu_args_t.imm20 (bs at [1:0], shamt at [6:2]): in VX_decode
+    // any later write to op_args.alu.* on the same path would silently clobber
+    // them, so the SYM arms must not fall through to a shared alu assignment.
+    // AUTH needs no args type -- clmul/clmulh/brev8 carry no immediate operand.
     typedef struct packed {
-        logic [INST_ARGS_BITS-2-1:0] __padding;
-        logic [1:0]                  bs;
+        logic [INST_ARGS_BITS-5-2-1:0] __padding;
+        logic [4:0]                    shamt;
+        logic [1:0]                    bs;
     } sym_args_t;
     `PACKAGE_ASSERT($bits(sym_args_t) == INST_ARGS_BITS)
 `endif

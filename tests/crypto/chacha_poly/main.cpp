@@ -39,7 +39,12 @@ struct impl_t {
 };
 
 const impl_t kImpls[] = {
-  { "chacha_poly_sw", "sw" },
+  { "chacha_poly_sw",   "sw" },
+  // Same code with the ratified Zbb/Zbkb RORI in place of slli+srli+or. It is
+  // not a cryptographic instruction, so this row is a stronger software
+  // baseline, not an instruction-set extension: the ChaCha20 speedup it shows
+  // is what any RV32 with the B extension already has.
+  { "chacha_poly_rori", "rori" },
 };
 
 const uint32_t kNumImpls = (uint32_t)(sizeof(kImpls) / sizeof(kImpls[0]));

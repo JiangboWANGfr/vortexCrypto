@@ -219,6 +219,22 @@ module VX_decode import
                     `USED_IREG (rs1);
                 end else
             `endif
+            `ifdef VX_CFG_EXT_SYM_ENABLE
+                // Zbb/Zbkb RORI, RV32 form: OP-IMM, funct3 101, instr[31:25]
+                // 0110000, shamt in instr[24:20]. Matched on u_12 for the same
+                // reason as BREV8 above -- is_itype_sh replaces i_imm with the
+                // shamt for funct3 101, so the upper bits are only visible in
+                // the raw field. Left to the fallback the two models disagree
+                // about it: instr[30] is set, so the RTL would run it as SRAI
+                // while simx would run it as SRL.
+                if (funct3 == 3'b101 && u_12[11:5] == 7'b0110000) begin
+                    ex_type = EX_SYM;
+                    op_type = INST_OP_BITS'(INST_SYM_RORI);
+                    op_args.sym.shamt = u_12[4:0];
+                    `USED_IREG (rd);
+                    `USED_IREG (rs1);
+                end else
+            `endif
                 begin
                     ex_type = EX_ALU;
                     op_type = INST_OP_BITS'(r_type);

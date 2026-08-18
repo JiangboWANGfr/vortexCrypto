@@ -450,3 +450,75 @@ Provenance for this section:
 - `CONFIGS="-DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_NUM_WARPS=4 -DVX_CFG_NUM_THREADS=32"`
 - correctness: `tests/crypto/isa_check` passes 80/80 on both simulators, and
   both GCM variants pass the two-level check in `main.cpp`
+
+### Warp scan: what actually limits the S1 result
+
+The gap between the 9.11x instruction reduction and the 2.67x cycle speedup was
+attributed above to dependency-chain latency. **That was wrong**, and the
+correction matters more than the original number, so it is recorded here rather
+than quietly amended.
+
+A pipeline breakdown (`VORTEX_PROFILING=1`, a separate run per section 4, its
+cycle count not mixed with the recorded rows) at `c1w4t32`, `-n128 -b8`:
+
+| | sw_ttable | hw_s1 |
+| --- | ---: | ---: |
+| IPC | 0.087 | 0.031 |
+| scheduler idle | 91% | 97% |
+| scoreboard (operand) stall | 95% | 100% |
+| alu / lsu / sfu / fpu stall | 0% / 0% / 0% / 0% | 0% / 0% / 0% / 0% |
+| loads | 991,192 | 105,644 |
+| average load latency | 48.8 | 126.9 |
+
+Two things fall out. **The crypto units are never the bottleneck** -- functional
+unit backpressure is flat zero in both, which is the empirical form of the claim
+in section 6 that a single-cycle stateless PE never deasserts ready. And the
+stall is not arithmetic: it is 100% operand stall, caused by a 127-cycle average
+load latency. `hw_s1` issues 9.4x fewer loads, exactly as designed, but its
+average load latency is 2.6x *worse* -- the fast 32-bank local-memory table
+gathers were what pulled the software baseline's average down, and what remains
+after deleting them is streaming plaintext and ciphertext through a
+single-banked D-cache with L2 and L3 disabled.
+
+A warp scan holding `SIMD_WIDTH` fixed confirms it. Warps are the only variable:
+`ISSUE_WIDTH`, `SIMD_WIDTH`, `NUM_ALU_LANES`, `NUM_SYM_LANES` and
+`LMEM_NUM_BANKS` are all constant across the three points, and the scan stops at
+16 warps because `ISSUE_WIDTH = up(NUM_WARPS/16)` steps to 2 at 32. Message
+count tracks thread count so no lane idles. `c1w{4,8,16}t4`, `-b64`, rtlsim:
+
+| warps | hw_s1 cycles/block | IPC | avg load latency | loads/cycle |
+| ---: | ---: | ---: | ---: | ---: |
+| 4 | 338.97 | 0.389 | 16.8 | 0.260 |
+| 8 | **254.97** | **0.517** | 27.0 | **0.346** |
+| 16 | 324.11 | 0.406 | 45.8 | 0.272 |
+
+It peaks at eight warps and **regresses 27% at sixteen**. Load latency grows
+monotonically with concurrency, about 1.7x per doubling, and load throughput
+tops out around 0.35 warp-loads per cycle -- which at four lanes per load is
+1.38 lane-accesses per cycle against one D-cache bank, already oversubscribed.
+Functional unit backpressure stays at zero across all three points.
+
+The same conclusion arrives independently from the other direction: `hw_s1`
+sustains 0.0472 bytes/cycle at `t4` and only 0.0244 at `t32`. Eight times the
+lanes, half the throughput. Added parallelism is being converted into queueing
+delay, not work.
+
+**So 2.67x is a floor, not a ceiling, and what caps it is not the instruction
+set.** Two levers, neither of them ISA:
+
+- `VX_CFG_DCACHE_NUM_BANKS` is 1 and L2/L3 are off. That is the wall.
+- Roughly 60% of the kernel's memory traffic looks like register spill: the
+  measured 126 memory operations per block per thread against about 52 the
+  algorithm requires. Spill lands directly on the resource that is already
+  saturated.
+
+This reorders the roadmap. A coarser-grained AES instruction shortens the
+dependency chain, and the dependency chain is not what is binding -- S2 would
+hit the same wall. Fix the spill, then the memory configuration, then re-measure
+S1. Only the number that survives that is a statement about the instruction set.
+
+**A caution about `t4` numbers.** The scan above is internally valid because
+only the warp count moves, but its *speedups* must not be quoted: at
+`LMEM_NUM_BANKS=4` the software baseline's table gather is starved while the
+hardware variant, which has no table, is unaffected. That inflates the ratio to
+7-9x. The honest ISA figure remains the `t32` 2.67x.

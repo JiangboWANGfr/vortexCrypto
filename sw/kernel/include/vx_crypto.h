@@ -27,6 +27,7 @@
 
 #include <crypto/vx_crypto_defs.h>
 #include <crypto/vx_aes.h>
+#include <crypto/vx_chacha.h>
 #include <crypto/vx_ghash.h>
 
 #endif // __VX_CRYPTO_H__

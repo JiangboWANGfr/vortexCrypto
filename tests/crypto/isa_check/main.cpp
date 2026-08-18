@@ -88,8 +88,11 @@ static uint32_t ref_aes32(uint32_t a, uint32_t b, uint32_t bs, bool mix) {
 }
 
 static const char* kOpNames[ISA_NUM_OPS] = {
-  "clmul", "clmulh", "brev8", "aes32esi", "aes32esmi"
+  "clmul", "clmulh", "brev8", "aes32esi", "aes32esmi", "rori"
 };
+
+// The four shamt values the kernel uses, indexed by vector.
+static const uint32_t kRoriShamt[4] = { 16, 20, 24, 25 };
 
 static uint32_t ref_op(uint32_t op, uint32_t v, uint32_t a, uint32_t b) {
   switch (op) {
@@ -98,6 +101,7 @@ static uint32_t ref_op(uint32_t op, uint32_t v, uint32_t a, uint32_t b) {
   case ISA_OP_BREV8:     return ref_brev8(a);
   case ISA_OP_AES32ESI:  return ref_aes32(a, b, v & 3, false);
   case ISA_OP_AES32ESMI: return ref_aes32(a, b, v & 3, true);
+  case ISA_OP_RORI:      return ref_rol32(a, (32 - kRoriShamt[v & 3]) & 31);
   default:               return 0;
   }
 }

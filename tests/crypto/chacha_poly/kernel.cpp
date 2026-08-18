@@ -1,4 +1,5 @@
 #include <vx_spawn2.h>
+#include <vx_intrinsics.h>
 #include "common.h"
 
 // One CTA per core, one independent ChaCha20-Poly1305 message per thread.
@@ -18,24 +19,40 @@ inline uint32_t load_le32(const uint8_t* p) {
        | ((uint32_t)p[3] << 24);
 }
 
-inline uint32_t rotl32(uint32_t v, int n) {
-  return (uint32_t)((v << n) | (v >> (32 - n)));
-}
+// The two entry points below differ in exactly one thing: how a 32-bit left
+// rotate is spelled. The round schedule, the Poly1305 limbs and the memory
+// access pattern are shared code, so a comparison between the two rows
+// measures the rotate and nothing else.
+//
+// `rot_sw` is what rv32imaf can express: three instructions, two of them
+// independent, so the rotate is two levels of the dependency chain. `rot_hw`
+// is the ratified Zbb/Zbkb RORI, one instruction and one level.
+struct rot_sw {
+  template <int N> static inline uint32_t rotl(uint32_t v) {
+    return (uint32_t)((v << N) | (v >> (32 - N)));
+  }
+};
 
-// RFC 8439 section 2.1. Four adds, four xors and four rotates; with no rotate
-// instruction in rv32imaf each rotate is three instructions, which is what the
-// S1 work is measured against.
+struct rot_hw {
+  template <int N> static inline uint32_t rotl(uint32_t v) {
+    return vx_rotl32(v, N);
+  }
+};
+
+// RFC 8439 section 2.1. Four adds, four xors and four rotates.
+template <typename R>
 inline void quarter_round(uint32_t x[16], int a, int b, int c, int d) {
-  x[a] += x[b]; x[d] ^= x[a]; x[d] = rotl32(x[d], 16);
-  x[c] += x[d]; x[b] ^= x[c]; x[b] = rotl32(x[b], 12);
-  x[a] += x[b]; x[d] ^= x[a]; x[d] = rotl32(x[d], 8);
-  x[c] += x[d]; x[b] ^= x[c]; x[b] = rotl32(x[b], 7);
+  x[a] += x[b]; x[d] ^= x[a]; x[d] = R::template rotl<16>(x[d]);
+  x[c] += x[d]; x[b] ^= x[c]; x[b] = R::template rotl<12>(x[b]);
+  x[a] += x[b]; x[d] ^= x[a]; x[d] = R::template rotl<8>(x[d]);
+  x[c] += x[d]; x[b] ^= x[c]; x[b] = R::template rotl<7>(x[b]);
 }
 
 // RFC 8439 section 2.3. The initial state is not kept live across the rounds:
 // its words are constants, the key, the counter and the nonce, all of which
 // are still in registers at the end, so the final addition rebuilds them
 // instead of holding a second sixteen-word copy.
+template <typename R>
 inline void chacha20_block(const uint32_t k[8], uint32_t n0, uint32_t n1,
                            uint32_t n2, uint32_t counter, uint32_t out[16]) {
   uint32_t x[16];
@@ -47,14 +64,14 @@ inline void chacha20_block(const uint32_t k[8], uint32_t n0, uint32_t n1,
   x[12] = counter; x[13] = n0; x[14] = n1; x[15] = n2;
 
   for (int i = 0; i < CHACHA_ROUNDS / 2; ++i) {
-    quarter_round(x, 0, 4, 8, 12);
-    quarter_round(x, 1, 5, 9, 13);
-    quarter_round(x, 2, 6, 10, 14);
-    quarter_round(x, 3, 7, 11, 15);
-    quarter_round(x, 0, 5, 10, 15);
-    quarter_round(x, 1, 6, 11, 12);
-    quarter_round(x, 2, 7, 8, 13);
-    quarter_round(x, 3, 4, 9, 14);
+    quarter_round<R>(x, 0, 4, 8, 12);
+    quarter_round<R>(x, 1, 5, 9, 13);
+    quarter_round<R>(x, 2, 6, 10, 14);
+    quarter_round<R>(x, 3, 7, 11, 15);
+    quarter_round<R>(x, 0, 5, 10, 15);
+    quarter_round<R>(x, 1, 6, 11, 12);
+    quarter_round<R>(x, 2, 7, 8, 13);
+    quarter_round<R>(x, 3, 4, 9, 14);
   }
 
   out[0] = x[0] + 0x61707865; out[1] = x[1] + 0x3320646e;
@@ -169,9 +186,12 @@ inline void poly1305_finish(poly1305_t& st, uint32_t tag[4]) {
   tag[0] = h0; tag[1] = h1; tag[2] = h2; tag[3] = h3;
 }
 
-} // namespace
-
-__kernel void chacha_poly_sw(kernel_arg_t* __UNIFORM__ arg) {
+// `arg` keeps its __UNIFORM__ annotation here as well as on the two kernel
+// entry points below: dropping it on this side costs 1304 retired instructions
+// at the recorded point, because the per-message argument loads stop being
+// hoisted as uniform. Measured, not assumed.
+template <typename R>
+inline void chacha_poly_body(kernel_arg_t* __UNIFORM__ arg) {
   const uint32_t* key = (const uint32_t*)arg->key_addr;
   const uint8_t* nonce_base = (const uint8_t*)arg->nonce_addr;
   const uint32_t* src_base = (const uint32_t*)arg->src_addr;
@@ -198,14 +218,14 @@ __kernel void chacha_poly_sw(kernel_arg_t* __UNIFORM__ arg) {
     // The one-time Poly1305 key is the keystream at counter zero. It depends
     // on the nonce, so it is per message and cannot be hoisted to the host.
     uint32_t ks[16];
-    chacha20_block(k, n0, n1, n2, 0, ks);
+    chacha20_block<R>(k, n0, n1, n2, 0, ks);
     poly1305_t st;
     poly1305_init(st, ks);
 
     const uint32_t* pt = src_base + (size_t)words * msg;
     uint32_t* ct = dst_base + (size_t)words * msg;
     for (uint32_t b = 0; b < blocks; ++b) {
-      chacha20_block(k, n0, n1, n2, b + 1, ks);
+      chacha20_block<R>(k, n0, n1, n2, b + 1, ks);
       const uint32_t* pb = pt + 16 * b;
       uint32_t* cb = ct + 16 * b;
       // The ciphertext words go straight into the MAC, four Poly1305 blocks
@@ -236,4 +256,17 @@ __kernel void chacha_poly_sw(kernel_arg_t* __UNIFORM__ arg) {
       tp[i] = tag[i];
     }
   }
+}
+
+} // namespace
+
+__kernel void chacha_poly_sw(kernel_arg_t* __UNIFORM__ arg) {
+  chacha_poly_body<rot_sw>(arg);
+}
+
+// Same code with RORI. This is not a cryptographic instruction, so this row is
+// a stronger software baseline rather than an instruction-set extension --
+// see sw/kernel/include/crypto/vx_chacha.h.
+__kernel void chacha_poly_rori(kernel_arg_t* __UNIFORM__ arg) {
+  chacha_poly_body<rot_hw>(arg);
 }

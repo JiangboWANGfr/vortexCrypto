@@ -443,6 +443,7 @@ package VX_trace_pkg;
             case (op_type)
                 INST_SYM_AES32ESI:  `TRACE(level, ("AES32ESI"))
                 INST_SYM_AES32ESMI: `TRACE(level, ("AES32ESMI"))
+                INST_SYM_RORI:      `TRACE(level, ("RORI"))
                 default:            `TRACE(level, ("?"))
             endcase
         end

@@ -88,6 +88,17 @@ void SymUnit::execute(instr_trace_t* trace) {
   auto sym_type = std::get<SymType>(trace->op_type);
   auto symArgs = std::get<IntrSymArgs>(instrArgs);
   uint32_t bs = symArgs.bs & 0x3;
+  uint32_t shamt = symArgs.shamt & 0x1F;
+
+  if (sym_type == SymType::RORI) {
+    for (uint32_t t = 0; t < num_threads; ++t) {
+      if (!tmask.test(t))
+        continue;
+      uint32_t a = (uint32_t)rs1_data[t].u;
+      rd_data[t].u = rol32(a, (32 - shamt) & 31);
+    }
+    return;
+  }
 
   for (uint32_t t = 0; t < num_threads; ++t) {
     if (!tmask.test(t))

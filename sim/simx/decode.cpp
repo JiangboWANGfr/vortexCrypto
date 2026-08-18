@@ -399,6 +399,7 @@ static op_string_t op_string(const Instr &instr) {
       switch (sym_type) {
       case SymType::AES32ESI:  return {"AES32ESI", ss.str()};
       case SymType::AES32ESMI: return {"AES32ESMI", ss.str()};
+      case SymType::RORI:      return {"RORI", std::to_string(symArgs.shamt)};
       default:
         std::abort();
       }
@@ -571,7 +572,16 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
      && ((funct7 & 0x1F) == 0x11 || (funct7 & 0x1F) == 0x13)) {
       instr->set_fu_type(FUType::SYM);
       instr->set_op_type(((funct7 & 0x1F) == 0x13) ? SymType::AES32ESMI : SymType::AES32ESI);
-      instr->set_args(IntrSymArgs{(funct7 >> 5) & 0x3});
+      instr->set_args(IntrSymArgs{(funct7 >> 5) & 0x3, 0});
+    } else
+    // Zbb/Zbkb RORI, RV32 form: OP-IMM, funct3 5, funct7 0x30, shamt in the
+    // rs2 field. Tested raw for the same reason as BREV8 above. Left to the
+    // shift path this decodes as SRL here but as SRAI in the RTL, since that
+    // side keys on instr[30] -- the two models would disagree silently.
+    if (op == Opcode::I && funct3 == 0x5 && funct7 == 0x30) {
+      instr->set_fu_type(FUType::SYM);
+      instr->set_op_type(SymType::RORI);
+      instr->set_args(IntrSymArgs{0, rs2 & 0x1F});
     } else
 #endif
     if ((op == Opcode::R || op == Opcode::R_W) && (funct7 & 0x1)) {

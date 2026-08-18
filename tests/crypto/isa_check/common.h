@@ -21,7 +21,8 @@
 #define ISA_OP_BREV8      2
 #define ISA_OP_AES32ESI   3   // uses bs = vector index & 3
 #define ISA_OP_AES32ESMI  4
-#define ISA_NUM_OPS       5
+#define ISA_OP_RORI       5   // uses shamt = ChaCha20's four amounts, by index
+#define ISA_NUM_OPS       6
 
 #define ISA_NUM_RESULTS (ISA_NUM_OPS * ISA_NUM_VECTORS)
 

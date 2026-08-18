@@ -13,11 +13,10 @@
 
 `include "VX_define.vh"
 
-// Symmetric-cipher execute unit. One PE today (AES); ChaCha joins it later,
-// which is why the VX_pe_switch stays even at PE_COUNT == 1: with one PE the
-// switch degenerates to wires (VX_stream_switch and VX_stream_arb both take
-// their passthru branch at NUM_INPUTS == NUM_OUTPUTS), so keeping it costs
-// nothing and means adding the second PE does not restructure this module.
+// Symmetric-cipher execute unit. Two PEs: the AES round transforms, and the
+// rotate that ChaCha20 is built from. They are separate PEs rather than one
+// because they share no logic -- an S-box and a barrel shifter -- and because
+// VX_sym_rot is not a cryptographic transform at all (see its header).
 
 module VX_sym_unit import VX_gpu_pkg::*; #(
     parameter `STRING INSTANCE_ID = ""
@@ -36,9 +35,10 @@ module VX_sym_unit import VX_gpu_pkg::*; #(
     localparam BLOCK_SIZE  = `VX_CFG_NUM_SYM_BLOCKS;
     localparam NUM_LANES   = `VX_CFG_NUM_SYM_LANES;
     localparam PARTIAL_BW  = (BLOCK_SIZE != `VX_CFG_ISSUE_WIDTH) || (NUM_LANES != `VX_CFG_SIMD_WIDTH);
-    localparam PE_COUNT    = 1;
+    localparam PE_COUNT    = 2;
     localparam PE_SEL_BITS = `CLOG2(PE_COUNT);
     localparam PE_IDX_AES  = 0;
+    localparam PE_IDX_ROT  = 1;
 
     VX_execute_if #(
         .data_t (sym_execute_t)
@@ -69,7 +69,8 @@ module VX_sym_unit import VX_gpu_pkg::*; #(
             .data_t (sym_result_t)
         ) pe_result_if[PE_COUNT]();
 
-        wire [`UP(PE_SEL_BITS)-1:0] pe_select = PE_IDX_AES;
+        wire is_rot = (per_block_execute_if[block_idx].data.op_type == INST_OP_BITS'(INST_SYM_RORI));
+        wire [`UP(PE_SEL_BITS)-1:0] pe_select = is_rot ? PE_IDX_ROT : PE_IDX_AES;
 
         VX_pe_switch #(
             .PE_COUNT    (PE_COUNT),
@@ -95,6 +96,16 @@ module VX_sym_unit import VX_gpu_pkg::*; #(
             .reset      (reset),
             .execute_if (pe_execute_if[PE_IDX_AES]),
             .result_if  (pe_result_if[PE_IDX_AES])
+        );
+
+        VX_sym_rot #(
+            .INSTANCE_ID (`SFORMATF(("%s-rot%0d", INSTANCE_ID, block_idx))),
+            .NUM_LANES   (NUM_LANES)
+        ) sym_rot (
+            .clk        (clk),
+            .reset      (reset),
+            .execute_if (pe_execute_if[PE_IDX_ROT]),
+            .result_if  (pe_result_if[PE_IDX_ROT])
         );
     end
 

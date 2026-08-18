@@ -231,14 +231,18 @@ enum class AluType {
 
 #ifdef VX_CFG_EXT_SYM_ENABLE
 // Zkne RV32 encrypt transforms. Decrypt (AES32DSI/DSMI) is deliberately absent:
-// GCM runs AES in counter mode, which only ever encrypts.
+// GCM runs AES in counter mode, which only ever encrypts. RORI is the ratified
+// Zbb/Zbkb rotate: not a cryptographic transform, but ChaCha20's quarter-round
+// needs it and rv32imaf has none (see hw/rtl/crypto/sym/VX_sym_rot.sv).
 enum class SymType {
   AES32ESI,
-  AES32ESMI
+  AES32ESMI,
+  RORI
 };
 
 struct IntrSymArgs {
-  uint32_t bs : 2;   // byte select, from instr[31:30]
+  uint32_t bs : 2;      // AES32* byte select, from instr[31:30]
+  uint32_t shamt : 5;   // RORI rotate amount, from instr[24:20]
 };
 #endif
 
