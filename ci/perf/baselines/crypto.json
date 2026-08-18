@@ -1,0 +1,22 @@
+{
+  "crypto:perf_gate-aes-gcm-sw:rtlsim": {
+    "32": {
+      "cycles": 932257,
+      "instrs": 383936
+    },
+    "app": "crypto/aes_gcm",
+    "args": "-n64 -b4 -i0",
+    "config_hash": "dd7079396eb9046a",
+    "configs": ""
+  },
+  "crypto:perf_gate-chacha-poly-sw:rtlsim": {
+    "32": {
+      "cycles": 219772,
+      "instrs": 77592
+    },
+    "app": "crypto/chacha_poly",
+    "args": "-n64 -b1 -i0",
+    "config_hash": "f3b21c8ac8bc9ef4",
+    "configs": ""
+  }
+}

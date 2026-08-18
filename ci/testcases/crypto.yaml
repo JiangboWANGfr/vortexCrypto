@@ -92,3 +92,66 @@ tests:
   dir: tests/crypto/isa_check
   target: run-{driver}
   configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_NUM_CORES=2 -DVX_CFG_NUM_THREADS=16
+# AAD and partial final blocks. Every case above runs at its app's Makefile OPTS
+# default, which is `-a0 -t0`: the AAD absorb, the zero-padded tail and the
+# length block that carries both lengths had NO regression coverage, and they are
+# where the byte-order and padding mistakes live -- a wrong pad or a wrong length
+# block produces a plausible ciphertext with a wrong tag. `-t5` is a fragment
+# smaller than one authentication block and `-t37` spans three of them, so the
+# ChaCha20 case also exercises a tail that is more than one Poly1305 block.
+# Both drivers: the tail is the only byte-granular path in either kernel, and an
+# unaligned access is a trap in the RTL that simx does not necessarily reproduce.
+- id: crypto-aes-gcm-aad-tail
+  via: make-run
+  drivers:
+  - simx
+  - rtlsim
+  dir: tests/crypto/aes_gcm
+  target: run-{driver}
+  vars:
+    OPTS: -n64 -b4 -t5 -a20
+# The hardware kernel implements AAD and the tail SEPARATELY from the software
+# one -- different padding code, different byte order, its own length block --
+# so covering the software path says nothing about it.
+- id: crypto-aes-gcm-hw-aad-tail
+  via: make-run
+  drivers:
+  - simx
+  - rtlsim
+  dir: tests/crypto/aes_gcm
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE
+  vars:
+    OPTS: -n64 -b4 -t5 -a20 -i1
+- id: crypto-chacha-poly-aad-tail
+  via: make-run
+  drivers:
+  - simx
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  vars:
+    OPTS: -n64 -b1 -t37 -a20
+# Perf-regression gates for the two software baselines. Their cycle counts are
+# what docs/proposals/crypto_isa_proposal.md compares every instruction against,
+# and nothing was watching them: the post-AAD drift recorded in section 12 was
+# found by hand, days of runs after it landed. These gate the shape CI can
+# afford -- each app's own default -- not the recorded measurement point, so they
+# catch drift rather than reproduce the document's numbers.
+#
+# No model_parity twin, deliberately: section 5 records a simx-versus-rtlsim
+# cycle gap that GROWS with problem size (6.3% at -b4, 16.3% at -b64). That is an
+# unresolved modelling discrepancy, and a parity gate here would either fail or
+# have to carry a tolerance wide enough to be meaningless.
+- id: perf_gate-aes-gcm-sw
+  check: perf_gate
+  tier: full
+  via: blackbox
+  app: crypto/aes_gcm
+  args: -n64 -b4 -i0
+- id: perf_gate-chacha-poly-sw
+  check: perf_gate
+  tier: full
+  via: blackbox
+  app: crypto/chacha_poly
+  args: -n64 -b1 -i0
