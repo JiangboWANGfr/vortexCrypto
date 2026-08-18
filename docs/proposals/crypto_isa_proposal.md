@@ -386,7 +386,7 @@ identical across all three, so the measured difference is the instruction
 granularity and not the surrounding structure. Only the standard granularity
 exists today; the other two are new design work, not a port.
 
-## 7. Recorded: the S1 hardware variant
+## 8. Recorded: the S1 hardware variant
 
 `aes_gcm_hw_s1` is the same GCM in the same application, selected by `-i1`. It
 uses five ratified instructions — `aes32esi`, `aes32esmi` (Zkne) in `EX_SYM`,
@@ -440,9 +440,9 @@ Section 5's numbers do not reproduce exactly in the current tree: simx moved
 while retired instructions are unchanged at 1,229,052, so the compiled kernel is
 identical. The off/on comparison above rules out the crypto units as the cause.
 Something else between commit `6533ce29f` and now moved rtlsim timing slightly
-and has not been identified. The section 7 rows are all measured in one tree at
+and has not been identified. The section 8 rows are all measured in one tree at
 one commit, so the comparison between them stands regardless; but section 5's
-numbers should not be quoted against section 7's until this is explained.
+numbers should not be quoted against section 8's until this is explained.
 
 Provenance for this section:
 
@@ -522,3 +522,137 @@ only the warp count moves, but its *speedups* must not be quoted: at
 `LMEM_NUM_BANKS=4` the software baseline's table gather is starved while the
 hardware variant, which has no table, is unaffected. That inflates the ratio to
 7-9x. The honest ISA figure remains the `t32` 2.67x.
+
+## 9. RORI: the same wall, reached from ChaCha20
+
+`chacha_poly_rori` is the same AEAD in the same application, selected by `-i1`.
+It adds exactly one instruction, and the instruction is deliberately not a
+cryptographic one: ratified Zbb/Zbkb `RORI`, executed by a second PE in `EX_SYM`
+(`hw/rtl/crypto/sym/VX_sym_rot.sv`).
+
+### Why a non-cryptographic instruction is recorded here
+
+`rv32imaf` has no rotate at all. ChaCha20's quarter-round is add, xor and
+rotate, so each of the four rotates in each of the eighty quarter-rounds per
+64-byte block compiles to `slli`/`srli`/`or`: 960 instructions of rotation in a
+block that costs about 2611. Implementing `RORI` therefore **raises the
+baseline** rather than accelerating the cipher, and a ChaCha20 speedup measured
+against a baseline without it would be claiming credit for the B extension.
+
+Section 6's rows are the `rv32imaf` baseline. The `sw` row below is that same
+source measured in the current tree; the `rori` row is what the B extension is
+worth. Only a fused xor-rotate, which has no ratified encoding, would be an
+extension in the sense the rest of this document means.
+
+### Conformance before performance
+
+`tests/crypto/isa_check` gained a `rori` case: four `shamt` values over sixteen
+vectors against a host reference, **16/16 on simx and 16/16 on rtlsim**. That
+check is not ceremony. Left to the fallback decode path the two models disagree
+about this encoding -- the RTL keys on `instr[30]` and would run it as `SRAI`,
+simx would run it as `SRL` -- so a kernel-level test would have shown a wrong
+answer without saying which instruction produced it. The emitted encoding was
+also checked directly against the assembler: `6105d513` disassembles as
+`rori a0, a1, 0x10`.
+
+### Recorded
+
+`c1w4t32`, `-n128 -b16`, 131072 bytes, both units enabled:
+
+```
+CONFIGS="-DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_NUM_THREADS=32" \
+  OPTS="-n128 -b16 -i{0,1}" make run-simx
+```
+
+| | sw simx | rori simx | ratio |
+| --- | ---: | ---: | ---: |
+| cycles | 2,387,331 | 2,403,251 | 0.993 |
+| instrs | 177,124 | 135,356 | 1.309 |
+| cycles/block (64 B) | 1165.69 | 1173.46 | |
+| bytes/cycle | 0.0549 | 0.0545 | |
+
+**24% of the instructions removed, and none of the cycles.** On rtlsim the sign
+is the same and slightly stronger: 2,706,858 -> 2,736,057, a 1.1% regression.
+
+Two caveats on those two rtlsim numbers, both of which have to be stated rather
+than smoothed over. They were taken from a binary four instructions different
+from the one above (177,120 / 135,352), from an intermediate version of the
+shared-body refactor; and they could not be retaken, because
+`hw/rtl/core/VX_csr_data.sv:198` in the current tree references
+`pipeline_perf.issue.dispatch_stalls[EX_AUTH]` and verilator cannot resolve the
+`issue` scope, so `librtlsim.so` does not build. That is unrelated in-flight
+work in a shared file. The simx rows are therefore primary here, contrary to
+section 4's usual order, and the rtlsim rows are quoted only for their sign.
+
+The `sw` row is also 1,308 instructions above section 6's 175,816. Both entry
+points now share one body, templated on how a rotate is spelled, so that a
+comparison between the two rows measures the rotate and nothing else; sharing
+it costs those 1,308 instructions and both rows carry the cost equally. Adding
+`__UNIFORM__` to the shared body's parameter was tried and made it four
+instructions worse, so that is not the cause.
+
+### It is not dependency latency, and more warps do not help
+
+Section 8 left open that the S1 result should be re-measured at higher warp
+counts before being read as a ceiling. For ChaCha that door is now closed.
+simx, `SIMD_WIDTH` fixed at 32, message count tracking thread count so no lane
+idles:
+
+| warps | messages | sw cycles/block | rori cycles/block | ratio |
+| ---: | ---: | ---: | ---: | ---: |
+| 4 | 128 | 1165.69 | 1173.46 | 1.007 |
+| 8 | 256 | 1183.01 | 1219.99 | 1.031 |
+| 16 | 512 | 1228.81 | 1224.11 | 0.996 |
+
+The ratio stays at one throughout, and cycles per block get slightly *worse*
+with more warps for both variants. The machine is saturated at four warps on
+something that is neither instruction issue nor arithmetic latency.
+
+### Where the cycles go
+
+IPC is 0.074. The arithmetic closes on the measured numbers without a model:
+each 64-byte block costs a lane 16 word loads and 16 word stores, so 4 warps x
+16 blocks x 32 memory instructions is 2048 warp memory instructions, and at 32
+lanes each that is 65,536 individual accesses -- 262,144 bytes, exactly the
+plaintext read plus the ciphertext written. Against 2,387,331 cycles that is
+**36.4 cycles per access**, and it accounts for essentially the whole run.
+(Spill traffic is on top of this, so 36.4 is an upper bound on the per-access
+cost and 65,536 a lower bound on the access count.)
+
+The cause is the workload shape rather than the algorithm. One independent
+message per thread puts consecutive lanes 1024 bytes apart, so every warp
+memory instruction touches 32 distinct cache lines, and those are serialised
+twice over: `DCACHE_NUM_BANKS` is 1, and on the DE10-Pro image
+`PLATFORM_MEMORY_NUM_BANKS` is also 1, since only one of the four DDR4 channels
+was ever on the Vortex path.
+
+### What this settles
+
+This is section 8's 127-cycle operand stall arrived at from the other
+algorithm, and it arrives with no table gathers anywhere in the picture --
+ChaCha20 has no tables to delete. The wall is therefore not an artefact of
+what the AES variant removed from the memory system; it is there when nothing
+was removed. Two independent algorithms, two independent routes, one
+conclusion: **on this configuration the instruction set is not the binding
+constraint, and an instruction that only removes arithmetic cannot show up in
+cycles.**
+
+The immediate consequence is that a fused ChaCha xor-rotate -- the natural next
+step, and the only one that would be a genuine extension -- removes a further
+~320 instructions per block and would also buy approximately zero. It should
+not be built until the memory side moves.
+
+For ChaCha specifically the spill lever section 8 names is structural rather
+than incidental: sixteen live ChaCha state words plus Poly1305's five `h`, five
+`r` and four `5r` limbs is thirty values on a thirty-two register machine, and
+the compiled kernel shows 145 `lw` and 108 `sw` statically. The form that fixes
+that is the subgroup-cooperative one -- four state words per lane instead of
+sixteen -- which is a different axis from instruction granularity.
+
+Provenance:
+
+- commit `3a66ec981` plus this section's own commit
+- the working tree also carried unrelated in-flight MPM-counter edits in
+  `VX_csr_data.sv`, `sim/simx/core.*` and `perf.cpp` at measurement time; both
+  rows were measured in that same tree, so the comparison between them stands
+- `CONFIGS="-DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_NUM_THREADS=32"`
