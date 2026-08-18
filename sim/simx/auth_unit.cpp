@@ -97,8 +97,19 @@ void AuthUnit::execute(instr_trace_t* trace) {
     case AuthType::GHRED32H: {
       // 0x87 is the GF(2^128) reduction constant; carry-less multiply by it is
       // x ^ (x<<1) ^ (x<<2) ^ (x<<7). Must match VX_auth_ghash.sv bit for bit.
-      uint64_t p = b ^ (b << 1) ^ (b << 2) ^ (b << 7);
-      res = a ^ ((auth_type == AuthType::GHRED32H) ? (p >> width) : p);
+      //
+      // The halves are accumulated separately rather than as one shifted value:
+      // the product is width+7 bits, so at width 64 it does not fit a uint64_t,
+      // and `p >> width` would have been shift-by-64 -- undefined behaviour that
+      // gcc folds to 0. Each shift here is by less than width.
+      uint64_t plo = 0, phi = 0;
+      for (uint32_t k : {0u, 1u, 2u, 7u}) {
+        plo ^= (b << k);
+        if (k != 0) {
+          phi ^= (b >> (width - k));
+        }
+      }
+      res = a ^ ((auth_type == AuthType::GHRED32H) ? phi : plo);
       break;
     }
     case AuthType::CLMUL:

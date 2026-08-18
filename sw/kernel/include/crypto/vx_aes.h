@@ -17,6 +17,13 @@
 #include <stdint.h>
 #include <crypto/vx_crypto_defs.h>
 
+// AES32* is an RV32 encoding. On RV64 the opcode is full-width OP and LP64 keeps
+// uint32_t values sign-extended, so these would assemble and return a silently
+// wrong result rather than failing. RV64 needs the AES64 family instead.
+#if defined(VX_CFG_XLEN) && (VX_CFG_XLEN != 32)
+#error "crypto/vx_aes.h: aes32esi/aes32esmi are RV32-only; RV64 needs AES64"
+#endif
+
 // AES round transforms -- RISC-V Zkne, RV32 forms. Executed by EX_SYM
 // (hw/rtl/crypto/sym/VX_sym_aes.sv, sim/simx/sym_unit.cpp).
 //

@@ -42,8 +42,19 @@ module VX_sym_aes import VX_gpu_pkg::*; #(
     `UNUSED_SPARAM (INSTANCE_ID)
 
     // AES32* is an RV32 encoding; RV64 uses the AES64* family, which this unit
-    // does not implement. Guard rather than silently computing on a half operand.
-    `STATIC_ASSERT (`VX_CFG_XLEN == 32, ("VX_sym_aes: AES32* requires XLEN=32"))
+    // does not implement. At XLEN=64 the datapath below would XOR a
+    // zero-extended 32-bit result into a 64-bit rs1 and leave the upper half of
+    // rd equal to the upper half of rs1, while simx would zero it -- two models
+    // silently disagreeing.
+    //
+    // STATIC_ASSERT cannot express this: it expands to nothing under SYNTHESIS
+    // (VX_platform.vh:136), and the DE10-Pro flow defines SYNTHESIS, so the
+    // check would be absent from exactly the build that matters. A reference to
+    // a module that does not exist fails elaboration in Verilator and in
+    // Quartus alike, and names the reason where the tool prints it.
+`ifdef VX_CFG_XLEN_64
+    VX_sym_aes_requires_XLEN_32__use_AES64_for_RV64 __config_error();
+`endif
 
     // AES forward S-box (FIPS-197 figure 7). The table is written in natural
     // order (input 0 first) but declared descending to match the house style,
