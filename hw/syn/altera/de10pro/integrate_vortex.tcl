@@ -1,5 +1,14 @@
 package require -exact qsys 19.2
 
+# The Vortex fabric clock, in MHz. This is the rate the IOPLL is solved for and
+# therefore the one timing analysis signs off; the runtime can still switch
+# between every profile in the reconfiguration MIF. prepare_project.sh passes
+# the value it also compiles into VX_CFG_PLATFORM_CLOCK_RATE, so the two cannot
+# drift; the default here only applies when this script is run by hand.
+if {![info exists vortex_clock_mhz]} {
+    set vortex_clock_mhz 200.0
+}
+
 proc instance_exists {name} {
     return [expr {[lsearch -exact [get_instances] $name] >= 0}]
 }
@@ -328,12 +337,20 @@ if {[instance_exists vortex_iopll_reconfig]
     remove_instance vortex_iopll_reconfig
 }
 
+# Only reached on a fresh system file. Changing the rate of an IOPLL that
+# already exists cannot be done from here: save_system freezes every instance
+# into a generic component, which no longer carries the altera_iopll gui_*
+# parameters, and removing the instance to recreate it would drop the
+# dynamic-clock MIF parameters that only the profile flow installs. For the
+# usual case prepare_project.sh patches the child IP between this script and
+# qsys-generate.
 if {![instance_exists vortex_iopll]} {
     add_instance vortex_iopll altera_iopll 19.1
     set_instance_parameter_value vortex_iopll gui_en_reconf 1
     set_instance_parameter_value vortex_iopll gui_reference_clock_frequency 50.0
     set_instance_parameter_value vortex_iopll gui_number_of_clocks 1
-    set_instance_parameter_value vortex_iopll gui_output_clock_frequency0 250.0
+    set_instance_parameter_value vortex_iopll \
+        gui_output_clock_frequency0 $vortex_clock_mhz
     set_instance_parameter_value vortex_iopll gui_use_locked 1
     set_instance_parameter_value vortex_iopll gui_operation_mode direct
     set_instance_parameter_value vortex_iopll gui_pll_mode {Integer-N PLL}

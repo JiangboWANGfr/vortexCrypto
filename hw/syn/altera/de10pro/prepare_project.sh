@@ -14,12 +14,42 @@ SYSTEM_NAME=pcie_ddr4_system
 NUM_CORES=${VX_DE10PRO_NUM_CORES:-1}
 NUM_WARPS=${VX_DE10PRO_NUM_WARPS:-1}
 NUM_THREADS=${VX_DE10PRO_NUM_THREADS:-1}
+# The rate the IOPLL is solved for, and therefore the only one timing analysis
+# covers. The bitstream still carries every profile in the reconfiguration MIF,
+# so the runtime can switch away from it, just without a signed-off timing path.
+CLOCK_MHZ=${VX_DE10PRO_CLOCK_MHZ:-200}
+# Crypto execution units. These are `ifdef`-tested in VX_execute.sv, so a
+# disabled unit means the macro is absent -- setting it to 0 would still enable
+# the unit.
+EXT_SYM=${VX_DE10PRO_EXT_SYM:-1}
+EXT_AUTH=${VX_DE10PRO_EXT_AUTH:-1}
 
 if [[ ! "$NUM_CORES" =~ ^[1-9][0-9]*$ \
    || ! "$NUM_WARPS" =~ ^[1-9][0-9]*$ \
    || ! "$NUM_THREADS" =~ ^[1-9][0-9]*$ ]]; then
     echo "error: core/warp/thread counts must be positive integers" >&2
     exit 1
+fi
+
+# Only the four rates in the reconfiguration MIF can be solved for, and the
+# board manager's profile decode accepts exactly these.
+case "$CLOCK_MHZ" in
+    100|125|200|250) ;;
+    *)
+        echo "error: VX_DE10PRO_CLOCK_MHZ must be one of 100, 125, 200, 250" >&2
+        exit 1
+        ;;
+esac
+
+EXT_MACROS=()
+EXT_INCLUDES=()
+if [[ "$EXT_SYM" != 0 ]]; then
+    EXT_MACROS+=('VX_CFG_EXT_SYM_ENABLE=1')
+    EXT_INCLUDES+=("$VORTEX_HOME/hw/rtl/crypto/sym")
+fi
+if [[ "$EXT_AUTH" != 0 ]]; then
+    EXT_MACROS+=('VX_CFG_EXT_AUTH_ENABLE=1')
+    EXT_INCLUDES+=("$VORTEX_HOME/hw/rtl/crypto/auth")
 fi
 
 if [[ ! -d "$PROJECT_DIR" ]]; then
@@ -73,7 +103,12 @@ COMPONENT_FILE=$GENERATED_DIR/vortex_shell_hw.tcl
 DYNCLK_MIF=$PROJECT_DIR/generated/dynclk/vortex_iopll_profiles.mif
 mkdir -p "$CONFIG_DIR"
 
-CONFIG_FLAGS="-DSYNTHESIS=1 -DQUARTUS=1 -DNDEBUG=1 -DVX_CFG_XLEN=32 -DVX_CFG_XLEN_32=1 -DVX_CFG_NUM_CLUSTERS=1 -DVX_CFG_NUM_CORES=$NUM_CORES -DVX_CFG_NUM_WARPS=$NUM_WARPS -DVX_CFG_NUM_THREADS=$NUM_THREADS -DVX_CFG_EXT_F_DISABLE=1 -DVX_CFG_EXT_D_DISABLE=1 -DVX_CFG_ICACHE_LATENCY=3 -DVX_CFG_DCACHE_LATENCY=3 -DVX_CFG_PLATFORM_MEMORY_NUM_BANKS=1 -DVX_CFG_PLATFORM_MEMORY_INTERLEAVE=0 -DVX_CFG_PLATFORM_CLOCK_RATE=250"
+CONFIG_FLAGS="-DSYNTHESIS=1 -DQUARTUS=1 -DNDEBUG=1 -DVX_CFG_XLEN=32 -DVX_CFG_XLEN_32=1 -DVX_CFG_NUM_CLUSTERS=1 -DVX_CFG_NUM_CORES=$NUM_CORES -DVX_CFG_NUM_WARPS=$NUM_WARPS -DVX_CFG_NUM_THREADS=$NUM_THREADS -DVX_CFG_EXT_F_DISABLE=1 -DVX_CFG_EXT_D_DISABLE=1 -DVX_CFG_ICACHE_LATENCY=3 -DVX_CFG_DCACHE_LATENCY=3 -DVX_CFG_PLATFORM_MEMORY_NUM_BANKS=1 -DVX_CFG_PLATFORM_MEMORY_INTERLEAVE=0 -DVX_CFG_PLATFORM_CLOCK_RATE=$CLOCK_MHZ"
+if [[ ${#EXT_MACROS[@]} -gt 0 ]]; then
+    for macro in "${EXT_MACROS[@]}"; do
+        CONFIG_FLAGS+=" -D$macro"
+    done
+fi
 
 XLEN=32 python3 "$VORTEX_HOME/ci/gen_config.py" \
     --config "$VORTEX_HOME/VX_config.toml" \
@@ -104,7 +139,9 @@ XLEN=32 python3 "$VORTEX_HOME/ci/gen_config.py" \
     -DVX_CFG_DCACHE_LATENCY=3 \
     -DVX_CFG_PLATFORM_MEMORY_NUM_BANKS=1 \
     -DVX_CFG_PLATFORM_MEMORY_INTERLEAVE=0 \
-    -DVX_CFG_PLATFORM_CLOCK_RATE=250 \
+    -DVX_CFG_PLATFORM_CLOCK_RATE="$CLOCK_MHZ" \
+    ${EXT_MACROS[@]+"${EXT_MACROS[@]/#/-D}"} \
+    ${EXT_INCLUDES[@]+"${EXT_INCLUDES[@]/#/-I}"} \
     -I"$CONFIG_DIR" \
     -I"$VORTEX_HOME/hw/rtl" \
     -I"$VORTEX_HOME/hw/rtl/libs" \
@@ -165,7 +202,8 @@ for macro in \
     'VX_CFG_DCACHE_LATENCY=3' \
     'VX_CFG_PLATFORM_MEMORY_NUM_BANKS=1' \
     'VX_CFG_PLATFORM_MEMORY_INTERLEAVE=0' \
-    'VX_CFG_PLATFORM_CLOCK_RATE=250'; do
+    "VX_CFG_PLATFORM_CLOCK_RATE=$CLOCK_MHZ" \
+    ${EXT_MACROS[@]+"${EXT_MACROS[@]}"}; do
     if ! grep -Fq "VERILOG_MACRO \"$macro\"" "$QSF_FRAGMENT"; then
         echo "error: missing generated macro: $macro" >&2
         exit 1
@@ -182,9 +220,38 @@ SEARCH_PATH="$PROJECT_DIR,$PROJECT_DIR/rtl/board_mgmt,$GENERATED_DIR,\$"
         --rev="$PROJECT_NAME" \
         --system-file="$SYSTEM_NAME.qsys" \
         --search-path="$SEARCH_PATH" \
-        --cmd="set vx_de10pro_project_dir {$PROJECT_DIR}" \
+        --cmd="set vx_de10pro_project_dir {$PROJECT_DIR}; \
+               set vortex_clock_mhz $CLOCK_MHZ.0" \
         --script="$INTEGRATION_SCRIPT"
 )
+
+# save_system freezes every instance into a generic component, so the IOPLL's
+# desired frequency can no longer be set through the integration script once the
+# instance exists, and recreating the instance would drop the dynamic-clock MIF
+# parameters that only the profile flow installs. Patch the child IP instead and
+# let qsys-generate re-solve the M and C counters, which is what derive_pll_clocks
+# reads and therefore what timing analysis signs off.
+mapfile -t IOPLL_IP_RELS < <(
+    grep -Eo 'ip/pcie_ddr4_system/pcie_ddr4_system_vortex_iopll(_[0-9]+)?\.ip' \
+        "$SYSTEM_FILE" | sort -u
+)
+if [[ ${#IOPLL_IP_RELS[@]} -ne 1 ]]; then
+    echo "error: expected one Vortex IOPLL child IP in $SYSTEM_FILE" >&2
+    exit 1
+fi
+IOPLL_IP=$PROJECT_DIR/${IOPLL_IP_RELS[0]}
+DESIRED_MHZ=$CLOCK_MHZ.0 perl -0pi -e \
+    's{(<ipxact:parameter parameterId="gui_output_clock_frequency0".*?<ipxact:value>)[^<]*(</ipxact:value>)}{$1$ENV{DESIRED_MHZ}$2}s' \
+    "$IOPLL_IP"
+if ! grep -A3 -F 'parameterId="gui_output_clock_frequency0"' "$IOPLL_IP" \
+     | grep -Fq "<ipxact:value>$CLOCK_MHZ.0</ipxact:value>"; then
+    echo "error: could not set the Vortex IOPLL frequency in $IOPLL_IP" >&2
+    exit 1
+fi
+# qsys-generate treats an existing output directory as up to date and skips the
+# IP, so the frequency above would only take effect on some later run. Drop the
+# directory to force the solver to run against it now.
+rm -rf "${IOPLL_IP%.ip}"
 
 (
     cd "$PROJECT_DIR"
@@ -194,6 +261,26 @@ SEARCH_PATH="$PROJECT_DIR,$PROJECT_DIR/rtl/board_mgmt,$GENERATED_DIR,\$"
         --rev="$PROJECT_NAME" \
         --search-path="$SEARCH_PATH"
 )
+
+# Check what the solver actually produced, not what it was asked for. The
+# desired frequency is only an input; derive_pll_clocks reads these counters,
+# so they are what timing analysis signs off. Asserting the input instead would
+# pass while the fabric still ran at the old rate.
+IOPLL_PARAMS=$(find "${IOPLL_IP%.ip}" -name '*_parameters.tcl' -type f | sort | head -1)
+if [[ -z $IOPLL_PARAMS ]]; then
+    echo "error: the Vortex IOPLL did not regenerate: no parameters file" >&2
+    exit 1
+fi
+IOPLL_MULT=$(sed -n 's/.*outclk0 multiply_by \([0-9]\+\).*/\1/p' "$IOPLL_PARAMS" | head -1)
+IOPLL_DIV=$(sed -n 's/.*outclk0 divide_by \([0-9]\+\).*/\1/p' "$IOPLL_PARAMS" | head -1)
+# The board feeds this PLL a 50 MHz reference; integrate_vortex.tcl sets it.
+if [[ -z $IOPLL_MULT || -z $IOPLL_DIV ]] \
+   || (( 50 * IOPLL_MULT % IOPLL_DIV != 0 )) \
+   || (( 50 * IOPLL_MULT / IOPLL_DIV != CLOCK_MHZ )); then
+    echo "error: the Vortex IOPLL solved to 50 x ${IOPLL_MULT:-?}/${IOPLL_DIV:-?} MHz," \
+         "not $CLOCK_MHZ MHz" >&2
+    exit 1
+fi
 
 if [[ ! -f "$PCIE_DUT_QIP" || "$PCIE_DUT_IP" -nt "$PCIE_DUT_QIP" ]]; then
     "$QSYS_GENERATE" "$PCIE_DUT_IP" \
@@ -404,6 +491,7 @@ echo "Prepared: $PROJECT_DIR"
 echo "Profile: RV32, $NUM_CORES core(s), $NUM_WARPS warp(s), $NUM_THREADS thread(s), DDR4A"
 echo "Control window: BAR0 + 0x1000"
 echo "Board manager: BAR0 + 0x2000"
-echo "Vortex clocks: 100/125/200/250 MHz in one SOF; initial 250 MHz"
+echo "Vortex clocks: 100/125/200/250 MHz in one SOF; initial $CLOCK_MHZ MHz, the"
+echo "               only rate timing analysis covers"
 echo "Source fragment: $QSF_FRAGMENT"
 echo "Quartus compilation and board programming were not invoked."
