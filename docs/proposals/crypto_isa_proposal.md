@@ -28,11 +28,13 @@ not on the GCM critical path.
 ### Workload shape
 
 One independent GCM message per thread, one shared key, a distinct 96-bit IV
-per message, empty AAD. Both halves of GCM are then parallel across threads:
-counter-mode encryption is parallel by construction, and the GHASH chain is
-serial only within a message. This matches the shape a hardware GHASH would
-need, which keeps per-warp or per-lane state, and it models a server handling
-many independent records rather than one long stream.
+per message, and an AAD shared by every message -- empty in every recorded row,
+though both kernels implement it (sections 12 and 16.1). Both halves of GCM are
+then parallel across threads: counter-mode encryption is parallel by
+construction, and the GHASH chain is serial only within a message. This matches
+the shape a hardware GHASH would need, which keeps per-warp or per-lane state,
+and it models a server handling many independent records rather than one long
+stream.
 
 ### Tables live in local memory
 
@@ -120,48 +122,68 @@ and must be found before a number is recorded.
 
 ## 5. Recorded baseline
 
-Configuration `c1w4t32`: one core, four warps, 32 threads, therefore
-`SIMD_WIDTH=32` and `ISSUE_WIDTH=1`. Message count is set to the thread count
-so every lane carries exactly one message with no tail. The tree's checked-in
-shape is `c1w4t4`, so the thread count is a build override and has to be
-carried on every run that is compared against these numbers:
+Configuration `c2w4t16`: two cores, four warps, 16 threads, therefore
+`SIMD_WIDTH=16` and `ISSUE_WIDTH=1`. Section 11 moved the record to this shape
+because `c1w4t32` misses sign-off Fmax by 7% and cannot be built into a
+bitstream. Message count is set to the lane count so every lane carries exactly
+one message with no tail. The tree's checked-in shape is `c1w4t4`, so cores and
+threads are a build override, and it has to be carried on every run compared
+against these numbers -- on a `run-<driver>` target, because `CONFIGS` handed to
+a test directory rebuilds only the kernel while the shape lives in the driver
+(section 15.2):
 
 ```
-CONFIGS="-DVX_CFG_NUM_THREADS=32" OPTS="-n128 -b64 -i0" make run-simx
+CONFIGS="-DVX_CFG_NUM_CORES=2 -DVX_CFG_NUM_THREADS=16" OPTS="-n128 -b64 -i0" \
+  make -C tests/crypto/aes_gcm run-rtlsim
 ```
 
-128 messages of 64 blocks: 8192 blocks, 131072 bytes.
+128 messages of 64 blocks: 8192 blocks, 131072 bytes, empty AAD, no tail.
 
 | | simx | rtlsim |
 | --- | ---: | ---: |
-| cycles | 12,255,505 | 14,247,819 |
-| instrs | 1,229,052 | 1,229,052 |
-| cycles/block | 1496.03 | 1739.24 |
-| bytes/cycle | 0.0107 | 0.0092 |
+| cycles | 9,195,286 | 9,380,132 |
+| instrs | 2,474,230 | 2,474,230 |
+| cycles/block | 1122.47 | 1145.04 |
+| bytes/cycle | 0.0143 | 0.0140 |
 
-Retired instruction counts agree exactly. The cycle gap is 16.3% at this size
-and 6.3% at `-n64 -b4`, so it grows with the problem; that is a modelling
-discrepancy to resolve before a `model_parity` gate can cover these cases, not
-a tolerance to widen.
+Retired instruction counts agree exactly. The cycle gap is **1.97%**, against
+16.3% at the `c1w4t32` shape this row used to be recorded at, so the modelling
+discrepancy that gap represents is largely a property of that shape rather than
+of this workload.
 
-Steady-state evidence, simx, `-n128`:
+Steady-state evidence, rtlsim, `-n128`:
 
 | blocks/msg | cycles | ratio |
 | ---: | ---: | ---: |
-| 16 | 3,241,766 | |
-| 32 | 6,202,459 | 1.913 |
-| 64 | 12,255,505 | 1.976 |
+| 16 | 2,585,284 | |
+| 32 | 4,777,489 | 1.848 |
+| 64 | 9,380,132 | **1.963** |
 
-`-b64` is the first size inside the gate. Below it the fixed cost — the local
-memory fill plus launch, about 137k cycles by a two-point fit — is still
-visible.
+`-b64` is the first size inside the gate, as it was at the old shape.
+
+The floor for this kernel -- the distance between two entry points that cannot
+differ -- is measured in section 16.2 and runs **0.16% to 0.47%** across these
+three sizes, instruction-identical at each. Nothing under about half a per cent
+from this application is legible.
+
+**What this replaced, and why three things moved at once.** This row previously
+read 12,255,505 (simx) / 14,247,819 (rtlsim) with 1,229,052 instructions, at
+`c1w4t32`, from a kernel with no AAD and no partial-block support. Since then the
+recorded shape changed (section 11), the kernel gained AAD and partial blocks
+(section 12), and it gained a floor probe that cost it 8 instructions and 0.445%
+(section 16.2). Instruction counts do not compare across the two shapes at all:
+a 16-lane warp needs twice the warp-instructions for the same lane-work.
 
 Provenance:
 
-- commit `6533ce29fc2f44572b2bc3e6144f594bbd96e635`
-- `VX_config.toml` sha256 `3f020a15364555da8da610b5f78501f670299440685846fb40bb0f757593fb93`
-- `VX_types.toml` sha256 `2e22f4fbac08fe54036ee80b01116615f7675bb7cc512f6de77571ca5d91f877`
+- measured on the tree as committed with this section, parent `74f068551`
+- crypto units off; `CONFIGS="-DVX_CFG_NUM_CORES=2 -DVX_CFG_NUM_THREADS=16"`
 - clang 20.1.8 (vortexgpgpu/llvm 4c836512)
+- every row: `make` exit status recorded, the shape asserted from the
+  application's own banner rather than from the label passed in, and the
+  application's counter line required to agree with the runtime's `PERF:` line
+- three rtlsim runs at the recorded point returned identical cycle and
+  instruction counts
 
 ## 6. The second baseline: ChaCha20-Poly1305
 
@@ -205,73 +227,95 @@ field that compares between them.
 
 ### Recorded baseline
 
-Same configuration as section 5, same override:
+Same configuration as section 5, the same override, and the same form of
+invocation for the same reason:
 
 ```
-CONFIGS="-DVX_CFG_NUM_THREADS=32" OPTS="-n128 -b16 -i0" make run-simx
+CONFIGS="-DVX_CFG_NUM_CORES=2 -DVX_CFG_NUM_THREADS=16" OPTS="-n128 -b16 -i0" \
+  make -C tests/crypto/chacha_poly run-rtlsim
 ```
+
+128 messages of 16 blocks: 2048 blocks, 131072 bytes, empty AAD, no tail.
 
 | | simx | rtlsim |
 | --- | ---: | ---: |
-| cycles | 2,258,400 | 2,548,408 |
-| instrs | 175,512 | 175,512 |
-| cycles/block (64 B) | 1102.73 | 1244.34 |
-| bytes/cycle | 0.0580 | 0.0514 |
+| cycles | 1,435,309 | 1,469,082 |
+| instrs | 351,144 | 351,144 |
+| cycles/block (64 B) | 700.83 | 717.32 |
+| bytes/cycle | 0.0913 | 0.0892 |
 
-Retired instruction counts agree exactly; the cycle gap is 12.8%.
+Retired instruction counts agree exactly; the cycle gap is 2.30%.
+
+This kernel implements AAD and partial final blocks as of section 16.1, and the
+row above is taken at `-a0 -t0` -- which is what keeps it comparable with the
+aes_gcm row, not a statement that the feature is absent.
+
+The floor for this application at this shape is the sweep in section 16.2:
+**0.81% to 2.26%**, and the widest sample sits at `-b16`, the size this row is
+recorded at. Nothing here under about 2.3% is legible.
 
 ### The steady-state gate no longer passes at the comparison point
 
-Steady-state evidence, simx, `-n128`:
+Steady-state evidence, rtlsim, `-n128`:
 
 | blocks/msg | bytes/msg | cycles | ratio |
 | ---: | ---: | ---: | ---: |
-| 8 | 512 | 1,190,454 | |
-| 16 | 1024 | 2,258,400 | 1.897 |
-| 32 | 2048 | 4,579,135 | 2.028 |
+| 4 | 256 | 583,551 | |
+| 8 | 512 | 865,866 | 1.484 |
+| 16 | 1024 | 1,469,082 | 1.697 |
+| 32 | 2048 | 2,779,520 | 1.892 |
 
-`-b16` is **outside** the `[1.96, 2.04]` gate of section 4; `-b32` is inside it.
-An earlier revision of this kernel passed at `-b16` with 1.984, and what moved
-is the kernel rather than the measurement: fusing the keystream into the XOR
-(section 9) cut the per-block cost, which raises the share taken by the
-per-message cost that does not scale with the payload -- the counter-zero
-ChaCha20 block, the Poly1305 setup and the tag. A two-point fit puts that fixed
-term at about 122.5k cycles, 5.4% of the total at `-b16`.
+Every ratio is **outside** the `[1.96, 2.04]` gate of section 4, and the gap is
+wider than when this row was recorded at `c1w4t32`, where `-b16` read 1.897.
+Two changes push the same way: fusing the keystream into the XOR (section 9) cut
+the per-block cost, and the AAD and partial-block support of section 16.1 added
+per-message cost. Both raise the share of the total that does not scale with the
+payload -- the counter-zero ChaCha20 block, the Poly1305 setup, the trailer and
+the tag.
+
+A two-point fit over `-b8` and `-b16`, the pair this section used before, puts
+that fixed term at about **263k cycles, 17.9% of the total at `-b16`**, against
+5.4% when it was first written. The `-b16`/`-b32` pair gives 159k, 10.8%. The
+two disagree because the per-block cost is itself still falling with size here,
+which is the same fact the failing gate reports rather than a second problem.
 
 The gate is left failing rather than resolved, and the recorded row stays at
-`-b16`. The alternative is to record `-b32`, which passes the gate and destroys
-the one thing that makes this application comparable to aes_gcm at all: 1024
-bytes per message on both sides. A gate calibrated against a kernel with a
-larger per-block cost necessarily loosens when that cost is cut, so it failing
-here is a consequence of the fusion working rather than evidence against the
-number. The fixed-cost share is stated above so that a reader can discount it
-explicitly instead of trusting the gate to have done it.
+`-b16`, for the reason it always was: `-b32` passes and destroys the one thing
+that makes this application comparable to aes_gcm at all, 1024 bytes per message
+on both sides. What has changed is that the fixed share is now large enough to
+belong in the reading of the cross-algorithm ratio below, not in a footnote: a
+sixth to a fifth of this row is per-message work, and aes_gcm's per-message work
+is a far smaller share of a far larger number.
 
 Provenance:
 
-- commit `4e7ee9c4d`, crypto units off,
-  `CONFIGS="-DVX_CFG_NUM_THREADS=32"`
+- measured on the tree as committed with this section, parent `74f068551`,
+  crypto units off,
+  `CONFIGS="-DVX_CFG_NUM_CORES=2 -DVX_CFG_NUM_THREADS=16"`
 - clang 20.1.8 (vortexgpgpu/llvm 4c836512)
-- every row re-taken after a concurrent-build hazard was identified in this
-  shared tree: `make` exit status recorded, the driver `.so` mtime compared
-  across each build, the `CONFIGS` banner checked for the warp, thread and
-  unit-enable values actually requested, and the application's counter line
-  required to agree with the runtime's `PERF:` line. All rows passed. A build
-  that silently does not run leaves the mtime unchanged and is otherwise
-  invisible: it yields a plausible number from a stale binary.
+- every row: `make` exit status recorded, the driver `.so` mtime compared across
+  each build, the shape asserted from the application's own banner rather than
+  from the label passed in, and the application's counter line required to agree
+  with the runtime's `PERF:` line. All rows passed. A build that silently does
+  not run leaves the mtime unchanged and is otherwise invisible: it yields a
+  plausible number from a stale binary.
+- three rtlsim runs at the recorded point returned identical cycle and
+  instruction counts (1,469,082 / 351,144)
+- the same row with both crypto units enabled returns identical cycles and
+  instructions, so the units cost nothing to a kernel that does not use them
 
 ### What the two rows say
 
-Both applications measured in the same tree at the same commit, because
-section 5's rows no longer reproduce exactly (section 8):
+Both applications measured in the same tree at the same commit, at the same
+shape, with both kernels implementing the same feature set:
 
 | `-n128`, 131072 bytes | aes_gcm | chacha_poly | ratio |
 | --- | ---: | ---: | ---: |
-| cycles, simx | 12,224,492 | 2,258,400 | 5.41 |
-| cycles, rtlsim | 14,379,377 | 2,548,408 | 5.64 |
-| instrs | 1,229,052 | 175,512 | 7.00 |
+| cycles, simx | 9,195,286 | 1,435,309 | 6.41 |
+| cycles, rtlsim | 9,380,132 | 1,469,082 | **6.39** |
+| instrs | 2,474,230 | 351,144 | 7.05 |
 
-The software ChaCha20-Poly1305 is five times faster and needs seven times fewer
+The software ChaCha20-Poly1305 is six times faster and needs seven times fewer
 instructions than the software AES-GCM over the same bytes. That is not a defect
 in the AES baseline. AES on this machine is a table lookup and a GF(2^128)
 multiply, neither of which the ISA supports at all, while ChaCha20 is adds,
@@ -283,8 +327,10 @@ very different headroom, and a speedup quoted without naming its baseline says
 nothing. Where the ChaCha20 headroom is can be stated exactly: `rv32imaf` has
 no rotate, so each of the four rotates in a quarter-round compiles to
 `slli`/`srli`/`or`, and eighty quarter-rounds per block put 960 instructions of
-rotation into a block that costs about 2611 instructions per lane at the margin
-(the `-b8` to `-b16` instruction delta, per warp, per block). Thirty-seven per
+rotation into a block that costs about 2597 instructions per lane at the margin
+(the `-b8` to `-b16` instruction delta, per warp, per block; it was 2611 at the
+old shape, because warp-instructions per block do not depend on the shape while
+each lane holds one message). Thirty-seven per
 cent of the block is the ISA's missing rotate. Section 9 implements that rotate
 and measures what removing it is worth, which is not what this paragraph would
 lead a reader to expect.
@@ -579,28 +625,50 @@ also checked directly against the assembler: `6105d513` disassembles as
 
 ### Recorded
 
-`c1w4t32`, `-n128 -b16`, 131072 bytes, both units enabled:
+`c2w4t16`, `-n128 -b16`, 131072 bytes, both units enabled:
 
 ```
-CONFIGS="-DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_NUM_THREADS=32" \
-  OPTS="-n128 -b16 -i{0,1}" make run-simx
+CONFIGS="-DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE \
+  -DVX_CFG_NUM_CORES=2 -DVX_CFG_NUM_THREADS=16" \
+  OPTS="-n128 -b16 -i{0,1}" make -C tests/crypto/chacha_poly run-rtlsim
 ```
 
 | | sw | rori | ratio |
 | --- | ---: | ---: | ---: |
-| cycles, rtlsim | 2,548,408 | 2,513,410 | 1.014 |
-| cycles, simx | 2,258,400 | 2,229,517 | 1.013 |
-| instrs | 175,512 | 131,792 | 1.332 |
-| cycles/block (64 B), rtlsim | 1244.34 | 1227.25 | |
+| cycles, rtlsim | 1,469,082 | 1,671,111 | **0.879** |
+| cycles, simx | 1,435,309 | 1,646,897 | 0.872 |
+| instrs | 351,144 | 265,488 | 1.323 |
+| cycles/block (64 B), rtlsim | 717.32 | 815.97 | |
 
-**A third of the instructions removed, and no cycle change this apparatus can
-resolve.** The 1.4% is below the widest floor sample measured for this
-application and is withdrawn as a result; see "What this apparatus can resolve"
-below. Both simulators agree on its sign and very nearly on its size, which is
-determinism rather than significance. The instruction ratio, 1.332x, is exact
-and is what this row actually establishes.
+**A third of the instructions removed, and the kernel is 13.8% slower.** That
+reverses the sign of what this row used to record, and the reversal is not
+subtle: 13.8% is six times the widest floor sample this application produces at
+this shape (2.264%, section 16.2).
 
-The `sw` row here and section 6's are the same number, 2,548,408 / 175,512 on
+What moved was the kernel, not the shape. Both entry points were measured before
+and after the AAD and partial-block work of section 16.1, at this configuration,
+on rtlsim:
+
+| | before | after | move | instrs before | after |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| sw | 1,599,484 | 1,469,082 | **-8.153%** | 351,024 | 351,144 |
+| rori | 1,575,430 | 1,671,111 | **+6.073%** | 263,584 | 265,488 |
+
+One source change, applied to one templated body, moved its two instantiations
+**in opposite directions by 8% and 6%**. Neither instruction count moved by more
+than three quarters of a per cent (+0.034% and +0.722%). Whatever this is, it is not the rotate, and it is the same
+unattributed layout effect that section 16.4 finds on both applications and
+cannot account for.
+
+So the honest reading of the recorded row is unchanged in substance from the
+version that read +1.4%: **the instruction ratio, 1.323x, is exact and is what
+this row establishes.** The cycle ratio has now been measured on both sides of
+unity at the same configuration with the same two instruction streams, which is
+a statement about this apparatus rather than about the B extension. It remains
+an argument against building a fused xor-rotate, and a stronger one than before:
+a third of the instructions is not reliably worth anything here.
+
+The `sw` row here and section 6's are the same number, 1,469,082 / 351,144 on
 rtlsim, measured once with the units off and once with them on. That is the
 check section 8 ran for aes_gcm, and it passes here too: a kernel that issues no
 crypto instruction is unaffected by the units existing. The check is only worth
@@ -618,7 +686,10 @@ is bit-identical by construction rather than merely equivalent, since the four
 touch disjoint columns. Two kernels that cannot differ, so the distance between
 them is the floor.
 
-Sampled across problem size, rtlsim, `-n128`, everything else fixed:
+Sampled across problem size, rtlsim, `-n128`, everything else fixed. This sweep
+was taken at `c1w4t32` on the kernel as it stood before section 16.1; the same
+sweep at the recorded shape on the current kernel is in section 16.2, and it
+does not agree size for size:
 
 | blocks/msg | sw | sw_perm | distance |
 | ---: | ---: | ---: | ---: |
@@ -1411,7 +1482,9 @@ rather than attributed.
 does not survive is any claim that the difference between them means something.
 Until the software kernel has a floor probe of its own, the ratio at this
 configuration should be treated as bounded below by roughly 12x rather than
-quoted at a point.
+quoted at a point. **Closed in section 16.2**: that kernel now has a probe of its
+own, its floor is 0.16% to 0.47%, and section 16.5 says what the ratio may be
+quoted as.
 
 ## 13. Should S2 be built? Measured answer: no for GHASH, and not in the S2 shape for AES
 
@@ -1621,7 +1694,10 @@ both shapes were likewise shape-verified.
 | c1w4t32 | 32 | 14,379,377 | 15,328,651 | **+6.60%** | 1,061,573 | 1,032,241 | **-2.76%** |
 | c2w4t16 | 16 | 7,744,779 | 9,338,582 | **+20.58%** | 655,712 | 597,233 | **-8.92%** |
 
-**Confirmed, and more sharply than the prediction required.** Halving the LMEM
+**Confirmed, and more sharply than the prediction required** -- but see
+section 16.4, which measures the same shape pair on a kernel with no local
+memory and on a second perturbation of this one, and finds the scaling does not
+generalise. Halving the LMEM
 banks multiplies the movement by **3.1x on the software kernel and 3.2x on the
 hardware kernel** -- two kernels whose movements have *opposite signs*, scaling
 by the same factor. Random layout scatter does not do that. A mechanism that
@@ -1673,3 +1749,206 @@ its *shape label* is unverified. Deltas keep; shape attributions do not. The
 floor probe (-4.68%) and the round-key probe (-14.14%) were both of this form.
 Their labels are now confirmed independently: 597,233 reproduces exactly at a
 driver-verified c2w4t16.
+
+## 16. Both baselines re-recorded at one configuration, and the software floor measured
+
+Four things were stale at once, and they interact, so they are fixed in one pass
+rather than four.
+
+1. Sections 5, 6 and 9 recorded their rows at `c1w4t32`. Section 11 moved the
+   recorded configuration to `c2w4t16`, the shape whose bitstream closes timing,
+   and did not move them.
+2. Sections 5 and 8 predate the AAD and partial-block work of section 12, which
+   moved the software kernel by a fifth.
+3. `chacha_poly` did not implement AAD or partial blocks at all. Section 6's
+   claim that the two baselines "differ in their algorithm and in nothing else"
+   had stopped being true, and the cross-algorithm row was comparing an AEAD
+   that authenticates a header against one that could not.
+4. Section 12 left the software kernel with no floor probe of its own, so its
+   +19.1% could not be told from layout noise. The probe that existed reverses
+   statements inside `ghash_mul_hw`, which that kernel never calls: it read
+   0.00%, byte-identical, and bounded nothing.
+
+### 16.1 ChaCha20-Poly1305 gains AAD and partial blocks
+
+`tests/crypto/chacha_poly` now implements the parts of RFC 8439 section 2.8 it
+previously did not: AAD absorbed before any ciphertext and never encrypted, a
+partial final ChaCha20 block whose keystream is consumed only `tail` bytes deep,
+and a trailer carrying `le64(len(AAD)) || le64(len(C))` rather than
+`le64(0) || le64(len(C))`. The host reference already supported all three and
+level 1 already checked the RFC's section 2.8.2 vector against its published
+tag -- 12 bytes of AAD over a 114-byte payload, so both pads and both lengths.
+What was missing was on the device, which is the half the measurements run on.
+
+One thing differs from GCM, and it removes a case rather than adding one:
+RFC 8439's `pad16` zero-fills the AAD and the ciphertext to a whole 16-byte
+boundary before Poly1305 sees either, so **every Poly1305 block in this AEAD is
+a full block**. Poly1305's partial-block rule -- the 0x01 byte moving to the
+fragment's end -- is unreachable here. GHASH has no padding rule of its own,
+which is why aes_gcm's kernel pads into a buffer and this one does not need to.
+
+Level 2 now passes **30/30** on the software entry points: AAD lengths
+0/1/16/20/33 crossed with tails 0/5/37 -- a fragment shorter than one
+authentication block and one spanning three of them -- on both `sw` and the
+floor probe. With the units enabled it passes 8/8 across `rori` and aes_gcm's
+hardware kernel. Both apps also gained CI cases for the AAD and tail paths,
+which had none: every case in `ci/testcases/crypto.yaml` ran at `-a0 -t0`.
+
+### 16.2 A floor probe for the software AES kernel
+
+`aes_gcm_sw_ttable_perm` computes the four column words of each AES round in
+reverse order. They are independent -- each reads the whole state and the round
+key and writes only its own temporary -- so it is bit-identical by construction,
+and unlike the existing probe it perturbs the hot path of the kernel being
+measured rather than a function that kernel never calls.
+
+It passes section 9's validity condition more cleanly than any probe here so
+far: **the instruction counts are exactly equal at every problem size**, not
+merely fixed. That is the strongest form the condition can take.
+
+Sampled across problem size, rtlsim, `c2w4t16`, `-n128`:
+
+| blocks/msg | sw_ttable | sw_perm | distance | instr delta |
+| ---: | ---: | ---: | ---: | ---: |
+| 16 | 2,585,284 | 2,597,353 | **+0.467%** | 0 |
+| 32 | 4,777,489 | 4,785,114 | +0.160% | 0 |
+| 64 | 9,380,132 | 9,405,033 | +0.265% | 0 |
+
+**The software AES kernel's floor is 0.16% to 0.47% at the recorded shape.**
+simx disagrees: it reads +0.113%, -0.046% and **-0.928%**, the last wider than
+anything rtlsim shows and pointing the other way. Section 4 makes rtlsim
+authoritative, and this is a case where that matters -- taking simx's `-b64`
+sample would have set the floor twice as wide, and with the opposite sign.
+
+The chacha_poly probe was re-swept at the same shape after its kernel changed:
+
+| blocks/msg | sw | sw_perm | distance | instr delta |
+| ---: | ---: | ---: | ---: | ---: |
+| 4 | 583,551 | 588,279 | +0.810% | +24 |
+| 8 | 865,866 | 874,898 | +1.043% | +24 |
+| 16 | 1,469,082 | 1,502,336 | **+2.264%** | +24 |
+| 32 | 2,779,520 | 2,807,301 | +0.999% | +24 |
+
+The delta is fixed at +24 across an eightfold change in problem size, so the
+probe is still valid; it was +4 before the AAD work, which is what a probe of a
+larger body looks like.
+
+**All seven rtlsim samples across the two applications are positive**: at this
+shape the reversed order is uniformly the slower one. The `c1w4t32` sweep in
+section 9 alternated in sign and was read there as the shape scheduling variance
+should have. This one does not alternate, which is section 14's claim that the
+floor has a sign showing up as a measurement rather than as an inference -- and
+it means treating the floor as a symmetric error bar is, at this shape,
+measurably wrong in a known direction. **The `-b16` sample moved from -0.051% to +2.264%** --
+same probe, same shape, same size, different kernel -- and `-b16` is the size
+this application's row is recorded at. A floor belongs to a kernel at a shape,
+not to a machine, and it has to be re-measured when the kernel changes.
+
+### 16.3 The joint table
+
+Everything at `c2w4t16`, `-n128`, 131072 bytes, rtlsim, one tree, one commit.
+The two software rows are sections 5 and 6; the other two are what they are
+compared against.
+
+| | aes_gcm sw | aes_gcm hw_s1 | chacha_poly sw | chacha_poly rori |
+| --- | ---: | ---: | ---: | ---: |
+| cycles | 9,380,132 | 594,958 | 1,469,082 | 1,671,111 |
+| instrs | 2,474,230 | 212,162 | 351,144 | 265,488 |
+| bytes/cycle | 0.0140 | **0.2203** | 0.0892 | 0.0784 |
+
+- **AES-GCM: 15.77x** for the S1 instruction set over its software baseline.
+- **ChaCha20-Poly1305: 0.88x** for `rori` -- a third fewer instructions and 14%
+  *more* cycles. Section 9 records what that reverses.
+- Across algorithms, the software AES-GCM costs **6.39x** the cycles and 7.05x
+  the instructions of the software ChaCha20-Poly1305 over the same bytes.
+
+### 16.4 The price of the two changes, and what it does to section 15
+
+Both changes were measured before and after in this tree, at both shapes, with
+every row's shape asserted from the application's own banner:
+
+| shape | kernel | change | before | after | move | instrs |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| c2w4t16 | chacha_poly sw | AAD + tail | 1,599,484 | 1,469,082 | **-8.153%** | +120 |
+| c1w4t32 | chacha_poly sw | AAD + tail | 2,548,408 | 2,546,918 | **-0.058%** | +60 |
+| c2w4t16 | aes_gcm sw | probe refactor | 9,338,582 | 9,380,132 | **+0.445%** | +8 |
+| c1w4t32 | aes_gcm sw | probe refactor | 15,328,651 | 15,754,074 | **+2.775%** | +4 |
+
+Three of the four `before` rows reproduce numbers already in this document --
+2,548,408 in section 9's sweep, 9,338,582 in section 12, 15,328,651 in section
+15.1 -- **to the cycle**. The fourth, 1,599,484, was measured in a peer session
+and never recorded here; it reproduced to the cycle as well, as did that
+session's whole `c2w4t16` size sweep (540,892 / 899,464 / 3,062,616). That is the
+check that this apparatus and the one those numbers came from are the same
+apparatus, and it is the reason the before/after rows can be read as a
+difference rather than as two measurements.
+
+**Adding a feature made ChaCha20-Poly1305 8.2% faster.** Instructions went the
+other way, by +0.034%. Decomposed over the size sweep, per-block cycles fell
+12.9% (90,061 to 78,427) while per-block *instructions* fell 0.38% (20,856 to
+20,776), and the fixed per-message cost rose 49% in cycles for 8% in
+instructions. A 34-fold disproportion between the cycle change and the
+instruction change is not an instruction-count effect. It is the same class of
+thing as section 12's unexplained +19.1%, in the favourable direction, on a
+kernel that requests **no local memory at all**.
+
+**That is a problem for section 15's account, and the problem is the
+generalisation rather than the measurement.** Section 15 found the post-AAD
+movement 3.1x larger at 16 LMEM banks than at 32 and concluded that a mechanism
+acting through bank conflicts was at work. Two things here do not fit:
+
+- chacha_poly's movement is **140x** larger at `c2w4t16` than at `c1w4t32`, and
+  it has no local memory for a bank conflict to form in. Whatever sets the scale
+  of layout movement between these two shapes is available to a kernel with
+  `lmem_size = 0`.
+- aes_gcm's movement under a *different* perturbation runs the **opposite** way
+  between the same two shapes -- 6.2x larger at `c1w4t32`, the 32-bank shape. If
+  bank count set the scale, the ordering would not depend on which
+  bit-identical-by-construction change is applied.
+
+So "halving the LMEM banks multiplies the movement by 3.1x" describes one
+perturbation of one kernel. It does not describe the phenomenon, and section
+15's own caveat -- that the two shapes differ in cores, threads, LMEM banks and
+D-cache banks at once -- was carrying more weight than it was given credit for.
+What survives is section 14.1's narrower claim, now with a second and much
+larger counterexample: **layout sensitivity here is not an LMEM-bank effect, and
+no mechanism proposed so far accounts for its size.**
+
+### 16.5 What this closes
+
+**Section 12's open item is closed.** It said the ratio at this configuration
+should be treated as bounded below by roughly 12x rather than quoted at a point,
+because the software kernel had no floor probe of its own. It has one now, and
+its floor is 0.16% to 0.47% -- so the ratio can be quoted: **15.77x**, with the
+resolution set by the *hardware* endpoint, whose own probe ranges up to 4.68%
+(section 12). Read it as **15.8x with a floor of about 5%**, and note that the
+uncertainty now sits entirely on the instruction-set side of the comparison.
+
+**The +19.1% is real and still unexplained.** It is forty times the software
+kernel's floor at this shape, so it was never measurement scatter; section 15
+attributes part of it to bank conflicts and 16.4 says why that cannot be the
+whole account.
+
+**The simx-versus-rtlsim gap is largely a property of the old shape.** Section 5
+recorded 16.3% at `c1w4t32` and called it a modelling discrepancy to resolve
+before a `model_parity` gate could cover these cases. At `c2w4t16` it is
+**1.97%** for aes_gcm and 2.30% for chacha_poly. That does not resolve the
+discrepancy, but it does relocate it.
+
+**Both AEAD kernels implement the same feature set again**, so section 6's
+cross-algorithm row compares like with like for the first time since section 12.
+
+### 16.6 What it does not close
+
+- **The mechanism of the layout movements**, on either kernel, in either
+  direction. Four measured pairs, and no account that fits all four.
+- **chacha_poly's steady-state gate**, which fails at every size measured and
+  fails wider than before. Section 6 states the fixed-cost share so a reader can
+  discount it explicitly rather than trust the gate to have done it.
+- **`rori`'s sign flip**, section 9. The instruction ratio is exact and stable;
+  the cycle ratio has now been measured on both sides of unity at the same shape
+  with the same instructions, which says more about this apparatus than about
+  the B extension.
+- **Whether AAD belongs in the measured configuration at all.** Every row here
+  is `-a0 -t0`. The feature is implemented, checked and regression-covered, but
+  nothing is measured *with* it, so its runtime cost is unrecorded.
