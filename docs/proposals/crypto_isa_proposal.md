@@ -1010,6 +1010,49 @@ scheduling variance, and any genuine difference between the two instructions.
 it.** The floor may be well below that, in which case part of the 7.4% is real
 signal about `ghred32` rather than noise.
 
+**Measured, and that is what happened.** The floor probe is the four `r0..r3`
+statements of the reduction, reversed: they touch disjoint accumulators and read
+only `p[]`, so their order carries no meaning. Instruction counts came out
+within 0.008%, which is what makes it a probe rather than a variant.
+
+| point | reference | reordered | cycle delta |
+| --- | ---: | ---: | ---: |
+| `w16t4` rtlsim | 625,745 | 627,642 | **+0.303%** |
+| `c1w4t32` rtlsim | 1,061,573 | 1,092,285 | **+2.89%** |
+| `c1w4t32` simx | 888,983 | 885,313 | **-0.41%** |
+
+The floor is **configuration-dependent**: about 0.3% at `t4` and about 2.9% at
+`c1w4t32` on rtlsim, an order of magnitude apart. simx moves the opposite way at
+the same point, which is the shape scheduling variance should have and a
+systematic effect should not.
+
+Against those floors the `ghred32` results are **real, not noise**:
+
+| measurement | effect | floor | ratio |
+| --- | ---: | ---: | ---: |
+| ghred, `w8t4` | +4.4% | 0.30% | 14.5x |
+| ghred, `w16t4` | +4.4% | 0.30% | 14.5x |
+| ghred, `c1w4t32` | +10.2% | 2.89% | 3.5x |
+| ilp, `w16t4` | +7.4% | 0.30% | 24x |
+| ghred, `w4t4` | -0.06% | 0.30% | 0.2x -- the only one inside the floor |
+
+So the previous section's conclusion was wrong in the direction of
+under-claiming: these are genuine findings that were about to be written off.
+The `ilp` row is the sharpest -- 24x the floor, with an instruction count 0.24%
+from the reference -- so **there is a real cost to using `ghred32` that is not
+instruction count, not serialisation, and not layout**. It shows up as loads
+(231,596 against 227,564) and load latency (21.93 against 16.62). The mechanism
+is not identified.
+
+A note on the probe that failed first, because the failure is instructive.
+Swapping the `i`/`j` loop order of the schoolbook accumulation is bit-identical
+by associativity and commutativity of XOR, so it looked like the ideal probe. It
+produced **1.24% more instructions**. A source transformation being
+semantically equivalent does not make it instruction-identical, and a probe that
+moves the instruction count cannot separate layout from content -- which was the
+exact flaw in using `ilp` as a probe. The instruction count has to be checked
+before the cycle number means anything.
+
 Measuring the floor properly needs a perturbation that is bit-identical by
 construction rather than merely semantically equivalent -- same instructions,
 different order. Two exist in this kernel: the four AES state words `t0..t3` in
@@ -1017,8 +1060,9 @@ a round are computed from disjoint inputs, so reordering them changes nothing;
 and the sixteen schoolbook partial products accumulate into `p[]` by XOR, so
 reordering the accumulation is exact. That test is not yet run.
 
-So the honest answer to "when does ghred32 pay" is: not measurable here, and the
-reason is not the instruction. On a machine 99-100% stalled on operands, with
+So the honest answer to "when does ghred32 pay" is: not here, and now with
+enough resolution to say that rather than to shrug. The regressions are 3.5x to
+24x the measured floor. The reason is still not instruction count -- On a machine 99-100% stalled on operands, with
 IPC between 0.1 and 0.68, **instruction count is not the currency** -- the issue
 slot is idle most of the time and removing work from it buys nothing. These
 instructions would pay on a machine that is issue-bound. Establishing that on
