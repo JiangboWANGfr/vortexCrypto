@@ -767,6 +767,37 @@ to schedule sixteen.
 
 ## 10. AES-GCM re-recorded, and what it does to section 8
 
+> **State of the AES-GCM measurements.** Sections 8 and 10 have been corrected
+> repeatedly as measurements replaced reasoning, and the corrections are left in
+> place rather than edited away. That is right for the record but leaves a
+> reader unable to tell what is currently live, so:
+>
+> **Established.** The hardware AES-GCM is **13.54x fewer cycles and 11.56x
+> fewer instructions** than the software baseline at `c1w4t32` -- both halves
+> verified under the build-log-and-mtime check, and the software figure
+> independently reproduced from another session's build. The crypto units never
+> backpressure at any point measured. What capped the earlier 2.67x was the
+> kernel's memory traffic, not the instruction set. Once that traffic is gone,
+> more warps help monotonically. The custom `ghred32` pair costs cycles rather
+> than saving them, by a margin above the widest floor sample observed.
+>
+> **Retracted.** That the gap between the instruction and cycle ratios was
+> dependency-chain latency. That the warp scan peaked at eight warps and
+> regressed at sixteen. That S2 can be ruled out. That ~60% of the memory
+> traffic was register spill. That `sp`-relative operations fell to zero after
+> the inlining fix. That losing instruction-level parallelism explains the
+> `ghred32` regression. That the apparatus has a characterisable resolution
+> floor.
+>
+> **Open.** Why using `ghred32` raises load count and load latency when
+> instruction count and static stack traffic are unchanged. Whether S2 is worth
+> building. What the floor actually is, given it varies by a factor of 23 across
+> problem size at a single application and configuration.
+>
+> Each retraction was replaced by a measurement rather than by a better
+> argument, and several were prompted by build32-73 checking work I had
+> published.
+
 ### Re-recorded: what the instruction set is worth once the kernel is not in the way
 
 The 2.67x in the table above was never an instruction-set number. It was
