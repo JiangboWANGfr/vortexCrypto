@@ -936,3 +936,53 @@ and the negative result is the finding -- but the recorded kernel uses the
 ratified `clmul` form. **The useful claim is that ratified Zbkc plus Zbkb
 captures essentially all of the available win here, and a custom fused
 instruction on top of them is worse than nothing.**
+
+### When would ghred32 pay? Below this method's resolution
+
+The question the negative result raises is not "why did it lose" but "under what
+conditions would it win". Three kernel variants were swept across three warp
+counts to find that crossing point:
+
+- **clmul** -- the ratified reduction, 9 clmul-class + 8 XOR.
+- **ghred** -- fused, 9 instructions. Saves 8, serialises two multiplies per limb.
+- **ilp** -- fused but with a zero accumulator so the two multiplies per limb stay
+  independent. **Identical instruction count to clmul**, so it isolates
+  serialisation from everything else.
+
+rtlsim, `t4`, `-b64`, one message per lane, cycles:
+
+| warps | clmul | ghred | ilp |
+| ---: | ---: | ---: | ---: |
+| 4 | 261,892 | 261,742 (-0.06%) | 261,197 (-0.27%) |
+| 8 | 347,191 | 362,456 (+4.4%) | 355,216 (+2.3%) |
+| 16 | 625,745 | 653,067 (+4.4%) | **671,973 (+7.4%)** |
+
+**The serialisation hypothesis is refuted.** If losing instruction-level
+parallelism were the cause, `ilp` would recover `clmul`'s performance. It does
+not -- at 16 warps it is the *slowest* of the three, while having the same
+instruction count as the fastest.
+
+`ilp` and `clmul` are indistinguishable on every static metric measured: 566
+instructions, 47 static `sp`-relative operations, same reduction arithmetic.
+They differ by **7.4% of cycles**.
+
+That is the finding. **A pair of variants that differ in no measured static
+property differ by more than the effect being investigated**, so at a ±2%
+instruction change this method cannot resolve the question. The variance between
+semantically equivalent codegen exceeds the signal.
+
+So the honest answer to "when does ghred32 pay" is: not measurable here, and the
+reason is not the instruction. On a machine 99-100% stalled on operands, with
+IPC between 0.1 and 0.68, **instruction count is not the currency** -- the issue
+slot is idle most of the time and removing work from it buys nothing. These
+instructions would pay on a machine that is issue-bound. Establishing that on
+this one would need layout-controlled repetition, not another variant.
+
+Two consequences worth carrying forward:
+
+- An instruction-count reduction is not evidence that a change is directionally
+  good here. It was treated as such earlier in this document and that reasoning
+  is unsound: -1.96% instructions produced +4.4% to +10.2% cycles.
+- Any recorded result smaller than roughly 7% on this configuration should be
+  treated as unresolved rather than as a small win, unless it is accompanied by
+  a mechanism that was independently measured.
