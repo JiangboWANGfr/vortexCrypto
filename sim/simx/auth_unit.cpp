@@ -24,7 +24,7 @@ using namespace vortex;
 
 // Carry-less product of two XLEN-wide operands. Returns the full 2*XLEN result
 // so CLMUL and CLMULH can select their half, mirroring the single clmul_prod
-// expression in hw/rtl/crypto/VX_auth_ghash.sv.
+// expression in hw/rtl/crypto/auth/VX_auth_ghash.sv.
 static inline void clmul_full(uint64_t a, uint64_t b, uint32_t width,
                               uint64_t* lo, uint64_t* hi) {
   uint64_t rl = 0, rh = 0;

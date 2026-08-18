@@ -88,12 +88,18 @@ ifneq (,$(filter -DVX_CFG_EXT_TCU_ENABLE, $(XCONFIGS)))
 	endif
 endif
 
-# Add crypto extension sources (EX_SYM and EX_AUTH share hw/rtl/crypto). Neither
-# needs a package file: their payload types come from DECL_EXECUTE_T in
-# VX_gpu_pkg, so only an include path is added and RTL_PKGS is untouched. One
-# filter over both flags, so the path is added once if either unit is enabled.
-ifneq (,$(filter -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE, $(XCONFIGS)))
-	RTL_INCLUDE += -I$(RTL_DIR)/crypto
+# Add crypto extension sources. Neither unit needs a package file: their payload
+# types come from DECL_EXECUTE_T in VX_gpu_pkg, so only include paths are added
+# and RTL_PKGS is untouched. The two paths are guarded separately so a build
+# with one unit enabled does not put the other's modules on the search path.
+# Verilator's -I module lookup is not recursive, so hw/rtl/crypto alone would
+# not find them.
+ifneq (,$(filter -DVX_CFG_EXT_SYM_ENABLE, $(XCONFIGS)))
+	RTL_INCLUDE += -I$(RTL_DIR)/crypto/sym
+endif
+
+ifneq (,$(filter -DVX_CFG_EXT_AUTH_ENABLE, $(XCONFIGS)))
+	RTL_INCLUDE += -I$(RTL_DIR)/crypto/auth
 endif
 
 # Add DXA extension sources

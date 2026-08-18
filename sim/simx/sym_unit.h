@@ -19,8 +19,8 @@
 
 namespace vortex {
 
-// Symmetric-cipher unit: the simx counterpart of hw/rtl/crypto/VX_sym_unit.sv.
-// Must stay bit-exact with hw/rtl/crypto/VX_sym_aes.sv.
+// Symmetric-cipher unit: the simx counterpart of hw/rtl/crypto/sym/VX_sym_unit.sv.
+// Must stay bit-exact with hw/rtl/crypto/sym/VX_sym_aes.sv.
 class SymUnit : public FuncUnit<VX_CFG_NUM_SYM_BLOCKS> {
 public:
   SymUnit(const SimContext& ctx, const char* name, Core*);
