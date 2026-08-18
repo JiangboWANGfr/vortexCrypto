@@ -1,8 +1,8 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
 
-// ChaCha20-Poly1305 AEAD (RFC 8439), one independent message per thread,
-// empty AAD. Every message shares the 256-bit key; each has its own 96-bit
+// ChaCha20-Poly1305 AEAD (RFC 8439), one independent message per thread.
+// Every message shares the 256-bit key and the AAD; each has its own 96-bit
 // nonce.
 //
 // Three things differ from tests/crypto/aes_gcm, and all three are forced by
@@ -32,7 +32,18 @@
 
 typedef struct {
   uint32_t num_msgs;
-  uint32_t blocks_per_msg; // 64-byte ChaCha20 blocks
+  uint32_t blocks_per_msg; // FULL 64-byte ChaCha20 blocks
+  // Trailing bytes after the full blocks, 0..63. RFC 8439 is defined over
+  // arbitrary byte lengths; without this the ABI can only express multiples of
+  // 64. Message length is 64 * blocks_per_msg + tail_bytes.
+  uint32_t tail_bytes;
+  // Additional authenticated data: authenticated but not encrypted (RFC 8439
+  // section 2.8). Absorbed by Poly1305 before any ciphertext and zero-padded to
+  // a whole Poly1305 block, which is the specification's pad16 -- so a partial
+  // AAD block still enters as a FULL Poly1305 block, unlike GCM where the
+  // padding is the caller's. Shared by every message, the TLS/IPsec shape.
+  uint32_t aad_bytes;
+  uint64_t aad_addr;
   uint64_t key_addr;
   uint64_t nonce_addr;
   uint64_t src_addr;

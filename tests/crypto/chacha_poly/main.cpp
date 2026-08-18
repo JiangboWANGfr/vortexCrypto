@@ -26,6 +26,8 @@ namespace {
 const char* g_kernel_file = "kernel.vxbin";
 uint32_t g_num_msgs = 256;
 uint32_t g_blocks_per_msg = 4;
+uint32_t g_tail_bytes = 0;
+uint32_t g_aad_bytes = 0;
 uint32_t g_impl = 0;
 
 // Every implementation is a separate entry point in the same binary, sharing
@@ -184,7 +186,7 @@ const uint8_t kAeadTag[POLY1305_TAG_BYTES] = {
 void show_usage() {
   std::printf(
       "ChaCha20-Poly1305\n"
-      "Usage: [-n msgs] [-b blocks_per_msg] [-i impl] [-k kernel] [-h]\n"
+      "Usage: [-n msgs] [-b blocks_per_msg] [-t tail_bytes] [-a aad_bytes] [-i impl] [-k kernel] [-h]\n"
       "  blocks are 64-byte ChaCha20 blocks\n");
   for (uint32_t i = 0; i < kNumImpls; ++i) {
     std::printf("  -i%u  %s\n", i, kImpls[i].label);
@@ -193,10 +195,12 @@ void show_usage() {
 
 void parse_args(int argc, char** argv) {
   int c;
-  while ((c = getopt(argc, argv, "n:b:i:k:h")) != -1) {
+  while ((c = getopt(argc, argv, "n:b:t:a:i:k:h")) != -1) {
     switch (c) {
     case 'n': g_num_msgs = (uint32_t)std::atoi(optarg); break;
     case 'b': g_blocks_per_msg = (uint32_t)std::atoi(optarg); break;
+    case 't': g_tail_bytes = (uint32_t)std::atoi(optarg); break;
+    case 'a': g_aad_bytes = (uint32_t)std::atoi(optarg); break;
     case 'i': g_impl = (uint32_t)std::atoi(optarg); break;
     case 'k': g_kernel_file = optarg; break;
     case 'h': show_usage(); std::exit(0); break;
@@ -305,8 +309,20 @@ int main(int argc, char** argv) {
   CHECK(vx_device_query(dev, VX_CAPS_NUM_WARPS, &num_warps));
   CHECK(vx_device_query(dev, VX_CAPS_NUM_THREADS, &num_threads));
 
-  const uint32_t msg_bytes = CHACHA_BLOCK_BYTES * g_blocks_per_msg;
-  const size_t data_bytes = (size_t)msg_bytes * g_num_msgs;
+  if (g_tail_bytes > CHACHA_BLOCK_BYTES - 1) {
+    std::printf("FAILED: -t must be 0..63 (a tail is what is left after whole "
+                "blocks); got %u\n", g_tail_bytes);
+    return 1;
+  }
+  const uint32_t msg_bytes =
+      CHACHA_BLOCK_BYTES * g_blocks_per_msg + g_tail_bytes;
+  // Device buffers are strided by whole blocks so every message base stays
+  // 4-byte aligned for the word-wise streaming path; only msg_bytes of each
+  // slot carries data. Host-side reference buffers use the same stride so the
+  // comparison is index-for-index.
+  const uint32_t msg_stride =
+      CHACHA_BLOCK_BYTES * (g_blocks_per_msg + (g_tail_bytes != 0 ? 1u : 0u));
+  const size_t data_bytes = (size_t)msg_stride * g_num_msgs;
 
   std::printf("messages=%u blocks/msg=%u bytes=%zu cores=%lu warps=%lu "
               "threads=%lu\n",
@@ -318,7 +334,13 @@ int main(int argc, char** argv) {
   // expand, so unlike aes_gcm the host uploads the key itself.
   std::vector<uint8_t> h_nonce((size_t)CHACHA_NONCE_BYTES * g_num_msgs);
   std::vector<uint8_t> h_pt(data_bytes);
+  // AAD is shared by every message: the TLS/IPsec shape, one record header
+  // authenticated alongside each payload.
+  std::vector<uint8_t> h_aad(g_aad_bytes ? g_aad_bytes : 1, 0);
   std::srand(50);
+  for (uint32_t i = 0; i < g_aad_bytes; ++i) {
+    h_aad[i] = (uint8_t)(std::rand() & 0xff);
+  }
   for (size_t i = 0; i < h_nonce.size(); ++i) {
     h_nonce[i] = (uint8_t)std::rand();
   }
@@ -330,14 +352,16 @@ int main(int argc, char** argv) {
   std::vector<uint8_t> ref_tag((size_t)POLY1305_TAG_BYTES * g_num_msgs);
   for (uint32_t m = 0; m < g_num_msgs; ++m) {
     ref::aead_encrypt(kAeadKey, &h_nonce[(size_t)CHACHA_NONCE_BYTES * m],
-                      nullptr, 0, &h_pt[(size_t)msg_bytes * m], msg_bytes,
-                      &ref_ct[(size_t)msg_bytes * m],
+                      h_aad.data(), g_aad_bytes,
+                      &h_pt[(size_t)msg_stride * m], msg_bytes,
+                      &ref_ct[(size_t)msg_stride * m],
                       &ref_tag[(size_t)POLY1305_TAG_BYTES * m]);
   }
 
-  vx_buffer_h key_buf, nonce_buf, src_buf, dst_buf, tag_buf;
+  vx_buffer_h key_buf, nonce_buf, aad_buf, src_buf, dst_buf, tag_buf;
   CHECK(vx_buffer_create(dev, CHACHA_KEY_BYTES, VX_MEM_READ, &key_buf));
   CHECK(vx_buffer_create(dev, h_nonce.size(), VX_MEM_READ, &nonce_buf));
+  CHECK(vx_buffer_create(dev, h_aad.size(), VX_MEM_READ, &aad_buf));
   CHECK(vx_buffer_create(dev, data_bytes, VX_MEM_READ, &src_buf));
   CHECK(vx_buffer_create(dev, data_bytes, VX_MEM_WRITE, &dst_buf));
   CHECK(vx_buffer_create(dev, ref_tag.size(), VX_MEM_WRITE, &tag_buf));
@@ -345,6 +369,9 @@ int main(int argc, char** argv) {
   kernel_arg_t kernel_arg;
   kernel_arg.num_msgs = g_num_msgs;
   kernel_arg.blocks_per_msg = g_blocks_per_msg;
+  kernel_arg.tail_bytes = g_tail_bytes;
+  kernel_arg.aad_bytes = g_aad_bytes;
+  CHECK(vx_buffer_address(aad_buf, &kernel_arg.aad_addr));
   CHECK(vx_buffer_address(key_buf, &kernel_arg.key_addr));
   CHECK(vx_buffer_address(nonce_buf, &kernel_arg.nonce_addr));
   CHECK(vx_buffer_address(src_buf, &kernel_arg.src_addr));
@@ -363,6 +390,8 @@ int main(int argc, char** argv) {
   CHECK(vx_enqueue_write(queue, key_buf, 0, kAeadKey, CHACHA_KEY_BYTES, 0,
                          nullptr, nullptr));
   CHECK(vx_enqueue_write(queue, nonce_buf, 0, h_nonce.data(), h_nonce.size(), 0,
+                         nullptr, nullptr));
+  CHECK(vx_enqueue_write(queue, aad_buf, 0, h_aad.data(), h_aad.size(), 0,
                          nullptr, nullptr));
   CHECK(vx_enqueue_write(queue, src_buf, 0, h_pt.data(), h_pt.size(), 0,
                          nullptr, nullptr));
@@ -417,8 +446,11 @@ int main(int argc, char** argv) {
 
   int errors = 0;
   for (uint32_t m = 0; m < g_num_msgs && errors < 8; ++m) {
-    errors += compare("ciphertext", m, &dev_ct[(size_t)msg_bytes * m],
-                      &ref_ct[(size_t)msg_bytes * m], msg_bytes);
+    // Index by stride, compare msg_bytes: the padding in each slot is not
+    // ciphertext and is not authenticated, so comparing it would be comparing
+    // uninitialised memory.
+    errors += compare("ciphertext", m, &dev_ct[(size_t)msg_stride * m],
+                      &ref_ct[(size_t)msg_stride * m], msg_bytes);
     errors += compare("tag", m, &dev_tag[(size_t)POLY1305_TAG_BYTES * m],
                       &ref_tag[(size_t)POLY1305_TAG_BYTES * m],
                       POLY1305_TAG_BYTES);
@@ -451,6 +483,7 @@ int main(int argc, char** argv) {
   vx_buffer_release(tag_buf);
   vx_buffer_release(dst_buf);
   vx_buffer_release(src_buf);
+  vx_buffer_release(aad_buf);
   vx_buffer_release(nonce_buf);
   vx_buffer_release(key_buf);
   vx_device_release(dev);

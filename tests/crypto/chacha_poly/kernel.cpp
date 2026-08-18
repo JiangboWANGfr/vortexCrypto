@@ -299,7 +299,17 @@ inline void chacha_poly_body(kernel_arg_t* __UNIFORM__ arg) {
 
   const uint32_t num_msgs = arg->num_msgs;
   const uint32_t blocks = arg->blocks_per_msg;
-  const uint32_t words = blocks * (CHACHA_BLOCK_BYTES / 4);
+  const uint32_t tail = arg->tail_bytes;
+  const uint32_t aad_bytes = arg->aad_bytes;
+  const uint8_t* aad = (const uint8_t*)arg->aad_addr;
+  const uint32_t msg_bytes = CHACHA_BLOCK_BYTES * blocks + tail;
+  // Buffer stride is the message length rounded UP to a whole ChaCha20 block,
+  // deliberately not the message length: the word-wise streaming path below is
+  // only valid while each message base is 4-byte aligned, and RISC-V traps on
+  // an unaligned word access rather than fixing it up. The padding bytes are
+  // never read and never authenticated -- msg_bytes is what the AEAD sees.
+  const uint32_t words =
+      (blocks + (tail != 0u ? 1u : 0u)) * (CHACHA_BLOCK_BYTES / 4);
 
   uint32_t k[8];
   for (int i = 0; i < 8; ++i) {
@@ -321,6 +331,23 @@ inline void chacha_poly_body(kernel_arg_t* __UNIFORM__ arg) {
     poly1305_t st;
     poly1305_init(st, ks);
 
+    // AAD, absorbed before any ciphertext and never encrypted (RFC 8439
+    // section 2.8). pad16 zero-fills the final chunk to a whole Poly1305 block,
+    // so every chunk enters as a full block and the 0x01 byte stays at position
+    // 16 -- there is no Poly1305 partial block anywhere in this AEAD. Byte-wise
+    // because the AAD length is arbitrary and its base carries no alignment
+    // guarantee; it runs once per message, not once per block.
+    for (uint32_t off = 0; off < aad_bytes; off += POLY1305_BLOCK_BYTES) {
+      const uint32_t n = (aad_bytes - off < POLY1305_BLOCK_BYTES)
+                       ? (aad_bytes - off) : POLY1305_BLOCK_BYTES;
+      uint8_t padded[POLY1305_BLOCK_BYTES] = {0};
+      for (uint32_t i = 0; i < n; ++i) {
+        padded[i] = aad[off + i];
+      }
+      poly1305_block<PERM>(st, load_le32(padded), load_le32(padded + 4),
+                           load_le32(padded + 8), load_le32(padded + 12));
+    }
+
     const uint32_t* pt = src_base + (size_t)words * msg;
     uint32_t* ct = dst_base + (size_t)words * msg;
     for (uint32_t b = 0; b < blocks; ++b) {
@@ -328,11 +355,37 @@ inline void chacha_poly_body(kernel_arg_t* __UNIFORM__ arg) {
                                    ct + 16 * b, st);
     }
 
-    // The AAD is empty and the ciphertext is a whole number of Poly1305
-    // blocks, so neither pad16 contributes anything and the length block is
-    // the only trailer: le64(0) || le64(ciphertext bytes).
-    const uint64_t ct_bytes = (uint64_t)blocks * CHACHA_BLOCK_BYTES;
-    poly1305_block(st, 0, 0, (uint32_t)ct_bytes, (uint32_t)(ct_bytes >> 32));
+    // Partial final block: `tail` bytes of keystream consumed, the ciphertext
+    // fragment zero-padded to whole Poly1305 blocks before they are absorbed.
+    // Byte-wise on purpose -- the word-wise path above is justified by 64-byte
+    // alignment, which a tail by definition does not have, and a word store
+    // here would write up to three bytes past the message.
+    if (tail != 0) {
+      uint32_t x[16];
+      chacha20_keystream<R, PERM>(k, n0, n1, n2, blocks + 1, x);
+      const uint8_t* pb = (const uint8_t*)(pt + 16 * blocks);
+      uint8_t* cb = (uint8_t*)(ct + 16 * blocks);
+      for (uint32_t off = 0; off < tail; off += POLY1305_BLOCK_BYTES) {
+        const uint32_t n = (tail - off < POLY1305_BLOCK_BYTES)
+                         ? (tail - off) : POLY1305_BLOCK_BYTES;
+        uint8_t padded[POLY1305_BLOCK_BYTES] = {0};
+        for (uint32_t i = 0; i < n; ++i) {
+          const uint32_t j = off + i;
+          const uint8_t ksb = (uint8_t)(x[j >> 2] >> (8 * (j & 3)));
+          const uint8_t c = (uint8_t)(pb[j] ^ ksb);
+          cb[j] = c;
+          padded[i] = c;
+        }
+        poly1305_block<PERM>(st, load_le32(padded), load_le32(padded + 4),
+                             load_le32(padded + 8), load_le32(padded + 12));
+      }
+    }
+
+    // The trailer: le64(AAD bytes) || le64(ciphertext bytes).
+    const uint64_t aad_len = (uint64_t)aad_bytes;
+    const uint64_t ct_bytes = (uint64_t)msg_bytes;
+    poly1305_block<PERM>(st, (uint32_t)aad_len, (uint32_t)(aad_len >> 32),
+                         (uint32_t)ct_bytes, (uint32_t)(ct_bytes >> 32));
 
     uint32_t tag[4];
     poly1305_finish(st, tag);
