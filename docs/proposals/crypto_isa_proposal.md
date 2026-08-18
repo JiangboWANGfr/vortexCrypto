@@ -830,6 +830,13 @@ to schedule sixteen.
 > building. What the floor actually is, given it varies by a factor of 23 across
 > problem size at a single application and configuration.
 >
+> **Weaker than recorded below.** The `ghred32` regressions at `t4` (+4.4%) rest
+> on a *single* floor sample at that shape (0.303%). By the same argument that
+> retired other single-sample claims here, one draw is not a floor: the same
+> probe reaches 2.893% elsewhere in this application. Against the observed range
+> the margin is between 1.5x and 34x, not the 14.5x recorded. Only the +10.2% at
+> `c1w4t32` clears the widest sample taken at its own point.
+>
 > Each retraction was replaced by a measurement rather than by a better
 > argument, and several were prompted by build32-73 checking work I had
 > published.
@@ -1177,3 +1184,38 @@ units-on, and across separate rebuilds all establish **determinism** -- the same
 input gives the same output. None of them establishes a **floor**, which is how
 far apart two different inputs that should be equivalent actually land. This
 document treated the first as evidence for the second.
+
+
+### Two more probes, both rejected by their own validity condition
+
+Getting several independent draws at one point needs several perturbations that
+are bit-identical by construction. Two more were built for this kernel, with the
+validity condition -- instruction counts must match -- stated before running:
+
+- **B**, the four AES round words `t0..t3` reversed. Disjoint outputs, disjoint
+  inputs, so the order between the groups carries no meaning.
+- **C**, the ciphertext/GHASH loop run `i=3..0`. Each iteration touches a
+  distinct `ct_w[i]`, `y[i]`, `pt_w[i]` and `ks[i]`.
+
+Both are bit-identical in their arithmetic. **Both failed the check**: B emits
+0.237% more instructions and C emits 2.92% more. Their cycle deltas -- +6.5% and
+**+66.4%** at `c1w4t32` -- are therefore readings of a different program, not of
+the apparatus. Reported as rejected instruments rather than as floor samples.
+
+Had the condition not been stated in advance, C's +66.4% would have been
+recorded as a floor sample and would have "established" that nothing at any
+scale is measurable here.
+
+The finding is that **almost nothing in this kernel is instruction-identical
+under this compiler.** Reordering four independent statements changes register
+allocation enough to add instructions; reversing a loop changes addressing.
+Exactly one perturbation out of three survived, so the plan of taking several
+draws at one point is not currently executable for `aes_gcm`, and the `t4`
+result stays on one sample.
+
+One refinement to the condition itself. A flat percentage threshold is the wrong
+form: the reduction reversal perturbs the instruction count by a fixed ~8
+instructions regardless of problem size, so the same valid probe reads 0.0075%
+at `-b64` and 0.090% at `-b4`. The criterion should be that the absolute
+perturbation is small and does not scale with the workload, not that a ratio
+sits under a constant.
