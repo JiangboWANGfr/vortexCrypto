@@ -36,22 +36,23 @@ uint32_t g_impl = 0;
 struct impl_t {
   const char* kernel;
   const char* label;
+  bool needs_sym;   // issues RORI, so requires EX_SYM
 };
 
 const impl_t kImpls[] = {
-  { "chacha_poly_sw",   "sw" },
+  { "chacha_poly_sw",   "sw", false },
   // Same code with the ratified Zbb/Zbkb RORI in place of slli+srli+or. It is
   // not a cryptographic instruction, so this row is a stronger software
   // baseline, not an instruction-set extension: the ChaCha20 speedup it shows
   // is what any RV32 with the B extension already has.
-  { "chacha_poly_rori", "rori" },
+  { "chacha_poly_rori", "rori", true },
   // Bit-identical to sw; see kernel.cpp. Measures the apparatus, not the cipher.
-  { "chacha_poly_sw_perm", "sw_perm" },
+  { "chacha_poly_sw_perm", "sw_perm", false },
   // Rejected as instruments; see kernel.cpp. Correct, bit-identical by
   // construction, and the compiler emits a different instruction count anyway,
   // so their deltas are code differences rather than floor readings.
-  { "chacha_poly_sw_perm2", "sw_perm2(rejected)" },
-  { "chacha_poly_sw_perm3", "sw_perm3(rejected)" },
+  { "chacha_poly_sw_perm2", "sw_perm2(rejected)", false },
+  { "chacha_poly_sw_perm3", "sw_perm3(rejected)", false },
 };
 
 const uint32_t kNumImpls = (uint32_t)(sizeof(kImpls) / sizeof(kImpls[0]));
@@ -276,6 +277,26 @@ int main(int argc, char** argv) {
 
   vx_device_h dev = nullptr;
   CHECK(vx_device_open(0, &dev));
+
+  // Refuse rather than compute a wrong answer. RORI is an OP-IMM encoding and
+  // the fallback decode path executes it as a shift -- SRAI in the RTL, SRL in
+  // simx -- so without EX_SYM this kernel silently produces the wrong AEAD and
+  // only the reference comparison notices, after the run. The hazard is
+  // documented at the decode arm and was walked into anyway during bring-up, by
+  // a CONFIGS string that omitted the enable. This turns it from documented
+  // into impossible.
+  if (kImpls[g_impl].needs_sym) {
+    uint64_t isa_flags = 0;
+    CHECK(vx_device_query(dev, VX_CAPS_ISA_FLAGS, &isa_flags));
+    if ((isa_flags & VX_ISA_EXT_SYM) == 0) {
+      std::printf("SKIPPED: impl '%s' issues RORI and needs EX_SYM, which this "
+                  "device does not have. Rebuild with "
+                  "CONFIGS=\"-DVX_CFG_EXT_SYM_ENABLE\".\n",
+                  kImpls[g_impl].label);
+      vx_device_release(dev);
+      return 1;
+    }
+  }
 
   uint64_t num_cores = 0;
   uint64_t num_warps = 0;
