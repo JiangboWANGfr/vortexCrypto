@@ -1239,6 +1239,34 @@ Exactly one perturbation out of three survived, so the plan of taking several
 draws at one point is not currently executable for `aes_gcm`, and the `t4`
 result stays on one sample.
 
+**Confirmed independently on the other application.** build32-73 built two more
+perturbations for `chacha_poly`, both bit-identical by construction and both
+verified to compute the correct AEAD before any cycle was read: the diagonal
+round reversed (disjoint quarter-rounds), and the five Poly1305 limb products
+reversed (disjoint accumulators). The diagonal probe perturbs the instruction
+count by +28 at `-b4` and +124 at `-b16` -- it *scales with the workload*, which
+is the disqualifying signature -- and the Poly1305 probe by 0.67%. Both
+rejected. `chacha_poly` is one valid perturbation out of four, against
+`aes_gcm`'s one out of three.
+
+So the generalisation is not about either kernel: **bit-identical by
+construction is necessary and nowhere near sufficient.** The property has to be
+one the compiler preserves into the instruction stream, and provable arithmetic
+independence does not buy that. Two applications, two authors, seven
+perturbations, two survivors.
+
+The consequence for everything quoted in this section is that **no result here
+rests on more than a single floor sample**, and that is a property of the
+toolchain rather than of a kernel or of an author's care. A result needs a
+margin over the widest sample seen anywhere, not over the sample nearest to it.
+
+One question this leaves open rather than settles. The two surviving probes are
+both reorderings of disjoint state over a fixed register set -- structurally the
+most reorder-tolerant shape available -- so the tight samples they produce may
+be a property of that structure rather than of either application. The probe
+that would have discriminated was the Poly1305 one, and it was rejected. Nothing
+measured says the floor is tight anywhere else.
+
 One refinement to the condition itself. A flat percentage threshold is the wrong
 form: the reduction reversal perturbs the instruction count by a fixed ~8
 instructions regardless of problem size, so the same valid probe reads 0.0075%
