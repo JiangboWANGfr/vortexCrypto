@@ -1281,3 +1281,73 @@ instructions regardless of problem size, so the same valid probe reads 0.0075%
 at `-b64` and 0.090% at `-b4`. The criterion should be that the absolute
 perturbation is small and does not scale with the workload, not that a ratio
 sits under a constant.
+
+## 11. The recorded configuration moves to c2w4t16, and the first hardware evidence
+
+Every number above was taken at `c1w4t32`. That configuration should not be the
+one this work is quoted at, for a reason that only appears on the board.
+
+### c1w4t32 does not close timing; c2w4t16 does
+
+From the DE10-Pro builds in the FPGA project's `results/`, Slow 900mV 100C,
+`vortex_iopll_outclk0` (the Vortex fabric clock), 200 MHz requested:
+
+| | c1w4t32 | c2w4t16 |
+| --- | ---: | ---: |
+| setup slack | **-0.348 ns** | **+0.199 ns** |
+| total negative slack | **-60.679** | **0.000** |
+| Fmax | 186.99 MHz | **208.29 MHz** |
+| logic | 219,351 ALMs (24%) | **208,513 ALMs (22%)** |
+
+`c1w4t32`'s bitstream boots the fabric at 200 MHz while STA signs off only
+186.99 -- roughly 7% past its own ceiling, with 60 ns of accumulated violation.
+`c2w4t16` has no violating path at all. **A number measured on the first
+describes a design that cannot be built correctly; a number measured on the
+second describes one that can.**
+
+### Where the area goes, and a prediction of mine that was wrong
+
+Per-entity ALMs from the fitter, with `c2w4t16` shown per core and doubled:
+
+| entity | c1w4t32 | c2w4t16 per core | x2 cores | change |
+| --- | ---: | ---: | ---: | ---: |
+| `alu_unit` | 37,831 | 14,473 | 28,946 | **-23%** |
+| `execute` | 71,124 | 32,018 | 64,035 | -10% |
+| `auth_ghash` | 13,442 | 7,615 | 15,229 | **+13%** |
+| `sym_aes` | 2,561 | 1,284 | 2,569 | flat |
+
+I predicted splitting the crypto units across two cores would reduce their area.
+**It does the opposite** -- GHASH costs 476 ALM/lane at 16 lanes against 420 at
+32, because the per-unit fixed cost (wrapper, `pe_switch`, elastic buffers)
+amortises over half as many lanes. The total win is entirely in the ALU and the
+other lane-scaled logic, where a 32-lane block is much more expensive than two
+16-lane blocks to route.
+
+**GHASH is still the largest single crypto cost by far: 15,229 ALMs, twice the
+LSU, four times the SFU, for a unit that shows 0% backpressure at every point
+measured.** That is the number this work has to answer for, and until now it
+existed only inside a gitignored fitter report.
+
+### The recorded numbers at c2w4t16
+
+rtlsim, `-n128 -b64`, both variants, `num_cores=2` confirmed in the banner:
+
+| | sw_ttable | hw_s1 | ratio |
+| --- | ---: | ---: | ---: |
+| cycles | 7,744,779 | 655,712 | **11.81x** |
+| cycles/block | 945.41 | 80.04 | |
+| bytes/cycle | 0.0169 | **0.1999** | |
+
+Against `c1w4t32`, the hardware kernel gains 62% throughput (0.1235 to 0.1999
+bytes/cycle) and the software baseline gains 86%, **so the ratio falls from
+13.54x to 11.81x**. The shape change helps the memory-bound software variant
+more than the hardware one, which is the honest direction and the one that costs
+this work rather than flattering it.
+
+Instruction counts are not comparable across the two shapes -- a 16-lane warp
+needs twice the warp-instructions for the same lane-work -- so cycles and
+bytes/cycle are the quantities that transfer, which is why the absolute
+throughput is recorded alongside the ratio from here on.
+
+**11.81x is therefore the number to quote.** It is smaller than 13.54x and it
+corresponds to a bitstream that meets timing.
