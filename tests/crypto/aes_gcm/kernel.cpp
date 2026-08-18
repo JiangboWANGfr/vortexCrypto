@@ -252,6 +252,14 @@ struct hw_lmem_layout_t {
 
 // AES-128 block encryption. State words are little-endian packed columns;
 // ShiftRows is expressed by which state word each byte-select reads from.
+// always_inline, not inline. LLVM declined to inline these two at -O3 (they are
+// large and have several call sites), and because they take array pointers that
+// forced ctr[], ks[], y[] and h[] into stack slots. On this machine that is the
+// worst possible placement: vx_start.S gives each hart a stack 8 KB apart, so a
+// single sp-relative access in a warp becomes NUM_THREADS distinct cache lines
+// 8 KB apart -- a fully divergent gather on a single-banked L1, replayed at warp
+// width. Inlining keeps all four arrays in registers and deletes that traffic.
+__attribute__((always_inline))
 inline void aes128_encrypt_hw(const uint32_t* rk, const uint32_t in[4],
                               uint32_t out[4]) {
   uint32_t s0 = in[0] ^ rk[0];
@@ -291,6 +299,7 @@ inline void aes128_encrypt_hw(const uint32_t* rk, const uint32_t in[4],
 // reflected limb domain. Schoolbook 4x4; Karatsuba trades 14 clmul for 11 xor
 // here, which is a wash at this width and is not worth the complexity until
 // clmul is measured to be more expensive than an xor.
+__attribute__((always_inline))
 inline void ghash_mul_hw(const uint32_t h[4], uint32_t y[4]) {
   uint32_t p[8] = {0, 0, 0, 0, 0, 0, 0, 0};
   for (int i = 0; i < 4; ++i) {
@@ -369,9 +378,15 @@ __kernel void aes_gcm_hw_s1(kernel_arg_t* __UNIFORM__ arg) {
       uint32_t ks[4];
       aes128_encrypt_hw(lm->rk, ctr, ks);
 
+      // Word-wise, not via load_le32/store_le32: those are byte-at-a-time, and
+      // RISC-V's strict-alignment default stops LLVM widening them, costing 16
+      // lbu + 16 sb per block instead of 4 + 4. The buffers are vx_mem_alloc'd
+      // and indexed at 16-byte granularity, so word access is aligned.
+      const uint32_t* pt_w = (const uint32_t*)(pt + 16 * b);
+      uint32_t* ct_w = (uint32_t*)(ct + 16 * b);
       for (int i = 0; i < 4; ++i) {
-        const uint32_t c = load_le32(pt + 16 * b + 4 * i) ^ ks[i];
-        store_le32(ct + 16 * b + 4 * i, c);
+        const uint32_t c = pt_w[i] ^ ks[i];
+        ct_w[i] = c;
         y[i] ^= vx_brev8(c);
       }
       ghash_mul_hw(h, y);

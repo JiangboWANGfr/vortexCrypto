@@ -656,3 +656,62 @@ Provenance:
   `VX_csr_data.sv`, `sim/simx/core.*` and `perf.cpp` at measurement time; both
   rows were measured in that same tree, so the comparison between them stands
 - `CONFIGS="-DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_NUM_THREADS=32"`
+
+### Re-recorded: what the instruction set is worth once the kernel is not in the way
+
+The 2.67x in the table above was never an instruction-set number. It was
+measured on a kernel whose memory traffic was about 57% non-algorithmic, and on
+this machine that traffic had the worst possible shape.
+
+The cause was **not** register spill, which is what the previous section
+suspected. There are zero register-allocator spills: `p[8]`, `y[4]`, `h[4]` and
+every clmul temporary live in registers. Two other things were responsible:
+
+- **The helpers were not inlined.** `inline` is a hint and LLVM declined both at
+  `-O3`. Because they take array pointers, `ctr[]`, `ks[]`, `y[]` and `h[]` were
+  forced into stack slots -- 45 memory ops per block. `vx_start.S:96` gives each
+  hart a stack 8 KB apart, so one `sp`-relative access in a warp is
+  `NUM_THREADS` distinct cache lines 8 KB apart: a fully divergent gather on a
+  single-banked L1, replayed at warp width.
+- **The streaming accessors were byte-wise.** RISC-V's strict-alignment default
+  stops LLVM widening `load_le32`/`store_le32`, costing 16 `lbu` + 16 `sb` per
+  block where 4 + 4 suffice -- 24 more ops.
+
+`__attribute__((always_inline))` and word-wise access fix both. Re-measured at
+`c1w4t32`, `-n128 -b64`, rtlsim authoritative, on a build with no `PERF_ENABLE`:
+
+| | sw_ttable | hw_s1 | ratio |
+| --- | ---: | ---: | ---: |
+| cycles (rtlsim) | 14,379,377 | 1,061,573 | **13.54x** |
+| instrs | 1,229,052 | 106,356 | **11.56x** |
+| cycles/block | 1755.30 | 129.59 | |
+| bytes/cycle | 0.0091 | 0.1235 | |
+| cycles (simx) | 12,224,492 | 888,983 | 13.75x |
+
+**2.67x -> 13.54x from two kernel attributes, with the hardware unchanged.**
+
+That the two ratios now nearly agree -- 13.54x cycles against 11.56x
+instructions, where before it was 2.67x against 9.11x -- is the substantive
+result. The kernel is no longer dominated by a term the instruction set cannot
+touch.
+
+Evidence the mechanism is what moved, rather than codegen luck (a fair caution:
+a peer session measured 24% swings in both directions from `always_inline`
+alone on a different kernel):
+
+- `sp`-relative memory operations in the whole binary: **zero**. Both helper
+  symbols are gone; `aes_gcm_hw_s1` is one 566-instruction function. The traffic
+  class named above went to zero, and the cycles moved with it.
+- Three rtlsim runs return identical cycles and instructions, per section 4.
+- The residual 44 `lbu`/`sb` in `hw_s1` are the per-*message* IV load and tag
+  store, amortised over 64 blocks, not per-block traffic.
+
+`PERF_ENABLE` was checked rather than assumed: the counters do not perturb
+timing here, and the numbers above are byte-identical to a PERF build.
+
+**The memory wall is still there and is not a knob.** On the DE10-Pro image
+DDR4 B/C/D were removed outright, so `PLATFORM_MEMORY_NUM_BANKS=1` is hardware
+truth rather than a configuration choice, behind `DCACHE_NUM_BANKS=1` with L2
+and L3 off. A simulation modelling more banks describes a machine that does not
+exist on this board. The remaining `scrb` stall is that wall, and it now caps a
+kernel that is otherwise clean.
