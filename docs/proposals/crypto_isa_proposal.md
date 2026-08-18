@@ -593,8 +593,12 @@ CONFIGS="-DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_NUM_THREADS=3
 | instrs | 175,512 | 131,792 | 1.332 |
 | cycles/block (64 B), rtlsim | 1244.34 | 1227.25 | |
 
-**A third of the instructions removed, and one and a half per cent of the
-cycles.** Both simulators agree on the sign and very nearly on the size.
+**A third of the instructions removed, and no cycle change this apparatus can
+resolve.** The 1.4% is below the widest floor sample measured for this
+application and is withdrawn as a result; see "What this apparatus can resolve"
+below. Both simulators agree on its sign and very nearly on its size, which is
+determinism rather than significance. The instruction ratio, 1.332x, is exact
+and is what this row actually establishes.
 
 The `sw` row here and section 6's are the same number, 2,548,408 / 175,512 on
 rtlsim, measured once with the units off and once with them on. That is the
@@ -614,33 +618,65 @@ is bit-identical by construction rather than merely equivalent, since the four
 touch disjoint columns. Two kernels that cannot differ, so the distance between
 them is the floor.
 
-| | sw | sw_perm | distance |
-| --- | ---: | ---: | ---: |
-| cycles, rtlsim | 2,548,408 | 2,541,483 | -0.272% |
-| cycles, simx | 2,258,400 | 2,260,762 | +0.105% |
-| instrs | 175,512 | 175,508 | 0.002% |
+Sampled across problem size, rtlsim, `-n128`, everything else fixed:
 
-**The floor is about 0.3%**, and the two signs are opposite, which is the shape
-scheduling variance should have rather than a systematic effect. Against it,
-`rori`'s 1.5% is roughly five times the floor and the keystream fusion's 5.7%
-roughly twenty; both are resolved rather than small. A change worth less than
-about 1% is not measurable here and should not be recorded as a result.
+| blocks/msg | sw | sw_perm | distance |
+| ---: | ---: | ---: | ---: |
+| 4 | 709,964 | 693,747 | **-2.284%** |
+| 8 | 1,203,154 | 1,206,432 | +0.272% |
+| 16 | 2,548,408 | 2,541,483 | -0.272% |
+| 32 | 4,837,117 | 4,852,750 | +0.323% |
+| 64 | 9,516,001 | 9,536,209 | +0.212% |
+
+Instruction counts differ by exactly four at every size, so the probe is valid
+at all of them. The signs alternate, which is the shape scheduling variance
+should have rather than a systematic effect.
+
+**Two kernels that cannot differ land up to 2.3% apart.** Four samples sit near
+0.27% and one at 2.28%, so the floor is not a number even for one application
+at one configuration; the same measurement on aes_gcm ranges from 0.13% to
+2.89% over the same sweep.
+
+Against the widest sample:
+
+- The keystream fusion's **5.7% stands**, at about 2.5x the worst floor sample.
+- `rori`'s **1.4% does not**. It is below the worst sample and is withdrawn as
+  a result. What survives is the instruction count, 1.332x, which is exact.
+
+It is tempting to judge a result quoted at `-b16` against the `-b16` floor of
+0.27% and conclude that `rori` survives after all. That does not hold: one
+perturbation per size gives one draw from each size's distribution, not that
+size's floor, and `-b4` shows this same perturbation reaching 2.28% somewhere in
+this application. Nothing measured here says `-b16` is safe from that.
+
+Settling it needs several *different* perturbations at one size, which is the
+sample not taken. Reversing the diagonal round independently of the column
+round, and reordering the four Poly1305 limb products, are both bit-identical
+by the same disjointness argument and touch different regions of the kernel.
+Until that exists, **no result under about 3% should be quoted from this
+application**, and the instruction counts -- which are exact -- carry whatever
+argument is being made.
 
 This is a different property from determinism, and the distinction cost a
 retraction elsewhere before it was drawn. Byte-identical repeat runs, agreement
 across simx and rtlsim, and agreement across units-off and units-on builds all
 say that the same input gives the same output. None of them says how far apart
-two different inputs that should agree will land. Only this row does.
+two different inputs that should agree will land. Only this table does.
 
-One caveat: 0.3% is a single perturbation at a single point, so it establishes
-that the floor is at least that rather than that no perturbation lands further
-out. If a future result lands under about 1%, two or three more reorderings
-should be measured before it is believed.
+The first version of this section recorded the `-b16` row alone and called it
+"about 0.3%", with a caveat that the floor was at least that. The caveat pointed
+the wrong way. The risk was never that the floor is larger than the sample; it
+is that the sample is unrepresentative, and a lower bound drawn from what may be
+the minimum is worth nothing. The sweep above is what the caveat should have
+been.
 
 ### The ratio to watch is the divergence, not the speedup
 
-1.014x cycles against 1.332x instructions. Those two ratios should track each
-other in a kernel whose cost is the instructions it issues, and they do not.
+1.332x instructions against a cycle change too small to resolve. Those two
+should track each other in a kernel whose cost is the instructions it issues,
+and they do not. The withdrawal above does not weaken this: the claim being made
+is that the cycles did not move, and "indistinguishable from zero" is that
+claim, arrived at more honestly than a small measured number would have been.
 Section 10 records the same divergence for AES before its kernel was fixed --
 9.11x instructions for 2.67x cycles -- and records it closing to 11.56x against
 13.54x afterwards. ChaCha has not closed, which is the single most useful fact
