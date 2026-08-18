@@ -637,11 +637,19 @@ should have rather than a systematic effect.
 at one configuration; the same measurement on aes_gcm ranges from 0.13% to
 2.89% over the same sweep.
 
-Against the widest sample:
+The standard has to be a margin over the widest floor sample seen **anywhere**,
+not over the nearest one, and that follows from this section's own conclusion:
+if the spread is a property of the apparatus rather than of either application,
+then aes_gcm's samples bound chacha_poly's results too. The widest seen across
+both applications is 2.893%. Against it:
 
-- The keystream fusion's **5.7% stands**, at about 2.5x the worst floor sample.
-- `rori`'s **1.4% does not**. It is below the worst sample and is withdrawn as
-  a result. What survives is the instruction count, 1.332x, which is exact.
+- The keystream fusion's **5.7% stands**, at 1.96x. Not comfortable.
+- `rori`'s **1.4% does not**. It is well below and is withdrawn as a result.
+  What survives is the instruction count, 1.332x, which is exact.
+
+Quoting 2.5x here, against this application's own widest sample of 2.284%,
+would be the cross-application transfer this section already withdrew, run in
+the direction that flatters the result.
 
 It is tempting to judge a result quoted at `-b16` against the `-b16` floor of
 0.27% and conclude that `rori` survives after all. That does not hold: one
