@@ -109,6 +109,13 @@ typedef struct vx_kernel* vx_kernel_h;
 #define VX_ISA_EXT_TCU              (1ull << (32 + 9))
 #define VX_ISA_EXT_DXA              (1ull << (32 + 10))
 #define VX_ISA_EXT_RTU              (1ull << (32 + 11))
+// Crypto execute units. Without these a host cannot tell whether a device has
+// them, and a binary built with the crypto intrinsics does not fault on a device
+// without them -- the encodings decode as some other instruction, differently in
+// RTL than in simx. Querying this is the only way to refuse the run instead of
+// returning a wrong answer.
+#define VX_ISA_EXT_SYM              (1ull << (32 + 12))
+#define VX_ISA_EXT_AUTH             (1ull << (32 + 13))
 
 // ============================================================================
 // Device memory access flags  (vx_buffer_create / vx_buffer_access)

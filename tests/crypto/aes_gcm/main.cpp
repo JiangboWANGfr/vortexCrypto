@@ -205,6 +205,27 @@ int main(int argc, char** argv) {
   uint64_t num_cores = 0;
   uint64_t num_warps = 0;
   uint64_t num_threads = 0;
+  // Refuse rather than return a wrong answer. A binary built with the crypto
+  // intrinsics does NOT fault on a device without the units: the encodings
+  // decode as some other instruction, and differently in RTL than in simx, so
+  // the run would produce a plausible-looking wrong ciphertext. The two-level
+  // check would catch it here, but only after the fact and only because this
+  // application happens to have a reference; nothing protects a real caller.
+  if (g_impl != 0) {
+    uint64_t isa_flags = 0;
+    CHECK(vx_device_query(dev, VX_CAPS_ISA_FLAGS, &isa_flags));
+    const bool has_sym  = (isa_flags & VX_ISA_EXT_SYM)  != 0;
+    const bool has_auth = (isa_flags & VX_ISA_EXT_AUTH) != 0;
+    if (!has_sym || !has_auth) {
+      std::printf("SKIPPED: impl '%s' needs EX_SYM and EX_AUTH; device has "
+                  "sym=%d auth=%d. Rebuild with "
+                  "CONFIGS=\"-DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE\".\n",
+                  kImpls[g_impl].label, (int)has_sym, (int)has_auth);
+      vx_device_release(dev);
+      return 1;
+    }
+  }
+
   CHECK(vx_device_query(dev, VX_CAPS_NUM_CORES, &num_cores));
   CHECK(vx_device_query(dev, VX_CAPS_NUM_WARPS, &num_warps));
   CHECK(vx_device_query(dev, VX_CAPS_NUM_THREADS, &num_threads));

@@ -69,3 +69,26 @@ tests:
   configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE
   vars:
     OPTS: -n64 -b4 -i1
+# The cases above all run at the default 4-thread shape, so NUM_SYM_LANES and
+# NUM_AUTH_LANES are 4 and the wide-SIMD elaboration is never built. Every
+# recorded measurement is taken at 16 lanes across 2 cores, and VX_config.toml
+# flags lane count as the risky axis: lanes are pinned to SIMD_WIDTH to keep
+# NUM_PACKETS at 1, which is what makes bottom-of-priority commit placement
+# survivable. A width-dependent bug in the lane replication, in VX_lane_dispatch's
+# divisibility assertion, or in commit arbitration would ship green without this.
+- id: crypto-aes-gcm-hw-wide
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/aes_gcm
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_NUM_CORES=2 -DVX_CFG_NUM_THREADS=16
+  vars:
+    OPTS: -n32 -b4 -i1
+- id: crypto-isa-check-wide
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/isa_check
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_NUM_CORES=2 -DVX_CFG_NUM_THREADS=16
