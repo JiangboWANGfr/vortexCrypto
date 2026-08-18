@@ -1538,3 +1538,41 @@ S1 property preserved. The only new state is a per-core 1,408-bit key register
 written once per CTA and amortised over 8,192 blocks, and unlike myvortex's H it
 is **readable**, so context remains saveable. It collects the measured 14%
 without the uop sequencer, the operand-path widening, or the per-lane state.
+
+## 14. The floor is a mechanism, not noise
+
+Every floor probe in this document was read as measurement scatter -- an error
+bar to discount observed gains against. A peer session measuring
+`chacha_poly` supplied the observation that reframes it: that kernel requests
+`lmem_size = 0`, and its floor probe at c2w4t16 reads **-0.051%** on rtlsim
+against the **4.68%** measured here at the same configuration.
+
+The difference is not the applications' complexity. It is that this kernel gathers
+into local memory -- four 1 KB T-tables, the key schedule, the GHASH table -- and
+`LMEM_NUM_BANKS = SIMD_WIDTH`. Reversing four reduction statements leaves the
+instruction stream bit-identical but changes which addresses are in flight in the
+same cycle, hence the bank-conflict pattern, hence cycles. A kernel with no local
+memory has nothing for a layout perturbation to perturb.
+
+**So the floor here has a sign.** Part of the 4.68% is an access order not yet
+chosen, not irreducible uncertainty. Using it as a symmetric error bar
+understates what a deliberate layout could buy and overstates how much of an
+observed gain must be discounted. The bit-identical-by-construction requirement
+was necessary and remains so; the interpretation of what survives it was wrong.
+
+This also resolves a loose end in section 13.3. The round-key probe removes 40
+LMEM loads per block and saves 2.35 cycles per instruction removed, *below* the
+2.81 average CPI -- which would be strange if LMEM traffic were conflict-prone.
+It is not strange, because the round keys are read **uniformly**: every lane
+loads the same address (`kernel.cpp:437,463,488` pass `lm->rk` with no
+per-thread index). Uniform reads broadcast and do not conflict. The T-table
+gathers in the software kernel are data-dependent and do conflict, which is why
+that kernel is the floor-sensitive one. The two facts fit: the 14.1% really is a
+linear instruction-count return, and the floor really is a gather effect.
+
+**Open, with a decisive test.** The unexplained +19.1% on the software kernel in
+section 12 is a candidate for the same mechanism: AAD support did not change
+`AES_GCM_LMEM_BYTES`, but it added live values across the message loop, which can
+shift register allocation and therefore spill addresses and therefore the bank
+pattern. If that is the cause, the regression should be *smaller* at c1w4t32,
+where `LMEM_NUM_BANKS = SIMD_WIDTH` gives 32 banks against 16. Not yet run.
