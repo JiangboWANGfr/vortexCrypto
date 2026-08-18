@@ -31,6 +31,13 @@ inline void store_be32(uint8_t* p, uint32_t v) {
 
 // T-table AES-128 encryption of one block, state held as four big-endian
 // column words.
+//
+// PERM selects the order in which the four column words of a round are
+// computed. They are independent -- each reads s0..s3 and the round key and
+// writes only its own temporary -- so reversing them is bit-identical by
+// construction rather than merely equivalent. PERM == 1 is the floor probe;
+// see aes_gcm_sw_ttable_perm below.
+template <int PERM>
 inline void aes128_encrypt(const lmem_layout_t* lm, const uint8_t in[16],
                            uint8_t out[16]) {
   const uint32_t* te0 = lm->te;
@@ -46,14 +53,26 @@ inline void aes128_encrypt(const lmem_layout_t* lm, const uint8_t in[16],
 
   for (int round = 1; round < AES128_ROUNDS; ++round) {
     const uint32_t* k = rk + 4 * round;
-    const uint32_t t0 = te0[s0 >> 24] ^ te1[(s1 >> 16) & 0xff]
-                      ^ te2[(s2 >> 8) & 0xff] ^ te3[s3 & 0xff] ^ k[0];
-    const uint32_t t1 = te0[s1 >> 24] ^ te1[(s2 >> 16) & 0xff]
-                      ^ te2[(s3 >> 8) & 0xff] ^ te3[s0 & 0xff] ^ k[1];
-    const uint32_t t2 = te0[s2 >> 24] ^ te1[(s3 >> 16) & 0xff]
-                      ^ te2[(s0 >> 8) & 0xff] ^ te3[s1 & 0xff] ^ k[2];
-    const uint32_t t3 = te0[s3 >> 24] ^ te1[(s0 >> 16) & 0xff]
-                      ^ te2[(s1 >> 8) & 0xff] ^ te3[s2 & 0xff] ^ k[3];
+    uint32_t t0, t1, t2, t3;
+    if (PERM == 1) {
+      t3 = te0[s3 >> 24] ^ te1[(s0 >> 16) & 0xff]
+         ^ te2[(s1 >> 8) & 0xff] ^ te3[s2 & 0xff] ^ k[3];
+      t2 = te0[s2 >> 24] ^ te1[(s3 >> 16) & 0xff]
+         ^ te2[(s0 >> 8) & 0xff] ^ te3[s1 & 0xff] ^ k[2];
+      t1 = te0[s1 >> 24] ^ te1[(s2 >> 16) & 0xff]
+         ^ te2[(s3 >> 8) & 0xff] ^ te3[s0 & 0xff] ^ k[1];
+      t0 = te0[s0 >> 24] ^ te1[(s1 >> 16) & 0xff]
+         ^ te2[(s2 >> 8) & 0xff] ^ te3[s3 & 0xff] ^ k[0];
+    } else {
+      t0 = te0[s0 >> 24] ^ te1[(s1 >> 16) & 0xff]
+         ^ te2[(s2 >> 8) & 0xff] ^ te3[s3 & 0xff] ^ k[0];
+      t1 = te0[s1 >> 24] ^ te1[(s2 >> 16) & 0xff]
+         ^ te2[(s3 >> 8) & 0xff] ^ te3[s0 & 0xff] ^ k[1];
+      t2 = te0[s2 >> 24] ^ te1[(s3 >> 16) & 0xff]
+         ^ te2[(s0 >> 8) & 0xff] ^ te3[s1 & 0xff] ^ k[2];
+      t3 = te0[s3 >> 24] ^ te1[(s0 >> 16) & 0xff]
+         ^ te2[(s1 >> 8) & 0xff] ^ te3[s2 & 0xff] ^ k[3];
+    }
     s0 = t0; s1 = t1; s2 = t2; s3 = t3;
   }
 
@@ -127,7 +146,12 @@ inline void inc32(uint8_t ctr[16]) {
 
 } // namespace
 
-__kernel void aes_gcm_sw_ttable(kernel_arg_t* __UNIFORM__ arg) {
+namespace {
+
+// The software baseline, parameterised on the floor probe's permutation so the
+// two entry points below are the same source with one ordering difference.
+template <int PERM>
+inline void aes_gcm_sw_body(kernel_arg_t* __UNIFORM__ arg) {
   lmem_layout_t* lm = (lmem_layout_t*)__local_mem();
 
   // Cooperative fill: the CTA spans every warp on the core, so the tables
@@ -194,7 +218,7 @@ __kernel void aes_gcm_sw_ttable(kernel_arg_t* __UNIFORM__ arg) {
     for (uint32_t b = 0; b < blocks; ++b) {
       inc32(ctr);
       uint8_t ks[16];
-      aes128_encrypt(lm, ctr, ks);
+      aes128_encrypt<PERM>(lm, ctr, ks);
       for (int i = 0; i < 16; ++i) {
         const uint8_t c = (uint8_t)(pt[16 * b + i] ^ ks[i]);
         ct[16 * b + i] = c;
@@ -208,7 +232,7 @@ __kernel void aes_gcm_sw_ttable(kernel_arg_t* __UNIFORM__ arg) {
     if (tail != 0) {
       inc32(ctr);
       uint8_t ks[16];
-      aes128_encrypt(lm, ctr, ks);
+      aes128_encrypt<PERM>(lm, ctr, ks);
       for (uint32_t i = 0; i < tail; ++i) {
         const uint8_t c = (uint8_t)(pt[16 * blocks + i] ^ ks[i]);
         ct[16 * blocks + i] = c;
@@ -226,12 +250,41 @@ __kernel void aes_gcm_sw_ttable(kernel_arg_t* __UNIFORM__ arg) {
     ghash_mul(lm->htable, y);
 
     uint8_t ej0[16];
-    aes128_encrypt(lm, j0, ej0);
+    aes128_encrypt<PERM>(lm, j0, ej0);
     uint8_t* tag = tag_base + GCM_TAG_BYTES * msg;
     for (int i = 0; i < 16; ++i) {
       tag[i] = (uint8_t)(y[i] ^ ej0[i]);
     }
   }
+}
+
+} // namespace
+
+__kernel void aes_gcm_sw_ttable(kernel_arg_t* __UNIFORM__ arg) {
+  aes_gcm_sw_body<0>(arg);
+}
+
+// Bit-identical to aes_gcm_sw_ttable, and the only thing it measures is the
+// distance between two kernels that cannot differ -- the floor below which a
+// cycle result from the SOFTWARE kernel is not legible. It exists because the
+// probe this application already had reverses statements inside ghash_mul_hw,
+// which this kernel never calls: it read 0.00%, byte-identical, and bounded
+// nothing.
+//
+// The probe has a validity condition and it must be checked on every use: the
+// two entry points must differ by a SMALL FIXED number of instructions that
+// does not grow with the block count. Absolute, not proportional -- a valid
+// probe perturbs the count by a constant, so a percentage threshold rejects it
+// at small problem sizes and accepts a scaling perturbation at large ones. A
+// probe that fails this silently is worse than no probe, because it fails
+// toward ending the inquiry; see the rejected probes in
+// tests/crypto/chacha_poly/kernel.cpp for what that looks like.
+//
+// Measured at c2w4t16, -n128, blocks 16/32/64: the counts are EQUAL, not merely
+// fixed -- 649,078 / 1,257,462 / 2,474,230 on both entry points -- and the cycle
+// distance is 0.16% to 0.47%. See section 16.2 of the proposal.
+__kernel void aes_gcm_sw_ttable_perm(kernel_arg_t* __UNIFORM__ arg) {
+  aes_gcm_sw_body<1>(arg);
 }
 
 // ---------------------------------------------------------------------------

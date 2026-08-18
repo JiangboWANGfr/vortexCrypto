@@ -36,22 +36,28 @@ uint32_t g_impl = 0;
 struct impl_t {
   const char* kernel;
   const char* label;
+  bool needs_units;   // issues aes32*/clmul*, so requires EX_SYM and EX_AUTH
 };
 
 const impl_t kImpls[] = {
-  { "aes_gcm_sw_ttable", "sw_ttable" },
+  { "aes_gcm_sw_ttable", "sw_ttable", false },
   // Same host program, buffers, vectors, counter reduction and output format;
   // only the device code differs, which is the whole point of selecting by -i
   // rather than building a second application.
-  { "aes_gcm_hw_s1",     "hw_s1" },
+  { "aes_gcm_hw_s1",     "hw_s1", true },
+  // Bit-identical to sw_ttable; see kernel.cpp. Measures the apparatus, not
+  // the cipher, and it is the software kernel's own floor -- the existing
+  // ghash_mul_hw probe reads 0.00% here because this kernel never calls it.
+  { "aes_gcm_sw_ttable_perm", "sw_perm", false },
 };
 
 const uint32_t kNumImpls = (uint32_t)(sizeof(kImpls) / sizeof(kImpls[0]));
 
-// AES-128-GCM with a 96-bit IV and empty AAD, from McGrew & Viega's GCM
-// specification (also NIST CAVP gcmEncryptExtIV128). Two cases: one block,
-// which exercises a single GHASH multiply, and four blocks, which exercises
-// the chain and the length block.
+// AES-128-GCM with a 96-bit IV, from McGrew & Viega's GCM specification (also
+// NIST CAVP gcmEncryptExtIV128). One block, which exercises a single GHASH
+// multiply; four blocks, which exercises the chain and the length block; and
+// test case 4, which carries 20 bytes of AAD over a 60-byte plaintext and so
+// exercises AAD and a partial tail together.
 struct gcm_vector_t {
   const char* name;
   const uint8_t key[16];
@@ -263,7 +269,7 @@ int main(int argc, char** argv) {
   // the run would produce a plausible-looking wrong ciphertext. The two-level
   // check would catch it here, but only after the fact and only because this
   // application happens to have a reference; nothing protects a real caller.
-  if (g_impl != 0) {
+  if (kImpls[g_impl].needs_units) {
     uint64_t isa_flags = 0;
     CHECK(vx_device_query(dev, VX_CAPS_ISA_FLAGS, &isa_flags));
     const bool has_sym  = (isa_flags & VX_ISA_EXT_SYM)  != 0;

@@ -136,8 +136,8 @@ inline void inc32(uint8_t ctr[16]) {
   }
 }
 
-// AES-128-GCM encryption with an empty AAD and a 96-bit IV, over a whole
-// number of blocks. SP 800-38D section 7.1.
+// AES-128-GCM encryption with a 96-bit IV, arbitrary AAD and an optional
+// partial final block. SP 800-38D section 7.1.
 inline void gcm_encrypt(const uint8_t rk[AES128_RK_BYTES],
                         const uint8_t h[16],
                         const uint8_t iv[GCM_IV_BYTES],

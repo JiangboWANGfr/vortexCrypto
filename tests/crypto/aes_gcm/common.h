@@ -1,10 +1,10 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
 
-// AES-128-GCM, one independent message per thread, empty AAD.
-// Every message shares the key schedule, the T-tables and the GHASH table;
-// each has its own 96-bit IV. The device copies the three shared tables into
-// local memory once per CTA, so a data-dependent table lookup lands on the
+// AES-128-GCM, one independent message per thread.
+// Every message shares the key schedule, the T-tables, the GHASH table and the
+// AAD; each has its own 96-bit IV. The device copies the three shared tables
+// into local memory once per CTA, so a data-dependent table lookup lands on the
 // 32-bank LMEM rather than the single-bank D-cache.
 
 #define AES_BLOCK_BYTES 16
