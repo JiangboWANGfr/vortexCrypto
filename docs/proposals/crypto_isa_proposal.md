@@ -213,43 +213,63 @@ CONFIGS="-DVX_CFG_NUM_THREADS=32" OPTS="-n128 -b16 -i0" make run-simx
 
 | | simx | rtlsim |
 | --- | ---: | ---: |
-| cycles | 2,464,332 | 2,629,820 |
-| instrs | 175,816 | 175,816 |
-| cycles/block (64 B) | 1203.29 | 1284.09 |
-| bytes/cycle | 0.0532 | 0.0498 |
+| cycles | 2,258,400 | 2,548,408 |
+| instrs | 175,512 | 175,512 |
+| cycles/block (64 B) | 1102.73 | 1244.34 |
+| bytes/cycle | 0.0580 | 0.0514 |
 
-Retired instruction counts agree exactly. The cycle gap is 6.7%, against 16.3%
-for aes_gcm at the same byte count, so whatever section 5's modelling
-discrepancy is, it tracks something aes_gcm does and this does not. Three
-rtlsim runs returned identical cycle and instruction counts.
+Retired instruction counts agree exactly; the cycle gap is 12.8%.
+
+### The steady-state gate no longer passes at the comparison point
 
 Steady-state evidence, simx, `-n128`:
 
 | blocks/msg | bytes/msg | cycles | ratio |
 | ---: | ---: | ---: | ---: |
-| 4 | 256 | 754,851 | |
-| 8 | 512 | 1,242,231 | 1.646 |
-| 16 | 1024 | 2,464,332 | 1.984 |
+| 8 | 512 | 1,190,454 | |
+| 16 | 1024 | 2,258,400 | 1.897 |
+| 32 | 2048 | 4,579,135 | 2.028 |
 
-`-b16` is the first size inside the gate, and it is the size the byte matching
-asks for independently. Below it the per-message cost that does not scale with
-the payload is still visible, and here that cost is algorithmic rather than a
-fill: at `-b4` the counter-zero block alone is a fifth of the ChaCha20 work.
+`-b16` is **outside** the `[1.96, 2.04]` gate of section 4; `-b32` is inside it.
+An earlier revision of this kernel passed at `-b16` with 1.984, and what moved
+is the kernel rather than the measurement: fusing the keystream into the XOR
+(section 9) cut the per-block cost, which raises the share taken by the
+per-message cost that does not scale with the payload -- the counter-zero
+ChaCha20 block, the Poly1305 setup and the tag. A two-point fit puts that fixed
+term at about 122.5k cycles, 5.4% of the total at `-b16`.
+
+The gate is left failing rather than resolved, and the recorded row stays at
+`-b16`. The alternative is to record `-b32`, which passes the gate and destroys
+the one thing that makes this application comparable to aes_gcm at all: 1024
+bytes per message on both sides. A gate calibrated against a kernel with a
+larger per-block cost necessarily loosens when that cost is cut, so it failing
+here is a consequence of the fusion working rather than evidence against the
+number. The fixed-cost share is stated above so that a reader can discount it
+explicitly instead of trusting the gate to have done it.
 
 Provenance:
 
-- commit `16c8506e288376920587a63c2c174b0f160243b2`
-- `VX_config.toml` sha256 `3f020a15364555da8da610b5f78501f670299440685846fb40bb0f757593fb93`
-- `VX_types.toml` sha256 `2e22f4fbac08fe54036ee80b01116615f7675bb7cc512f6de77571ca5d91f877`
+- commit `4e7ee9c4d`, crypto units off,
+  `CONFIGS="-DVX_CFG_NUM_THREADS=32"`
 - clang 20.1.8 (vortexgpgpu/llvm 4c836512)
+- every row re-taken after a concurrent-build hazard was identified in this
+  shared tree: `make` exit status recorded, the driver `.so` mtime compared
+  across each build, the `CONFIGS` banner checked for the warp, thread and
+  unit-enable values actually requested, and the application's counter line
+  required to agree with the runtime's `PERF:` line. All rows passed. A build
+  that silently does not run leaves the mtime unchanged and is otherwise
+  invisible: it yields a plausible number from a stale binary.
 
 ### What the two rows say
 
+Both applications measured in the same tree at the same commit, because
+section 5's rows no longer reproduce exactly (section 8):
+
 | `-n128`, 131072 bytes | aes_gcm | chacha_poly | ratio |
 | --- | ---: | ---: | ---: |
-| cycles, simx | 12,255,505 | 2,464,332 | 4.97 |
-| cycles, rtlsim | 14,247,819 | 2,629,820 | 5.42 |
-| instrs | 1,229,052 | 175,816 | 6.99 |
+| cycles, simx | 12,224,492 | 2,258,400 | 5.41 |
+| cycles, rtlsim | 14,379,377 | 2,548,408 | 5.64 |
+| instrs | 1,229,052 | 175,512 | 7.00 |
 
 The software ChaCha20-Poly1305 is five times faster and needs seven times fewer
 instructions than the software AES-GCM over the same bytes. That is not a defect
@@ -265,7 +285,9 @@ no rotate, so each of the four rotates in a quarter-round compiles to
 `slli`/`srli`/`or`, and eighty quarter-rounds per block put 960 instructions of
 rotation into a block that costs about 2611 instructions per lane at the margin
 (the `-b8` to `-b16` instruction delta, per warp, per block). Thirty-seven per
-cent of the block is the ISA's missing rotate.
+cent of the block is the ISA's missing rotate. Section 9 implements that rotate
+and measures what removing it is worth, which is not what this paragraph would
+lead a reader to expect.
 
 ## 7. Hardware: two execute units, named by role
 
@@ -523,7 +545,7 @@ only the warp count moves, but its *speedups* must not be quoted: at
 hardware variant, which has no table, is unaffected. That inflates the ratio to
 7-9x. The honest ISA figure remains the `t32` 2.67x.
 
-## 9. RORI: the same wall, reached from ChaCha20
+## 9. RORI: a third of the instructions, and none of the cycles
 
 `chacha_poly_rori` is the same AEAD in the same application, selected by `-i1`.
 It adds exactly one instruction, and the instruction is deliberately not a
@@ -564,32 +586,35 @@ CONFIGS="-DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_NUM_THREADS=3
   OPTS="-n128 -b16 -i{0,1}" make run-simx
 ```
 
-| | sw simx | rori simx | ratio |
+| | sw | rori | ratio |
 | --- | ---: | ---: | ---: |
-| cycles | 2,387,331 | 2,403,251 | 0.993 |
-| instrs | 177,124 | 135,356 | 1.309 |
-| cycles/block (64 B) | 1165.69 | 1173.46 | |
-| bytes/cycle | 0.0549 | 0.0545 | |
+| cycles, rtlsim | 2,548,408 | 2,513,410 | 1.014 |
+| cycles, simx | 2,258,400 | 2,229,517 | 1.013 |
+| instrs | 175,512 | 131,792 | 1.332 |
+| cycles/block (64 B), rtlsim | 1244.34 | 1227.25 | |
 
-**24% of the instructions removed, and none of the cycles.** On rtlsim the sign
-is the same and slightly stronger: 2,706,858 -> 2,736,057, a 1.1% regression.
+**A third of the instructions removed, and one and a half per cent of the
+cycles.** Both simulators agree on the sign and very nearly on the size.
 
-Two caveats on those two rtlsim numbers, both of which have to be stated rather
-than smoothed over. They were taken from a binary four instructions different
-from the one above (177,120 / 135,352), from an intermediate version of the
-shared-body refactor; and they could not be retaken, because
-`hw/rtl/core/VX_csr_data.sv:198` in the current tree references
-`pipeline_perf.issue.dispatch_stalls[EX_AUTH]` and verilator cannot resolve the
-`issue` scope, so `librtlsim.so` does not build. That is unrelated in-flight
-work in a shared file. The simx rows are therefore primary here, contrary to
-section 4's usual order, and the rtlsim rows are quoted only for their sign.
+The `sw` row here and section 6's are the same number, 2,548,408 / 175,512 on
+rtlsim, measured once with the units off and once with them on. That is the
+check section 8 ran for aes_gcm, and it passes here too: a kernel that issues no
+crypto instruction is unaffected by the units existing. The check is only worth
+anything with the build verification described in section 6's provenance, since
+two identical numbers are equally consistent with the second build never having
+happened; the driver `.so` mtime changed across that build and the `CONFIGS`
+banner reported both units enabled, so it did.
 
-The `sw` row is also 1,308 instructions above section 6's 175,816. Both entry
-points now share one body, templated on how a rotate is spelled, so that a
-comparison between the two rows measures the rotate and nothing else; sharing
-it costs those 1,308 instructions and both rows carry the cost equally. Adding
-`__UNIFORM__` to the shared body's parameter was tried and made it four
-instructions worse, so that is not the cause.
+### The ratio to watch is the divergence, not the speedup
+
+1.014x cycles against 1.332x instructions. Those two ratios should track each
+other in a kernel whose cost is the instructions it issues, and they do not.
+Section 10 records the same divergence for AES before its kernel was fixed --
+9.11x instructions for 2.67x cycles -- and records it closing to 11.56x against
+13.54x afterwards. ChaCha has not closed, which is the single most useful fact
+in this section: it says the ChaCha kernel is still spending its time on
+something the instruction set cannot reach, and it says so without needing to
+identify what.
 
 ### It is not dependency latency, and more warps do not help
 
@@ -610,32 +635,47 @@ something that is neither instruction issue nor arithmetic latency.
 
 ### Where the cycles go
 
-IPC is 0.074. The arithmetic closes on the measured numbers without a model:
+IPC is 0.078. The arithmetic closes on the measured numbers without a model:
 each 64-byte block costs a lane 16 word loads and 16 word stores, so 4 warps x
 16 blocks x 32 memory instructions is 2048 warp memory instructions, and at 32
 lanes each that is 65,536 individual accesses -- 262,144 bytes, exactly the
-plaintext read plus the ciphertext written. Against 2,387,331 cycles that is
-**36.4 cycles per access**, and it accounts for essentially the whole run.
-(Spill traffic is on top of this, so 36.4 is an upper bound on the per-access
-cost and 65,536 a lower bound on the access count.)
+plaintext read plus the ciphertext written. Against 2,258,400 cycles that is
+**34.5 cycles per access**, and it accounts for essentially the whole run.
+Stack traffic is on top of this, so 34.5 is an upper bound on the per-access
+cost and 65,536 a lower bound on the access count.
 
 The cause is the workload shape rather than the algorithm. One independent
 message per thread puts consecutive lanes 1024 bytes apart, so every warp
-memory instruction touches 32 distinct cache lines, and those are serialised
-twice over: `DCACHE_NUM_BANKS` is 1, and on the DE10-Pro image
-`PLATFORM_MEMORY_NUM_BANKS` is also 1, since only one of the four DDR4 channels
-was ever on the Vortex path.
+memory instruction touches 32 distinct cache lines, and `DCACHE_NUM_BANKS` is
+1 with L2 and L3 off.
+
+A correction, because the first version of this section overstated it: these
+rows were **not** taken under `PLATFORM_MEMORY_NUM_BANKS=1`. The banner says 2.
+One DDR4 channel is a property of the DE10-Pro bitstream, where only one of the
+four was ever on the Vortex path; the simulated configuration these numbers come
+from has two. The direction matters and is not the flattering one -- the
+simulated memory system is the more generous of the two, so a board measurement
+should come out worse than what is recorded here, not better.
 
 ### What this settles
 
-This is section 8's 127-cycle operand stall arrived at from the other
-algorithm, and it arrives with no table gathers anywhere in the picture --
-ChaCha20 has no tables to delete. The wall is therefore not an artefact of
-what the AES variant removed from the memory system; it is there when nothing
-was removed. Two independent algorithms, two independent routes, one
-conclusion: **on this configuration the instruction set is not the binding
-constraint, and an instruction that only removes arithmetic cannot show up in
-cycles.**
+**This conclusion has been narrowed, and the narrowing is the point.** It
+originally read: two independent algorithms, two independent routes, one
+conclusion -- on this configuration the instruction set is not the binding
+constraint. The AES half of that has since collapsed. Section 10 shows the AES
+wall was a property of the kernel rather than of the machine: two code defects,
+non-inlined helpers forcing arrays onto an 8 KB-strided stack and byte-wise
+accessors defeating strict-align widening, and once removed the same
+configuration yields 13.54x. The wall was removable.
+
+What survives is narrower and still worth having. ChaCha20 has no tables, so
+nothing was deleted from its memory system and the divergence cannot be an
+artefact of a deletion -- but nor is it evidence about the machine. The honest
+statement is about this kernel: **chacha_poly still carries the class of defect
+that AES has had removed, and until it is gone every ChaCha ISA number measures
+the defect rather than the instruction set.** `rori` removing a third of the
+instructions for one and a half per cent of the cycles is a measurement of that
+defect, not of the rotate.
 
 The immediate consequence is that a fused ChaCha xor-rotate -- the natural next
 step, and the only one that would be a genuine extension -- removes a further
@@ -656,6 +696,44 @@ Provenance:
   `VX_csr_data.sv`, `sim/simx/core.*` and `perf.cpp` at measurement time; both
   rows were measured in that same tree, so the comparison between them stands
 - `CONFIGS="-DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_NUM_THREADS=32"`
+
+### Three attempts to remove the defect, and what they cost
+
+The defect is named precisely: the keystream materialises. The permutation
+keeps all sixteen words in registers -- the double-round loop is 162
+instructions with zero memory operations -- and then they are spilled and
+reloaded four at a time by the XOR. Each reload is a per-hart stack access at
+`vx_start.S`'s 8 KB stride, which is 32 distinct cache lines per warp, the same
+shape as the payload layout at four times the stride.
+
+A prediction was registered before the attempts: if the payload and the
+keystream each contribute about 32 line-touches per block and the machine is
+line-touch-bound, removing the keystream half alone is worth close to 2x, with
+1.3x named in advance as the point below which the model would be abandoned.
+
+| attempt | result |
+| --- | --- |
+| Fuse the keystream into the XOR so no `ks[]` array exists | **-5.7%** (2,394,487 -> 2,258,400) |
+| Unroll the absorb, so constant indices let SROA hold the words in registers | **+19% worse** (2,258,400 -> 2,688,685) |
+| Drop the precomputed `r*5` limbs to free four registers | byte-identical binary |
+
+1.06x is below the 1.3x floor, so the line-touch model does not survive in the
+form it was stated. But the intervention did not achieve its precondition
+either: the keystream still materialises after the fusion, reloaded through a
+register holding a stack address rather than through `sp`, which is why an
+earlier count of `sp`-relative accesses missed it entirely.
+
+Taken together the three say the keystream cannot be held in registers here.
+Sixteen keystream words alongside the Poly1305 accumulator, key limbs and pad
+do not fit in thirty-two registers, and every route to making them fit costs
+more than it saves -- the unroll by raising pressure further, the `r*5` removal
+by freeing registers the compiler was already rematerialising. That is three
+measured failures rather than the live-value arithmetic that was retracted
+earlier, and it is the first real evidence for the subgroup-cooperative form,
+which reduces the per-lane state from sixteen words to four instead of trying
+to schedule sixteen.
+
+## 10. AES-GCM re-recorded, and what it does to section 8
 
 ### Re-recorded: what the instruction set is worth once the kernel is not in the way
 
