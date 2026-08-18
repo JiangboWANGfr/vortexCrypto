@@ -315,6 +315,18 @@ __kernel void chacha_poly_sw(kernel_arg_t* __UNIFORM__ arg) {
 // Bit-identical to chacha_poly_sw. Its only purpose is to measure the distance
 // between two kernels that cannot differ, which is the floor below which a
 // result from this application is not legible.
+//
+// The probe has a validity condition and it must be checked on every use: the
+// two entry points must report instruction counts within about 0.01% of each
+// other. Semantic equivalence does not imply instruction identity -- an
+// equivalent reordering elsewhere in this family produced 1.24% more
+// instructions, which would have been reported as a floor two orders of
+// magnitude too large. At the recorded point these differ by 4 instructions in
+// 175,512, or 0.002%. A probe that fails silently is worse than no probe.
+//
+// The floor is also specific to a configuration and an application, not a
+// property of the machine: the equivalent probe on aes_gcm measures 0.3% at
+// c1w16t4 and 2.9% at c1w4t32. Measure it where the result is quoted.
 __kernel void chacha_poly_sw_perm(kernel_arg_t* __UNIFORM__ arg) {
   chacha_poly_body<rot_sw, true>(arg);
 }
