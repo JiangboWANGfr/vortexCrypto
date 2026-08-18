@@ -1601,3 +1601,75 @@ decline it absent a measurement that isolates the directional part. The
 conservative two-sided bound stays. What changes is only the forward-looking
 claim that a deliberately chosen access order is worth measuring -- a statement
 about opportunity, not a relaxation of any bound already published.
+
+## 15. The unexplained regression, resolved on a pre-registered prediction
+
+Section 12 recorded a post-AAD movement it could not attribute: the software
+kernel +19-20% cycles with instructions *falling*, the hardware kernel 9% faster
+from a change that only adds work. Section 14 proposed a mechanism -- AAD added
+live values across the message loop, shifting register allocation, spill slot
+addresses, and therefore the LMEM bank-conflict pattern -- and stated the test
+**before running it**: if that is the cause, the movement must be smaller at
+c1w4t32, where `LMEM_NUM_BANKS = SIMD_WIDTH` gives 32 banks against 16.
+
+Both shapes measured in one pass, each row's `num_cores`/`num_threads` asserted
+from the application's own banner. Pre-AAD reference is the earlier run in which
+both shapes were likewise shape-verified.
+
+| shape | LMEM banks | sw pre | sw post | move | hw pre | hw post | move |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| c1w4t32 | 32 | 14,379,377 | 15,328,651 | **+6.60%** | 1,061,573 | 1,032,241 | **-2.76%** |
+| c2w4t16 | 16 | 7,744,779 | 9,338,582 | **+20.58%** | 655,712 | 597,233 | **-8.92%** |
+
+**Confirmed, and more sharply than the prediction required.** Halving the LMEM
+banks multiplies the movement by **3.1x on the software kernel and 3.2x on the
+hardware kernel** -- two kernels whose movements have *opposite signs*, scaling
+by the same factor. Random layout scatter does not do that. A mechanism that
+acts through bank conflicts does.
+
+**What this does not establish.** The two shapes differ in cores, threads per
+warp, LMEM banks *and* D-cache banks simultaneously, so "32 versus 16 LMEM
+banks" is not isolated -- only correlated with the change. And the mechanism is
+not the whole account even on its own terms: the residual +6.60% at 32 banks is
+still 2.3x that shape's widest floor sample, so something survives at the bank
+count where the effect should have largely vanished. One problem size.
+
+### 15.1 The withdrawn ratio, recovered
+
+Section 12 withdrew the +86% shape gain because one endpoint had moved 19% for
+unexplained reasons. Both endpoints are now measured post-AAD in a single
+shape-verified pass:
+
+| | c1w4t32 | c2w4t16 | gain |
+| --- | ---: | ---: | ---: |
+| sw_ttable | 15,328,651 | 9,338,582 | **+64.1%** |
+| hw_s1 | 1,032,241 | 597,233 | **+72.8%** |
+| ratio | 14.85x | 15.64x | |
+
+A peer session measuring ChaCha20-Poly1305 -- a kernel that requests no local
+memory at all, so with a disjoint bottleneck story -- records **+59.3%** for the
+same shape change on rtlsim, at roughly 1000x its floor at that shape. Three
+figures in one band, across two AEADs, two instruction-set extensions, and two
+different reasons for being memory-bound.
+
+**So the largest single lever measured in this project is the memory
+configuration, not the instruction set.** Doubling the D-cache banks at constant
+lane count, with no ISA change of any kind, is worth more than every crypto
+instruction added here.
+
+### 15.2 A measurement invalidated, and what survived it
+
+The first attempt at the table above returned all four rows byte-identical with
+`num_cores=2` on every row. Cause: `CONFIGS` passed to a *test* directory builds
+the kernel only. Shape lives in `sw/runtime/librtlsim.so`, so every row ran on
+whichever shape was built last -- in that instance, another session's. `make
+run-rtlsim` is the form that rebuilds the driver. No error was raised and all
+four rows passed.
+
+The scoping rule this forces, worth stating because it decides what else has to
+be re-checked: **a probe that rebuilds only the kernel between its two rows
+remains a valid relative measurement** -- both rows ran on the same driver -- but
+its *shape label* is unverified. Deltas keep; shape attributions do not. The
+floor probe (-4.68%) and the round-key probe (-14.14%) were both of this form.
+Their labels are now confirmed independently: 597,233 reproduces exactly at a
+driver-verified c2w4t16.
