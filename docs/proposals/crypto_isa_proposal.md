@@ -2721,11 +2721,62 @@ Not known, and this method cannot reach it:
   muxes recovered. `sym_aes` is 1,284 ALM per core at 16 lanes, 0.6% of a
   208,513-ALM design with 4.0% of period slack, so the area is affordable on
   paper -- but neither the fitter nor the timing analyser has seen it.
-- **`ghmul.sg4`.** The GHASH half is still software-routed and is now the
-  majority of what remains: about 24 of the 30.88 warp-instructions per block.
-  Section 13.1 measured GHASH acceleration as negative twice, but both of those
-  were S2 -- stateful, lane-local -- and this would be a stateless group
-  operation on a layout that did not exist then.
+- **`ghmul.sg4`.** Built; see 21.5. Correct in both models and a regression
+  against fusing the AES alone, for a reason that is in the code generator
+  rather than in the instruction.
 - **Whether the recorded configuration should move again.** Every row in this
   document is measured without the stack skew; sections 19, 20 and 21 are the
   case for changing that, and it is not a decision to take inside a section.
+
+### 21.5 `ghmul.sg4`: built, correct, and it makes things worse
+
+The GHASH half was the majority of what remained after 21.2, so it was built on
+the same terms.
+
+```
+ghmul.sg4 rd, rs1, rs2      # custom-3 (0x7B), funct3 = 2
+```
+
+The quad's `rs1` and `rs2` are one 128-bit value each, a limb per lane; each lane
+receives its limb of `A*H mod x^128+x^7+x^2+x+1`, in the same reflected limb
+domain the software path uses, so the kernel's `brev8` conventions are untouched.
+Sixteen 32x32 carry-less multiplies per quad -- **four per lane against the one
+the lane-local path needs**, which quadruples the multiplier array of what
+section 13.1 records as the largest crypto block.
+
+Verified three ways on constant inputs: the RTL, simx and an independent
+reference implementation all return `b34491b3 cc2389d5 e6fe8193 76a9fdbf` for
+A = (0x11111111, 0x22222222, 0x33333333, 0x44444444), H = (0x01020304 .. 07).
+Correct on both drivers with AAD, at the tree default and at `c2w4t16` where four
+quads share a warp; two runs identical.
+
+**And it is a regression against fusing the AES alone.** `c2w4t16`, `-n128 -b64`,
+rtlsim, stack skew on:
+
+| | cycles | instrs | vs hw_s1 |
+| --- | ---: | ---: | ---: |
+| hw_s1 | 543,229 | 212,186 | |
+| hw_s3f, AES fused | 371,139 | 236,138 | **-31.7%** |
+| hw_s3g, both fused | 435,335 | 322,594 | -19.9% |
+
+The instruction removes what it was designed to remove: the software distributed
+multiply is eight shuffles and eleven `clmul`-class operations per call, and
+`aes_gcm_hw_s3g` carries **36 custom encodings against `hw_s3f`'s 85, and 325
+static instructions against 530**. Statically the kernel is 39% smaller.
+
+**Dynamically it retires 37% more.** 322,594 against 236,138. A kernel half the
+size that executes half again as many instructions is a code-generation effect,
+not an instruction-set one: with the routing gone the loop body is small enough
+that clang stops unrolling it, and the per-iteration counter, address and branch
+work costs more than the fusion saved. Forcing `#pragma unroll 2` recovers part
+of it -- 440,070 to 435,335 -- and nothing like all.
+
+**Recorded as a null with the cause unresolved.** What is established: the
+instruction is correct in both models, its area cost is a fourfold multiplier
+array on the largest crypto block, and composing it into this kernel loses 12
+percentage points against fusing the AES round alone. What is not established is
+why a smaller kernel retires more instructions, and until that is understood the
+GHASH fusion should not be read as either a win or a loss on its own terms.
+
+**The AES fusion is the result of this section.** It stands at -31.7%, it does
+not depend on the multiply, and it costs no new multiplier.
