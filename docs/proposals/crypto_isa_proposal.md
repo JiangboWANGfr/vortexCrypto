@@ -1952,3 +1952,112 @@ cross-algorithm row compares like with like for the first time since section 12.
 - **Whether AAD belongs in the measured configuration at all.** Every row here
   is `-a0 -t0`. The feature is implemented, checked and regression-covered, but
   nothing is measured *with* it, so its runtime cost is unrecorded.
+
+## 17. S3 pre-registered: what a subgroup-cooperative AES would have to convert
+
+This section is written **before** the measurement it describes, and committed
+before the numbers exist, for the reason section 15 gives: a prediction stated
+afterwards is not a prediction.
+
+S3 in the taxonomy this project now uses is a *subgroup-cooperative, stateless*
+extension: the algorithm's state is distributed across lanes' general registers,
+the instruction adds fixed cross-lane routing, and nothing survives retirement
+inside the unit. For AES the natural mapping is four lanes to the four state
+columns, because `aes32esmi`'s byte-step already makes output column `j` consume
+state column `(j + bs) & 3` -- so ShiftRows, which in the lane-local form is
+free (it is a choice of which register to name), becomes a rotate within an
+aligned quad.
+
+### 17.1 The arithmetic that has to be said first
+
+**A subgroup AES is instruction-neutral per block, exactly, by construction.**
+Four lanes doing a quarter of the work each is the same warp-instruction count
+as one lane doing all of it: the mapping quarters the work per block and
+quarters the blocks per warp simultaneously. At the recorded point the shipped
+`hw_s1` issues 160 `aes32` per block from one lane, which is 10 warp-instructions
+per block across 16 lanes; a byte-granular `.sg4` form issues 40 per quad-pass,
+which is also 10 per block. There is no instruction saving to protect, and a
+design that reports "16 issues become 4" is quoting a per-subgroup count while
+the subgroup covers four times fewer blocks.
+
+The saving only appears if the four byte-steps are **fused into one instruction
+per round**, which is what makes S3 worth an opcode at all:
+
+| | per block | |
+| --- | ---: | --- |
+| `hw_s1` total | **25.899** | 212,162 instructions / 8192 blocks |
+| ... of which `aes32` | 10.00 | 160 per block, 16 blocks per warp |
+| S3 probe: adds 3 rotates per round | +7.50 | 120 per quad-pass-set / 16 blocks |
+| S3 probe: adds 2 transposes per block | +0.50 | 8 wgather / 16 blocks |
+| **probe predicted** | **33.899** | **277,700 instructions, +30.9%** |
+| fused round (`aesrm.sg4`), hypothetical | 18.899 | **-27.0%** |
+
+Round-key loads (2.75 per block), payload loads and stores, the AAD path, the
+GHASH half and the number of messages in flight per warp are **unchanged** in
+both forms: the quad round-robins over the four messages it owns rather than
+giving four lanes to one message, so the memory side of the kernel is left
+exactly where it is. That is deliberate. It costs two 4x4 transposes per block
+and it keeps the comparison attributable to the keystream generator.
+
+### 17.2 Which half of the machine this acts on
+
+Section 13.3 split an AES ISE cleanly and measured both halves: **"44 key loads
+-> 0. Measured at -14.1%. Converts"** against **"160 aes32 -> 10 round
+instructions ... Unlikely to convert"**. Counted against the kernel, every SG4
+layout including this one issues the same 11 warp-loads of round key per four
+blocks that the shipped kernel issues, and the same payload traffic.
+
+**So this removes zero loads. It acts entirely on the half that has never
+converted here.** The three in-tree measurements of removing arithmetic all have
+the wrong sign: `ghred32` -1.96% instructions for +10.2% cycles, `rori` -24.4%
+for +13.8%, and the `ilp` variant identical in instruction count for +7.4%. The
+best conversion rate ever measured in this tree is **r = 0.837**, and it came
+from removing loads.
+
+One counterweight is often quoted against that -- section 10's "the machine is
+at 68% of peak issue", "0% crypto backpressure", "`aes32` is 39% of the
+instruction stream". Those were taken at `c1w{4,8,16}t4`. At `c2w4t16`, where
+every recorded row now lives, per-core IPC is 106,081/594,958 = **0.178** with
+`ISSUE_WIDTH = 1`: the issue slot is 82% idle. The 39% mix figure does transfer
+(10 of 25.899 warp-instructions per block is 38.6%); the 68% does not.
+
+### 17.3 The probe, and why it needs no hardware
+
+The probe is a kernel entry point, `aes_gcm_hw_sg4`, and it changes no RTL,
+because **this tree already has the routing**. `SHFL` (UP/DOWN/BFLY/IDX),
+`VOTE`/`BALLOT` and `WGATHER` are decoded unconditionally in every build on
+custom0/custom1, implemented in RTL and simx, and `vx_transpose4` is already
+written as four `wgather`. With `mask = 0x3c`, `cval = 3` and a per-lane
+`bval = (c + p) & 3`, `SHFL.IDX` resolves to `(i & ~3) | ((i + p) & 3)` -- the
+aligned rotate -- identically at 4, 16 and 32 threads.
+
+### 17.4 The rule, fixed in advance
+
+Let `r = Dcycles% / Dinstrs%` measured on the probe against `hw_s1` at the
+recorded point.
+
+- **KILL-C, integrity.** If the probe's instruction count is not within two
+  percentage points of the predicted +30.9%, the lane mapping or the transpose
+  accounting is wrong. The cycle number is not read and not reported until the
+  count is explained and the prediction re-registered. This check fires on my
+  arithmetic, not on the machine.
+- **KILL-B, weak conversion.** The fused round is worth -27.0% instructions, so
+  clearing 10% of cycles -- about twice this kernel's 4.68% floor -- needs
+  `r >= 0.370`. If the measured `r` is below that, **stop: do not write the
+  RTL.** Record the null.
+- **KILL-A, layout penalty.** If `r > 0.837`, the excess is not instruction
+  count, because 0.837 is the highest rate this machine has ever shown and it
+  was for loads. The excess is the subgroup layout itself, which the fused form
+  still pays. **Stop** unless the excess is identified and removed.
+- **BUILD only for `0.370 <= r <= 0.837`.**
+
+The probe is asymmetric and that is worth stating: a *gain* would be decisive,
+because it would appear despite +30.9% instructions; a *loss* is not, because it
+could be either the machine's conversion rate or the layout. The rule above is
+written so that the ambiguous outcome stops the work rather than licensing it.
+
+### 17.5 Prediction
+
+I expect **KILL-B**: `r` between 0.15 and 0.40, and the probe landing between
++5% and +12% of cycles. If it is built anyway I expect the fused form to land
+within +/-6% of `hw_s1`, inside the floor, quotable only as a null.
