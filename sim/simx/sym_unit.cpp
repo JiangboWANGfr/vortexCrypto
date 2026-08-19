@@ -90,6 +90,28 @@ void SymUnit::execute(instr_trace_t* trace) {
   uint32_t bs = symArgs.bs & 0x3;
   uint32_t shamt = symArgs.shamt & 0x1F;
 
+  if (sym_type == SymType::AESRM_SG4 || sym_type == SymType::AESRF_SG4) {
+    // Lane j of each aligned quad produces state column j of the next round,
+    // taking byte r from the column in lane (j+r)&3. The source lane's mask is
+    // deliberately NOT consulted: the instruction requires a converged quad,
+    // and this is the rule the RTL implements, so the two cannot drift.
+    const bool is_mix = (sym_type == SymType::AESRM_SG4);
+    for (uint32_t t = 0; t < num_threads; ++t) {
+      if (!tmask.test(t))
+        continue;
+      uint32_t acc = (uint32_t)rs1_data[t].u;
+      for (uint32_t r = 0; r < 4; ++r) {
+        const uint32_t src = (t & ~3u) | ((t + r) & 3u);
+        uint8_t sel = (uint8_t)(((uint32_t)rs2_data[src].u >> (8 * r)) & 0xff);
+        uint8_t sb = kAesSbox[sel];
+        uint32_t so = is_mix ? aes_mixcol_byte(sb) : (uint32_t)sb;
+        acc ^= rol32(so, 8 * r);
+      }
+      rd_data[t].u = acc;
+    }
+    return;
+  }
+
   if (sym_type == SymType::RORI) {
     for (uint32_t t = 0; t < num_threads; ++t) {
       if (!tmask.test(t))

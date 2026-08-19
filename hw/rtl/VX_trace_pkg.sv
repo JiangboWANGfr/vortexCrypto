@@ -444,6 +444,10 @@ package VX_trace_pkg;
                 INST_SYM_AES32ESI:  `TRACE(level, ("AES32ESI"))
                 INST_SYM_AES32ESMI: `TRACE(level, ("AES32ESMI"))
                 INST_SYM_RORI:      `TRACE(level, ("RORI"))
+            `ifdef VX_CFG_EXT_SYM_SG4_ENABLE
+                INST_SYM_AESRM_SG4: `TRACE(level, ("AESRM.SG4"))
+                INST_SYM_AESRF_SG4: `TRACE(level, ("AESRF.SG4"))
+            `endif
                 default:            `TRACE(level, ("?"))
             endcase
         end

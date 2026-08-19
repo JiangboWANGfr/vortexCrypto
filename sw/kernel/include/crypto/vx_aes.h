@@ -68,6 +68,32 @@ extern "C" {
     __out;                                                                   \
 })
 
+
+// Fused subgroup AES round -- one instruction advances a whole 128-bit state
+// held one column per lane across an aligned quad. rs1 is this lane's round-key
+// column, rs2 is this lane's state column, rd is the next state column.
+//
+// The quad MUST be converged: every lane of the quad is read by every other and
+// neither model consults the source lane's mask. Custom-3 (0x7B), funct3 0 for
+// the middle round and 1 for the final round; executed by EX_SYM
+// (hw/rtl/crypto/sym/VX_sym_aes.sv, sim/simx/sym_unit.cpp) and present only
+// when VX_CFG_EXT_SYM_SG4_ENABLE is defined.
+#ifdef VX_CFG_EXT_SYM_SG4_ENABLE
+inline uint32_t vx_aesrm_sg4(uint32_t rk_col, uint32_t state_col) {
+    uint32_t out;
+    __asm__ (".insn r %1, 0, 0, %0, %2, %3"
+             : "=r"(out) : "i"(0x7B), "r"(rk_col), "r"(state_col));
+    return out;
+}
+
+inline uint32_t vx_aesrf_sg4(uint32_t rk_col, uint32_t state_col) {
+    uint32_t out;
+    __asm__ (".insn r %1, 1, 0, %0, %2, %3"
+             : "=r"(out) : "i"(0x7B), "r"(rk_col), "r"(state_col));
+    return out;
+}
+#endif
+
 #ifdef __cplusplus
 }
 #endif

@@ -1,7 +1,7 @@
 {
   "crypto:perf_gate-aes-gcm-sw:rtlsim": {
     "32": {
-      "cycles": 932257,
+      "cycles": 910621,
       "instrs": 383936
     },
     "app": "crypto/aes_gcm",

@@ -237,7 +237,11 @@ enum class AluType {
 enum class SymType {
   AES32ESI,
   AES32ESMI,
-  RORI
+  RORI,
+  // Fused subgroup AES round, opt-in behind VX_CFG_EXT_SYM_SG4_ENABLE. Reads
+  // across an aligned quad of lanes and requires the quad to be converged.
+  AESRM_SG4,
+  AESRF_SG4
 };
 
 struct IntrSymArgs {

@@ -132,6 +132,53 @@ module VX_sym_aes import VX_gpu_pkg::*; #(
         assign aes_result[i] = execute_if.data.rs1_data[i] ^ rol32(so, bs);
     end
 
+`ifdef VX_CFG_EXT_SYM_SG4_ENABLE
+    // Fused subgroup round. Lane j of each aligned quad produces state column
+    // j of the next round, which by ShiftRows takes byte r from column (j+r)&3
+    // -- and under the subgroup layout that column lives in lane (j+r)&3. The
+    // source index is a genvar expression, so the cross-lane network is a fixed
+    // byte transpose within the quad: sixteen bytes in, sixteen out, no mux.
+    //
+    // Enumerating all four byte steps also collapses the two 4:1 muxes the
+    // lane-local form needs -- sel_byte on bs and rol32 on bs -- into constant
+    // wiring, which pays for part of the four-fold S-box array.
+    //
+    // PRECONDITION: the quad must be converged. Every lane of the quad is read
+    // by every other, and this unit does not consult the source lane's mask --
+    // deliberately, so that RTL and simx cannot disagree the way SHFL currently
+    // does. A partial quad computes with whatever the masked lanes hold.
+    if ((NUM_LANES < 4) || ((NUM_LANES % 4) != 0)) begin : g_sg4_guard
+        VX_sym_aes_sg4_requires_NUM_LANES_multiple_of_4 __config_error();
+    end
+
+    wire is_sg4_mix = (execute_if.data.op_type == INST_SYM_AESRM_SG4);
+    wire is_sg4     = is_sg4_mix
+                   || (execute_if.data.op_type == INST_SYM_AESRF_SG4);
+
+    wire [NUM_LANES-1:0][3:0][31:0] sg4_terms;
+    wire [NUM_LANES-1:0][`VX_CFG_XLEN-1:0] sg4_result;
+
+    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_sg4
+        for (genvar r = 0; r < 4; ++r) begin : g_step
+            localparam int SRC = ((i / 4) * 4) + ((i + r) % 4);
+            wire [7:0]  b8 = execute_if.data.rs2_data[SRC][8*r +: 8];
+            wire [7:0]  sb = aes_sbox_fwd(b8);
+            wire [31:0] so = is_sg4_mix ? aes_mixcol_byte(sb) : {24'b0, sb};
+            assign sg4_terms[i][r] = rol32(so, 2'(r));
+        end
+        assign sg4_result[i] = execute_if.data.rs1_data[i]
+                             ^ sg4_terms[i][0] ^ sg4_terms[i][1]
+                             ^ sg4_terms[i][2] ^ sg4_terms[i][3];
+    end
+
+    wire [NUM_LANES-1:0][`VX_CFG_XLEN-1:0] unit_result;
+    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_sel
+        assign unit_result[i] = is_sg4 ? sg4_result[i] : aes_result[i];
+    end
+`else
+    wire [NUM_LANES-1:0][`VX_CFG_XLEN-1:0] unit_result = aes_result;
+`endif
+
     `UNUSED_VAR (execute_if.data.rs3_data)
 
     VX_elastic_buffer #(
@@ -141,7 +188,7 @@ module VX_sym_aes import VX_gpu_pkg::*; #(
         .reset     (reset),
         .valid_in  (execute_if.valid),
         .ready_in  (execute_if.ready),
-        .data_in   ({execute_if.data.header,  aes_result}),
+        .data_in   ({execute_if.data.header,  unit_result}),
         .data_out  ({result_if.data.header,   result_if.data.data}),
         .valid_out (result_if.valid),
         .ready_out (result_if.ready)

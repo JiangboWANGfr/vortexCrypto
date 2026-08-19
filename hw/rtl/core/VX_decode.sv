@@ -805,6 +805,26 @@ module VX_decode import
                     default:;
                 endcase
             end
+        `ifdef VX_CFG_EXT_SYM_SG4_ENABLE
+            INST_EXT4: begin
+                // Fused subgroup AES round. INST_EXT4 was declared and decoded
+                // by neither model, so like INST_EXT3 this arm cannot collide
+                // with a ratified encoding: funct3 0 = middle round, 1 = final.
+                // No immediate: the four byte steps are enumerated inside the
+                // instruction, so sym_args_t is unchanged and its fields are
+                // assigned explicitly because the decoder's default is 'x.
+                if (funct3 == 3'h0 || funct3 == 3'h1) begin
+                    ex_type = EX_SYM;
+                    op_type = INST_OP_BITS'(funct3[0] ? INST_SYM_AESRF_SG4
+                                                      : INST_SYM_AESRM_SG4);
+                    op_args.sym.bs = 2'b0;
+                    op_args.sym.shamt = 5'b0;
+                    `USED_IREG (rd);
+                    `USED_IREG (rs1);
+                    `USED_IREG (rs2);
+                end
+            end
+        `endif
         `ifdef VX_CFG_EXT_AUTH_ENABLE
             INST_EXT3: begin
                 // Custom fused GF(2^128) reduction. INST_EXT3 was entirely

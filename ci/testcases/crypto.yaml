@@ -195,3 +195,19 @@ tests:
   configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE
   vars:
     OPTS: -n64 -b4 -a20 -i6
+# The fused subgroup round (section 21). Needs its own configs because the
+# instruction, its decode arm and its datapath are all behind
+# VX_CFG_EXT_SYM_SG4_ENABLE; without it the entry point does not exist and the
+# app refuses rather than computing something else. Both drivers, because the
+# whole point of the instruction is that RTL and simx agree on a cross-lane
+# operation where SHFL currently does not.
+- id: crypto-aes-gcm-s3-fused
+  via: make-run
+  drivers:
+  - simx
+  - rtlsim
+  dir: tests/crypto/aes_gcm
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
+  vars:
+    OPTS: -n64 -b4 -a20 -i7

@@ -761,6 +761,23 @@ inline uint32_t ghash_mul_sg4(uint32_t c, uint32_t rot1, uint32_t rot2,
   return pl;
 }
 
+
+#ifdef VX_CFG_EXT_SYM_SG4_ENABLE
+// The same round with the routing in hardware: one instruction per round in
+// place of three rotates and four aes32. rs1 is this lane's round-key column,
+// rs2 its state column, and the quad's ShiftRows is the fixed byte transpose
+// inside the unit.
+__attribute__((always_inline))
+inline uint32_t aes128_encrypt_sg4f(const uint32_t* rk, uint32_t c,
+                                    uint32_t in_col) {
+  uint32_t s = in_col ^ rk[c];
+  for (int round = 1; round < AES128_ROUNDS; ++round) {
+    s = vx_aesrm_sg4(rk[4 * round + c], s);
+  }
+  return vx_aesrf_sg4(rk[4 * AES128_ROUNDS + c], s);
+}
+#endif
+
 } // namespace
 
 __kernel void aes_gcm_hw_s1(kernel_arg_t* __UNIFORM__ arg) {
@@ -807,7 +824,12 @@ __kernel void aes_gcm_hw_sg4(kernel_arg_t* __UNIFORM__ arg) {
 // a fused instruction would be wiring. What it measures is everything that is
 // not derivable -- the memory access pattern, the register pressure, and the
 // cost of carrying four messages per warp instead of sixteen.
-__kernel void aes_gcm_hw_s3(kernel_arg_t* __UNIFORM__ arg) {
+namespace {
+
+enum { S3_ROUTING_SOFTWARE = 0, S3_ROUTING_FUSED = 1 };
+
+template <int ROUND>
+inline void aes_gcm_hw_s3_body(kernel_arg_t* __UNIFORM__ arg) {
   hw_lmem_layout_t* lm = (hw_lmem_layout_t*)__local_mem();
 
   {
@@ -883,7 +905,15 @@ __kernel void aes_gcm_hw_s3(kernel_arg_t* __UNIFORM__ arg) {
       // the quad converged and a divergent region here is enough to break it.
       // Lanes 0-2 add zero, and bswap32 applied twice is the identity.
       ctr = bswap32(bswap32(ctr) + inc);
-      const uint32_t ks = aes128_encrypt_sg4(lm->rk, c, ab1, ab2, ab3, ctr);
+      uint32_t ks;
+#ifdef VX_CFG_EXT_SYM_SG4_ENABLE
+      if (ROUND == S3_ROUTING_FUSED) {
+        ks = aes128_encrypt_sg4f(lm->rk, c, ctr);
+      } else
+#endif
+      {
+        ks = aes128_encrypt_sg4(lm->rk, c, ab1, ab2, ab3, ctr);
+      }
       // Four lanes read four consecutive words of the same block, so a quad
       // touches sixteen contiguous bytes where the lane-local kernel touches
       // sixteen lines msg_stride apart.
@@ -911,8 +941,33 @@ __kernel void aes_gcm_hw_s3(kernel_arg_t* __UNIFORM__ arg) {
     y ^= vx_brev8(bswap32(lw));
     y = ghash_mul_sg4(c, rot1, rot2, rot3, h0, h1, h2, h3, y);
 
-    const uint32_t ej0 = aes128_encrypt_sg4(lm->rk, c, ab1, ab2, ab3, j0);
+    uint32_t ej0;
+#ifdef VX_CFG_EXT_SYM_SG4_ENABLE
+    if (ROUND == S3_ROUTING_FUSED) {
+      ej0 = aes128_encrypt_sg4f(lm->rk, c, j0);
+    } else
+#endif
+    {
+      ej0 = aes128_encrypt_sg4(lm->rk, c, ab1, ab2, ab3, j0);
+    }
     uint8_t* tag = tag_base + GCM_TAG_BYTES * msg;
     store_le32(tag + 4 * c, vx_brev8(y) ^ ej0);
   }
 }
+
+} // namespace
+
+__kernel void aes_gcm_hw_s3(kernel_arg_t* __UNIFORM__ arg) {
+  aes_gcm_hw_s3_body<S3_ROUTING_SOFTWARE>(arg);
+}
+
+#ifdef VX_CFG_EXT_SYM_SG4_ENABLE
+// The same kernel with the cross-lane routing done by the instruction instead
+// of by three shuffles per round. Everything else -- the layout, the payload
+// pattern, the distributed GHASH, the four messages per warp -- is identical,
+// so the difference between this row and hw_s3 is the fused round and nothing
+// else.
+__kernel void aes_gcm_hw_s3f(kernel_arg_t* __UNIFORM__ arg) {
+  aes_gcm_hw_s3_body<S3_ROUTING_FUSED>(arg);
+}
+#endif

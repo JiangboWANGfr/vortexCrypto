@@ -1018,6 +1018,21 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
       std::abort();
     }
   } break;
+#ifdef VX_CFG_EXT_SYM_SG4_ENABLE
+  case Opcode::EXT4: {
+    // Fused subgroup AES round. EXT4 was declared and decoded by neither model,
+    // so this cannot collide: funct3 0 = middle round, 1 = final round.
+    if (funct3 != 0x0 && funct3 != 0x1) {
+      std::abort();
+    }
+    instr->set_fu_type(FUType::SYM);
+    instr->set_op_type(funct3 == 0x1 ? SymType::AESRF_SG4 : SymType::AESRM_SG4);
+    instr->set_dest_reg(rd, RegType::Integer);
+    instr->set_src_reg(0, rs1, RegType::Integer);
+    instr->set_src_reg(1, rs2, RegType::Integer);
+    instr->set_args(IntrSymArgs{});
+  } break;
+#endif
 #ifdef VX_CFG_EXT_AUTH_ENABLE
   case Opcode::EXT3: {
     // Custom fused GF(2^128) reduction. EXT3 was entirely undecoded, so unlike

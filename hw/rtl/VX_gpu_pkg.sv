@@ -534,6 +534,11 @@ package VX_gpu_pkg;
     localparam INST_SYM_AES32ESI  = 4'h0;
     localparam INST_SYM_AES32ESMI = 4'h1;
     localparam INST_SYM_RORI      = 4'h2;
+    // Fused subgroup AES round (section 20 of the crypto proposal). Opt-in
+    // behind VX_CFG_EXT_SYM_SG4_ENABLE: it reads across an aligned quad of
+    // lanes, so it is only meaningful when the lane count is a multiple of four.
+    localparam INST_SYM_AESRM_SG4 = 4'h3;
+    localparam INST_SYM_AESRF_SG4 = 4'h4;
     localparam INST_SYM_BITS      = 4;
 `endif
 

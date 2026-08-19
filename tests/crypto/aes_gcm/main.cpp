@@ -40,32 +40,36 @@ struct impl_t {
   bool needs_quad;    // reads across aligned groups of four lanes
   bool interleaved;   // block b of every message stored together (diagnostic)
   bool no_tail;       // whole blocks only
+  bool needs_sg4;     // uses the fused subgroup round; needs VX_CFG_EXT_SYM_SG4_ENABLE
 };
 
 const impl_t kImpls[] = {
-  { "aes_gcm_sw_ttable", "sw_ttable", false, false, false, false },
+  { "aes_gcm_sw_ttable", "sw_ttable", false, false, false, false, false },
   // Same host program, buffers, vectors, counter reduction and output format;
   // only the device code differs, which is the whole point of selecting by -i
   // rather than building a second application.
-  { "aes_gcm_hw_s1",     "hw_s1", true, false, false, false },
+  { "aes_gcm_hw_s1",     "hw_s1", true, false, false, false, false },
   // Bit-identical to sw_ttable; see kernel.cpp. Measures the apparatus, not
   // the cipher, and it is the software kernel's own floor -- the existing
   // ghash_mul_hw probe reads 0.00% here because this kernel never calls it.
-  { "aes_gcm_sw_ttable_perm", "sw_perm", false, false, false, false },
+  { "aes_gcm_sw_ttable_perm", "sw_perm", false, false, false, false, false },
   // S3 probe: the same AEAD with the keystream computed by four cooperating
   // lanes. Built out of the shuffle that already exists, so it measures the
   // subgroup layout before any RTL is written. See kernel.cpp.
-  { "aes_gcm_hw_sg4",    "hw_sg4", true, true, false, false },
+  { "aes_gcm_hw_sg4",    "hw_sg4", true, true, false, false, false },
   // The shipped hardware kernel with ONLY the payload layout changed. A
   // diagnostic that bounds what better streaming locality could be worth; see
   // section 18 of the proposal.
-  { "aes_gcm_hw_s1_ilv", "hw_s1_ilv", true, false, true, true },
+  { "aes_gcm_hw_s1_ilv", "hw_s1_ilv", true, false, true, true, false },
   // Specimen for section 18.2: identical work, identical addresses, written as
   // base-plus-offset rather than a pointer walk, and 20.6% slower.
-  { "aes_gcm_hw_s1_ofs", "hw_s1_ofs", true, false, false, false },
+  { "aes_gcm_hw_s1_ofs", "hw_s1_ofs", true, false, false, false, false },
   // TRUE S3: a quad of four lanes owns one message end to end, everything
   // distributed, no transpose. Four messages per warp instead of sixteen.
-  { "aes_gcm_hw_s3",     "hw_s3", true, false, false, true },
+  { "aes_gcm_hw_s3",     "hw_s3", true, false, false, true, false },
+  // The same kernel with the fused subgroup round. Present only in a build that
+  // carries VX_CFG_EXT_SYM_SG4_ENABLE; refused, not miscomputed, otherwise.
+  { "aes_gcm_hw_s3f",    "hw_s3f", true, false, false, true, true },
 };
 
 const uint32_t kNumImpls = (uint32_t)(sizeof(kImpls) / sizeof(kImpls[0]));
@@ -441,7 +445,19 @@ int main(int argc, char** argv) {
   vx_module_h mod;
   vx_kernel_h kern;
   CHECK(vx_module_load_file(dev, g_kernel_file, &mod));
-  CHECK(vx_module_get_kernel(mod, kImpls[g_impl].kernel, &kern));
+  // A build without VX_CFG_EXT_SYM_SG4_ENABLE does not contain the fused entry
+  // point at all, so the lookup fails rather than the kernel computing something
+  // else. Refuse with a message that names the flag.
+  {
+    vx_result_t kr = vx_module_get_kernel(mod, kImpls[g_impl].kernel, &kern);
+    if (kr != VX_SUCCESS && kImpls[g_impl].needs_sg4) {
+      std::printf("SKIPPED: impl '%s' needs the fused subgroup round; rebuild "
+                  "with CONFIGS=\"-DVX_CFG_EXT_SYM_SG4_ENABLE\".\n",
+                  kImpls[g_impl].label);
+      return 1;
+    }
+    CHECK(kr);
+  }
 
   vx_queue_info_t qi = { sizeof(qi), nullptr, VX_QUEUE_PRIORITY_NORMAL, 0 };
   vx_queue_h queue = nullptr;
