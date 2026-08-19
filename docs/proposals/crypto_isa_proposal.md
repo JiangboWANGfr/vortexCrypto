@@ -2503,3 +2503,123 @@ opt-in for that reason. The decision is worth taking deliberately: a 25 to 37%
 improvement on the two software baselines is larger than every instruction-set
 effect recorded in this project, and larger than the memory-configuration change
 of section 15.1.
+
+## 20. True S3, measured -- and the two verdicts that were measured on a broken machine
+
+Sections 17 and 18 ruled against the subgroup tier. Both were measured before
+section 19 found that per-hart stacks alias into one D-cache set, and both
+kernels involved carry more stack traffic than the shipped one. **The rulings do
+not survive the fix.**
+
+### 20.1 The kernel
+
+`aes_gcm_hw_s3` is the mapping section 18.5 defines: a quad of four lanes owns
+one message from the counter to the tag, lane `c` holding counter word `c`, AES
+state column `c`, ciphertext word `c` and GHASH limb `c` throughout. **There is
+no transpose anywhere.** A warp carries four messages instead of sixteen.
+
+Both halves are distributed. The AES reuses the rotate-based round of section
+17. GHASH is new: with `Y` one limb per lane and `H` replicated, rotating `Y` by
+`j` puts the term whose limb index is `k` in lane `k` when `k >= j` and `k+4`
+when the rotate wrapped, so each lane accumulates `p[k]` and `p[k+4]`; every
+`clmulh` half belongs one limb higher and is rotated one lane up and steered on
+arrival. The fold has the same shape, with lane 3's carry closing back into lane
+0. It is 8 shuffles, 11 `clmul`-class and the selects, all stateless.
+
+**A hazard worth recording, because it is silent.** The first version put
+`if (c == 3) ctr = inc(ctr);` before the AES. The counter was right, the
+lane-to-word mapping was right, the AES round was the one already validated in
+section 17 -- and the cipher was wrong, every byte. A divergent region before a
+cross-lane operation breaks the quad, and nothing reports it. The increment is
+now branchless. Any fused subgroup instruction needs this as an architectural
+precondition, not a coding convention.
+
+Correctness: four configurations at the tree default including 20- and 33-byte
+AAD, identical retired-instruction counts on rtlsim and simx, and passing at
+`c2w4t16` where four quads share a warp so inter-quad divergence is live. Two
+runs at the recorded point return identical counts.
+
+### 20.2 Measured, and the confound is the result
+
+`c2w4t16`, `-n128 -b64`, rtlsim, one tree:
+
+| | cycles | instrs | vs hw_s1 |
+| --- | ---: | ---: | --- |
+| hw_s1, stack as shipped | 580,088 | 212,170 | |
+| hw_s3, stack as shipped | 1,966,839 | 481,682 | **+239.1%** cycles, +127.0% instrs |
+| hw_s1, per-hart skew | 543,229 | 212,186 | |
+| **hw_s3, per-hart skew** | **696,676** | 481,698 | **+28.3%** cycles, +127.0% instrs |
+
+**The skew removes 64.6% of this kernel's cycles and changes not one
+instruction.** The conversion rate for the software routing goes from r = 1.88
+to **r = 0.22**: once the spill slots stop colliding, the added instructions are
+nearly free in cycles, which is what an 82%-idle issue port should do with them.
+
+Section 17's hybrid probe moves the same way: +82.2% against `hw_s1` without the
+skew, **+11.1% with it**. Both of this document's rulings against the subgroup
+tier were artefacts of the stack aliasing.
+
+### 20.3 The memory side, which is what the probe was built for
+
+`-b16`, per core, both kernels with the skew, so the comparison is at equal
+stack configuration:
+
+| | hw_s1 | hw_s3 |
+| --- | ---: | ---: |
+| D-cache read hit | 84% | **97%** |
+| read misses | 1,931 | **1,052** |
+| **average load latency** | 45.28 | **22.40** |
+| loads | 61,548 | 88,812 (+44%) |
+| write hit | 1% | 27% |
+| scheduler idle | 82% | 69% |
+| `simt_util` | 16.0 (100%) | 14.9 (93%) |
+
+**The coalescing hypothesis is confirmed.** Four lanes reading four consecutive
+words of one block, with each message still contiguous, gives a 97% read hit
+rate and **half the load latency of the shipped kernel**. Section 18.1's
+interleaving diagnostic lost because it traded temporal reuse for spatial
+sharing; this mapping keeps both, which is exactly the distinction 18.1 could
+not test.
+
+The 4x loss of message parallelism -- 16 messages per warp down to 4 -- is inside
+these numbers and did not prevent them. That was the largest stated risk and it
+is now quantified rather than feared.
+
+`simt_util` at 93% is this kernel's own selects, the per-lane branchless
+predicates standing in for what an instruction would do in its decode. A fused
+form has none of them.
+
+### 20.4 What it implies for the instruction, stated as arithmetic
+
+The probe pays +127% instructions for routing that hardware would do as wiring:
+three rotates per AES round, eight per GHASH multiply, and the selects. Fusing
+removes them.
+
+| per block | |
+| --- | ---: |
+| hw_s1 | 25.90 |
+| hw_s3, software routing (measured) | 58.80 |
+| AES rotates + four `aes32` folded to one `aesrm.sg4` | -15.00 |
+| distributed GHASH folded to one `ghmul.sg4` | about -30 |
+| **hw_s3 with both fused (derived, not measured)** | **about 13.8** |
+
+That is **roughly 47% below the shipped kernel's instruction count**, on a
+layout measured to halve load latency, with the parallelism loss already paid
+for in the +28% figure above.
+
+**So the case for building the subgroup instructions is open again, and it is
+stronger than it was before either ruling.** What has not changed is the other
+half of the question: whether `aesrm.sg4` closes timing, and whether a stateless
+group multiply is affordable in area on a design with 4.0% of period slack --
+section 13.1 measured GHASH as the largest crypto block at 15,229 ALM. Those are
+still unanswered, and this probe cannot answer them.
+
+### 20.5 What this costs the rest of the document
+
+Every conclusion in sections 17 and 18 that rests on a cycle comparison was
+measured with the stack aliasing present. The instruction counts stand -- they
+are exact and the skew changes them by 16 -- and so do the ratios between
+kernels measured in the same configuration. What does not stand is any statement
+of the form "the subgroup layout costs X%": those numbers were the aliasing,
+and section 19's control shows why it took this long to see it -- the two
+ordinary applications used as sanity checks do not spill, so they never moved.
