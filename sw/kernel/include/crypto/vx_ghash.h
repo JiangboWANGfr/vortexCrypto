@@ -93,6 +93,25 @@ inline uint32_t vx_ghred32h(uint32_t acc, uint32_t x) {
     return out;
 }
 
+
+// Stateless subgroup GF(2^128) multiply. The four lanes of an aligned quad hold
+// one 32-bit limb each of A (rs1) and H (rs2); every lane receives its limb of
+// A*H mod x^128+x^7+x^2+x+1, in the same reflected limb domain the software
+// schoolbook path uses.
+//
+// The quad MUST be converged: the whole quad's operands are read and neither
+// model consults the source lane's mask. Custom-3 (0x7B) funct3 2, executed by
+// EX_AUTH; present only with VX_CFG_EXT_AUTH_SG4_ENABLE, which shares the opcode
+// arm with VX_CFG_EXT_SYM_SG4_ENABLE and therefore requires it.
+#ifdef VX_CFG_EXT_AUTH_SG4_ENABLE
+inline uint32_t vx_ghmul_sg4(uint32_t a_limb, uint32_t h_limb) {
+    uint32_t out;
+    __asm__ (".insn r %1, 2, 0, %0, %2, %3"
+             : "=r"(out) : "i"(0x7B), "r"(a_limb), "r"(h_limb));
+    return out;
+}
+#endif
+
 #ifdef __cplusplus
 }
 #endif

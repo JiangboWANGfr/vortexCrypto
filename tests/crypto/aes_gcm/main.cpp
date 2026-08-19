@@ -70,6 +70,8 @@ const impl_t kImpls[] = {
   // The same kernel with the fused subgroup round. Present only in a build that
   // carries VX_CFG_EXT_SYM_SG4_ENABLE; refused, not miscomputed, otherwise.
   { "aes_gcm_hw_s3f",    "hw_s3f", true, false, false, true, true },
+  // Both halves fused: aesrm.sg4 for the round and ghmul.sg4 for the multiply.
+  { "aes_gcm_hw_s3g",    "hw_s3g", true, false, false, true, true },
 };
 
 const uint32_t kNumImpls = (uint32_t)(sizeof(kImpls) / sizeof(kImpls[0]));

@@ -258,7 +258,11 @@ enum class AuthType {
   CLMULH,
   BREV8,
   GHRED32L,   // rd = rs1 ^ clmul_lo(rs2, 0x87)  -- custom
-  GHRED32H    // rd = rs1 ^ clmul_hi(rs2, 0x87)  -- custom
+  GHRED32H,   // rd = rs1 ^ clmul_hi(rs2, 0x87)  -- custom
+  // Stateless subgroup GF(2^128) multiply: the quad's rs1 and rs2 are read as
+  // 128-bit values one limb per lane, and each lane receives its limb of the
+  // product. Requires a converged quad; the source lane's mask is not consulted.
+  GHMUL_SG4
 };
 #endif
 

@@ -823,6 +823,17 @@ module VX_decode import
                     `USED_IREG (rs1);
                     `USED_IREG (rs2);
                 end
+            `ifdef VX_CFG_EXT_AUTH_SG4_ENABLE
+                // Stateless subgroup GF(2^128) multiply shares this opcode arm,
+                // so it requires VX_CFG_EXT_SYM_SG4_ENABLE to be set as well.
+                if (funct3 == 3'h2) begin
+                    ex_type = EX_AUTH;
+                    op_type = INST_OP_BITS'(INST_AUTH_GHMUL_SG4);
+                    `USED_IREG (rd);
+                    `USED_IREG (rs1);
+                    `USED_IREG (rs2);
+                end
+            `endif
             end
         `endif
         `ifdef VX_CFG_EXT_AUTH_ENABLE

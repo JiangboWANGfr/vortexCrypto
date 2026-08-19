@@ -460,6 +460,9 @@ package VX_trace_pkg;
                 INST_AUTH_BREV8:  `TRACE(level, ("BREV8"))
                 INST_AUTH_GHRED32L: `TRACE(level, ("GHRED32L"))
                 INST_AUTH_GHRED32H: `TRACE(level, ("GHRED32H"))
+            `ifdef VX_CFG_EXT_AUTH_SG4_ENABLE
+                INST_AUTH_GHMUL_SG4: `TRACE(level, ("GHMUL.SG4"))
+            `endif
                 default:          `TRACE(level, ("?"))
             endcase
         end

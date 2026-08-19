@@ -551,6 +551,10 @@ package VX_gpu_pkg;
     // and numbers recorded against the earlier encodings stay valid.
     localparam INST_AUTH_GHRED32L = 4'h3;
     localparam INST_AUTH_GHRED32H = 4'h4;
+    // Stateless subgroup GF(2^128) multiply: one instruction multiplies a whole
+    // 128-bit pair held one limb per lane across an aligned quad. Opt-in behind
+    // VX_CFG_EXT_AUTH_SG4_ENABLE; see hw/rtl/crypto/auth/VX_auth_ghash.sv.
+    localparam INST_AUTH_GHMUL_SG4 = 4'h5;
     localparam INST_AUTH_BITS     = 4;
 `endif
 

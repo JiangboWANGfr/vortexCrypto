@@ -826,7 +826,9 @@ __kernel void aes_gcm_hw_sg4(kernel_arg_t* __UNIFORM__ arg) {
 // cost of carrying four messages per warp instead of sixteen.
 namespace {
 
-enum { S3_ROUTING_SOFTWARE = 0, S3_ROUTING_FUSED = 1 };
+enum { S3_ROUTING_SOFTWARE = 0,   // shuffles for AES, software distributed GHASH
+       S3_ROUTING_FUSED    = 1,   // aesrm.sg4 for AES, software distributed GHASH
+       S3_ROUTING_FUSED_ALL = 2 };// aesrm.sg4 and ghmul.sg4
 
 template <int ROUND>
 inline void aes_gcm_hw_s3_body(kernel_arg_t* __UNIFORM__ arg) {
@@ -861,6 +863,11 @@ inline void aes_gcm_hw_s3_body(kernel_arg_t* __UNIFORM__ arg) {
   const uint32_t h1 = vx_brev8(load_le32(hp + 4));
   const uint32_t h2 = vx_brev8(load_le32(hp + 8));
   const uint32_t h3 = vx_brev8(load_le32(hp + 12));
+#ifdef VX_CFG_EXT_AUTH_SG4_ENABLE
+  // The fused multiply wants only this lane's limb; the software path wants all
+  // four, because every lane multiplies by every limb in turn.
+  const uint32_t hcol = vx_brev8(load_le32(hp + 4 * c));
+#endif
 
   const uint32_t num_msgs = arg->num_msgs;
   const uint32_t blocks = arg->blocks_per_msg;
@@ -893,12 +900,24 @@ inline void aes_gcm_hw_s3_body(kernel_arg_t* __UNIFORM__ arg) {
         }
       }
       y ^= vx_brev8(load_le32(pb));
-      y = ghash_mul_sg4(c, rot1, rot2, rot3, h0, h1, h2, h3, y);
+      #ifdef VX_CFG_EXT_AUTH_SG4_ENABLE
+      if (ROUND == S3_ROUTING_FUSED_ALL) {
+        y = vx_ghmul_sg4(y, hcol);
+      } else
+#endif
+      {
+        y = ghash_mul_sg4(c, rot1, rot2, rot3, h0, h1, h2, h3, y);
+      }
     }
 
     const uint8_t* pt = src_base + (size_t)msg_bytes * msg;
     uint8_t* ct = dst_base + (size_t)msg_bytes * msg;
 
+    // Unrolled by hand's width rather than left to the compiler: with the
+    // routing fused the loop body is small enough that clang stops unrolling it,
+    // and the per-iteration counter, address and branch work then costs more
+    // than the instructions the fusion removed.
+#pragma unroll 2
     for (uint32_t b = 0; b < blocks; ++b) {
       // inc32 touches only the trailing word, which lives in lane 3 -- but it is
       // written branchlessly, because every rotate inside the AES below needs
@@ -922,7 +941,14 @@ inline void aes_gcm_hw_s3_body(kernel_arg_t* __UNIFORM__ arg) {
       const uint32_t cw = pt_w[c] ^ ks;
       ct_w[c] = cw;
       y ^= vx_brev8(cw);
-      y = ghash_mul_sg4(c, rot1, rot2, rot3, h0, h1, h2, h3, y);
+      #ifdef VX_CFG_EXT_AUTH_SG4_ENABLE
+      if (ROUND == S3_ROUTING_FUSED_ALL) {
+        y = vx_ghmul_sg4(y, hcol);
+      } else
+#endif
+      {
+        y = ghash_mul_sg4(c, rot1, rot2, rot3, h0, h1, h2, h3, y);
+      }
     }
 
     // Length block: [len(A)]64 || [len(C)]64, one big-endian word per lane.
@@ -939,7 +965,14 @@ inline void aes_gcm_hw_s3_body(kernel_arg_t* __UNIFORM__ arg) {
       lw = (uint32_t)cbits;
     }
     y ^= vx_brev8(bswap32(lw));
-    y = ghash_mul_sg4(c, rot1, rot2, rot3, h0, h1, h2, h3, y);
+    #ifdef VX_CFG_EXT_AUTH_SG4_ENABLE
+      if (ROUND == S3_ROUTING_FUSED_ALL) {
+        y = vx_ghmul_sg4(y, hcol);
+      } else
+#endif
+      {
+        y = ghash_mul_sg4(c, rot1, rot2, rot3, h0, h1, h2, h3, y);
+      }
 
     uint32_t ej0;
 #ifdef VX_CFG_EXT_SYM_SG4_ENABLE
@@ -969,5 +1002,14 @@ __kernel void aes_gcm_hw_s3(kernel_arg_t* __UNIFORM__ arg) {
 // else.
 __kernel void aes_gcm_hw_s3f(kernel_arg_t* __UNIFORM__ arg) {
   aes_gcm_hw_s3_body<S3_ROUTING_FUSED>(arg);
+}
+#endif
+
+#if defined(VX_CFG_EXT_SYM_SG4_ENABLE) && defined(VX_CFG_EXT_AUTH_SG4_ENABLE)
+// Both halves fused: one instruction per AES round and one per GHASH block.
+// Everything else is identical to hw_s3 and hw_s3f, so the three rows differ
+// only in how much of the routing is an instruction.
+__kernel void aes_gcm_hw_s3g(kernel_arg_t* __UNIFORM__ arg) {
+  aes_gcm_hw_s3_body<S3_ROUTING_FUSED_ALL>(arg);
 }
 #endif

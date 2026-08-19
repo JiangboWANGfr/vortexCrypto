@@ -83,6 +83,56 @@ void AuthUnit::execute(instr_trace_t* trace) {
   const uint32_t width = (uint32_t)(sizeof(Word) * 8);
   const uint64_t mask = (width >= 64) ? ~0ull : ((1ull << width) - 1);
 
+#ifdef VX_CFG_EXT_AUTH_SG4_ENABLE
+  if (auth_type == AuthType::GHMUL_SG4) {
+    // The quad's rs1 and rs2 are one 128-bit value each, a limb per lane. The
+    // schoolbook product and the fold are the same arithmetic the software
+    // ghash_mul_hw does, in the same reflected limb domain, so the kernel's
+    // brev8 conventions are unchanged. The source lane's mask is deliberately
+    // not consulted: the instruction requires a converged quad, and this is the
+    // rule the RTL implements.
+    auto clmul64 = [](uint32_t x, uint32_t y) -> uint64_t {
+      uint64_t acc = 0;
+      for (int k = 0; k < 32; ++k) {
+        if ((y >> k) & 1) {
+          acc ^= ((uint64_t)x) << k;
+        }
+      }
+      return acc;
+    };
+    auto mul87 = [](uint32_t x) -> uint64_t {
+      uint64_t e = (uint64_t)x;
+      return e ^ (e << 1) ^ (e << 2) ^ (e << 7);
+    };
+    for (uint32_t q = 0; q + 3 < num_threads; q += 4) {
+      if (!tmask.test(q) && !tmask.test(q+1) && !tmask.test(q+2) && !tmask.test(q+3))
+        continue;
+      uint32_t p[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+      for (uint32_t i = 0; i < 4; ++i) {
+        for (uint32_t j = 0; j < 4; ++j) {
+          uint64_t prod = clmul64((uint32_t)rs1_data[q+i].u, (uint32_t)rs2_data[q+j].u);
+          p[i+j]   ^= (uint32_t)prod;
+          p[i+j+1] ^= (uint32_t)(prod >> 32);
+        }
+      }
+      uint64_t m4 = mul87(p[4]), m5 = mul87(p[5]);
+      uint64_t m6 = mul87(p[6]), m7 = mul87(p[7]);
+      uint64_t mc = mul87((uint32_t)(m7 >> 32));
+      uint32_t r[4];
+      r[0] = p[0] ^ (uint32_t)m4 ^ (uint32_t)mc;
+      r[1] = p[1] ^ (uint32_t)(m4 >> 32) ^ (uint32_t)m5;
+      r[2] = p[2] ^ (uint32_t)(m5 >> 32) ^ (uint32_t)m6;
+      r[3] = p[3] ^ (uint32_t)(m6 >> 32) ^ (uint32_t)m7;
+      for (uint32_t c = 0; c < 4; ++c) {
+        if (tmask.test(q + c)) {
+          rd_data[q + c].u = r[c];
+        }
+      }
+    }
+    return;
+  }
+#endif
+
   for (uint32_t t = 0; t < num_threads; ++t) {
     if (!tmask.test(t))
       continue;

@@ -102,6 +102,89 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
                                             : clmul_prod[XLEN-1:0];
     end
 
+`ifdef VX_CFG_EXT_AUTH_SG4_ENABLE
+    // Stateless subgroup GF(2^128) multiply.
+    //
+    //   ghmul.sg4 rd, rs1, rs2   with A = sum A_i x^(32i) over the quad's rs1
+    //                            and H likewise over rs2, lane i receives limb i
+    //                            of A*H mod x^128+x^7+x^2+x+1.
+    //
+    // Same reflected limb domain and the same reduction as the software
+    // ghash_mul_hw it replaces, so the kernel's brev8 conventions are unchanged.
+    //
+    // COST, stated plainly: the schoolbook product is sixteen 32x32 carry-less
+    // multiplies per quad, which is FOUR per lane against the one the lane-local
+    // path needs. This is the largest crypto block in the design and this
+    // quadruples its multiplier array.
+    //
+    // PRECONDITION: the quad must be converged. Every lane's operands are read
+    // by the whole quad and the source lane's mask is not consulted, matching
+    // aesrm.sg4 and, deliberately, not matching SHFL.
+    if ((NUM_LANES < 4) || ((NUM_LANES % 4) != 0)) begin : g_sg4_guard
+        VX_auth_ghash_sg4_requires_NUM_LANES_multiple_of_4 __config_error();
+    end
+
+    function automatic logic [2*XLEN-1:0] clmul64 (input logic [XLEN-1:0] a,
+                                                   input logic [XLEN-1:0] b);
+        logic [2*XLEN-1:0] acc;
+        acc = '0;
+        for (int k = 0; k < XLEN; ++k) begin
+            if (b[k]) begin
+                acc ^= ({{XLEN{1'b0}}, a} << k);
+            end
+        end
+        return acc;
+    endfunction
+
+    // Multiply by the constant 0x87, the reduction of x^128. Four shifted XORs
+    // rather than a full multiplier, exactly as the ghred32 path does it.
+    function automatic logic [2*XLEN-1:0] mul87 (input logic [XLEN-1:0] x);
+        logic [2*XLEN-1:0] e;
+        e = {{XLEN{1'b0}}, x};
+        return e ^ (e << 1) ^ (e << 2) ^ (e << 7);
+    endfunction
+
+    wire is_ghmul = (execute_if.data.op_type == INST_AUTH_GHMUL_SG4);
+    wire [NUM_LANES-1:0][XLEN-1:0] ghmul_result;
+
+    for (genvar q = 0; q < NUM_LANES / 4; ++q) begin : g_quads
+        logic [7:0][XLEN-1:0] pp;
+        logic [2*XLEN-1:0] prod;
+        always @(*) begin
+            // '0 rather than an assignment pattern: pp is PACKED, and '{default:'0}
+            // is an unpacked-array form whose meaning here is not what it reads as.
+            pp = '0;
+            prod = '0;
+            for (int i = 0; i < 4; ++i) begin
+                for (int j = 0; j < 4; ++j) begin
+                    prod = clmul64(execute_if.data.rs1_data[4*q+i],
+                                   execute_if.data.rs2_data[4*q+j]);
+                    pp[i+j]   = pp[i+j]   ^ prod[XLEN-1:0];
+                    pp[i+j+1] = pp[i+j+1] ^ prod[2*XLEN-1:XLEN];
+                end
+            end
+        end
+
+        wire [2*XLEN-1:0] m4 = mul87(pp[4]);
+        wire [2*XLEN-1:0] m5 = mul87(pp[5]);
+        wire [2*XLEN-1:0] m6 = mul87(pp[6]);
+        wire [2*XLEN-1:0] m7 = mul87(pp[7]);
+        wire [2*XLEN-1:0] mc = mul87(m7[2*XLEN-1:XLEN]);
+
+        assign ghmul_result[4*q+0] = pp[0] ^ m4[XLEN-1:0] ^ mc[XLEN-1:0];
+        assign ghmul_result[4*q+1] = pp[1] ^ m4[2*XLEN-1:XLEN] ^ m5[XLEN-1:0];
+        assign ghmul_result[4*q+2] = pp[2] ^ m5[2*XLEN-1:XLEN] ^ m6[XLEN-1:0];
+        assign ghmul_result[4*q+3] = pp[3] ^ m6[2*XLEN-1:XLEN] ^ m7[XLEN-1:0];
+    end
+
+    wire [NUM_LANES-1:0][XLEN-1:0] unit_result;
+    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_sel
+        assign unit_result[i] = is_ghmul ? ghmul_result[i] : auth_result[i];
+    end
+`else
+    wire [NUM_LANES-1:0][XLEN-1:0] unit_result = auth_result;
+`endif
+
     `UNUSED_VAR (execute_if.data.rs3_data)
 
     VX_elastic_buffer #(
@@ -111,7 +194,7 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
         .reset     (reset),
         .valid_in  (execute_if.valid),
         .ready_in  (execute_if.ready),
-        .data_in   ({execute_if.data.header, auth_result}),
+        .data_in   ({execute_if.data.header, unit_result}),
         .data_out  ({result_if.data.header,  result_if.data.data}),
         .valid_out (result_if.valid),
         .ready_out (result_if.ready)

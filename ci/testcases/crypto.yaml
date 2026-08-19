@@ -211,3 +211,16 @@ tests:
   configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
   vars:
     OPTS: -n64 -b4 -a20 -i7
+# The subgroup GF(2^128) multiply (section 21.5). It is a null as a performance
+# result and is kept as evidence, but it is a cross-lane instruction in two
+# models and that is exactly what rots silently, so it gets both drivers.
+- id: crypto-aes-gcm-s3-ghmul
+  via: make-run
+  drivers:
+  - simx
+  - rtlsim
+  dir: tests/crypto/aes_gcm
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE
+  vars:
+    OPTS: -n64 -b4 -a20 -i8

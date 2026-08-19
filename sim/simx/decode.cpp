@@ -1022,6 +1022,17 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
   case Opcode::EXT4: {
     // Fused subgroup AES round. EXT4 was declared and decoded by neither model,
     // so this cannot collide: funct3 0 = middle round, 1 = final round.
+#ifdef VX_CFG_EXT_AUTH_SG4_ENABLE
+    if (funct3 == 0x2) {
+      // Stateless subgroup GF(2^128) multiply; shares this opcode arm.
+      instr->set_fu_type(FUType::AUTH);
+      instr->set_op_type(AuthType::GHMUL_SG4);
+      instr->set_dest_reg(rd, RegType::Integer);
+      instr->set_src_reg(0, rs1, RegType::Integer);
+      instr->set_src_reg(1, rs2, RegType::Integer);
+      break;
+    }
+#endif
     if (funct3 != 0x0 && funct3 != 0x1) {
       std::abort();
     }
