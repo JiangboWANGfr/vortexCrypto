@@ -574,7 +574,7 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
      && ((funct7 & 0x1F) == 0x11 || (funct7 & 0x1F) == 0x13)) {
       instr->set_fu_type(FUType::SYM);
       instr->set_op_type(((funct7 & 0x1F) == 0x13) ? SymType::AES32ESMI : SymType::AES32ESI);
-      instr->set_args(IntrSymArgs{(funct7 >> 5) & 0x3, 0});
+      instr->set_args(IntrSymArgs{(funct7 >> 5) & 0x3, 0, 0});
     } else
     // Zbb/Zbkb RORI, RV32 form: OP-IMM, funct3 5, funct7 0x30, shamt in the
     // rs2 field. Tested raw for the same reason as BREV8 above. Left to the
@@ -583,7 +583,7 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
     if (op == Opcode::I && funct3 == 0x5 && funct7 == 0x30) {
       instr->set_fu_type(FUType::SYM);
       instr->set_op_type(SymType::RORI);
-      instr->set_args(IntrSymArgs{0, rs2 & 0x1F});
+      instr->set_args(IntrSymArgs{0, rs2 & 0x1F, 0});
     } else
 #endif
     if ((op == Opcode::R || op == Opcode::R_W) && (funct7 & 0x1)) {
@@ -1018,10 +1018,48 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
       std::abort();
     }
   } break;
-#ifdef VX_CFG_EXT_SYM_SG4_ENABLE
+#if defined(VX_CFG_EXT_SYM_SG4_ENABLE) || defined(VX_CFG_EXT_SYM_S2_ENABLE)
   case Opcode::EXT4: {
     // Fused subgroup AES round. EXT4 was declared and decoded by neither model,
     // so this cannot collide: funct3 0 = middle round, 1 = final round.
+#ifdef VX_CFG_EXT_SYM_S2_ENABLE
+    // Stateful per-lane AES engine: funct3 3 = context write, 4 = context read,
+    // 5 = the three context operations selected by funct7[1:0].
+    //
+    // funct7[6:3] must be encoded as zero. simx asserts it and the RTL ignores
+    // it: the check is free here and catches an encoding drift between the two
+    // models, which is exactly the class of bug that made ghmul.sg4 compute the
+    // right answer in one model and the wrong one in the other.
+    if (funct3 >= 0x3 && funct3 <= 0x5) {
+      if ((funct7 >> 3) != 0) {
+        std::abort();
+      }
+      instr->set_fu_type(FUType::SYM);
+      IntrSymArgs symArgs{};
+      symArgs.sel = funct7 & 0x7;
+      if (funct3 == 0x3) {
+        // aes.cwr rs1, sel -- rd is encoded x0, so wb is already 0.
+        instr->set_op_type(SymType::AES_CWR);
+        instr->set_src_reg(0, rs1, RegType::Integer);
+      } else if (funct3 == 0x4) {
+        // aes.crd rd, sel -- the only form here that writes a register.
+        if (symArgs.sel > 0x3) {
+          std::abort();  // sel 4-7 reserved: S is the only readable field
+        }
+        instr->set_op_type(SymType::AES_CRD);
+        instr->set_dest_reg(rd, RegType::Integer);
+      } else {
+        switch (funct7 & 0x7) {
+        case 0: instr->set_op_type(SymType::AES_BEGIN); break;
+        case 1: instr->set_op_type(SymType::AES_RNDM); break;
+        case 2: instr->set_op_type(SymType::AES_RNDF); break;
+        default: std::abort();
+        }
+      }
+      instr->set_args(symArgs);
+      break;
+    }
+#endif
 #ifdef VX_CFG_EXT_AUTH_SG4_ENABLE
     if (funct3 == 0x2) {
       // Stateless subgroup GF(2^128) multiply; shares this opcode arm.
@@ -1036,12 +1074,16 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
     if (funct3 != 0x0 && funct3 != 0x1) {
       std::abort();
     }
+#ifndef VX_CFG_EXT_SYM_SG4_ENABLE
+    std::abort();  // funct3 0/1 are the SG4 rounds, which are not built
+#else
     instr->set_fu_type(FUType::SYM);
     instr->set_op_type(funct3 == 0x1 ? SymType::AESRF_SG4 : SymType::AESRM_SG4);
     instr->set_dest_reg(rd, RegType::Integer);
     instr->set_src_reg(0, rs1, RegType::Integer);
     instr->set_src_reg(1, rs2, RegType::Integer);
     instr->set_args(IntrSymArgs{});
+#endif
   } break;
 #endif
 #ifdef VX_CFG_EXT_AUTH_ENABLE
@@ -1049,6 +1091,39 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
     // Custom fused GF(2^128) reduction. EXT3 was entirely undecoded, so unlike
     // the ratified crypto encodings this cannot collide: funct3 0 = GHRED32L,
     // 1 = GHRED32H.
+#ifdef VX_CFG_EXT_AUTH_S2_ENABLE
+    // Stateful per-lane GHASH engine: funct3 2 = context write, 3 = context
+    // read, 4 = the two context operations selected by funct7[0]. Same
+    // funct7[6:3] rule as the AES engine on EXT4.
+    if (funct3 >= 0x2 && funct3 <= 0x4) {
+      if ((funct7 >> 3) != 0) {
+        std::abort();
+      }
+      instr->set_fu_type(FUType::AUTH);
+      IntrAuthArgs authArgs{};
+      authArgs.sel = funct7 & 0x7;
+      if (funct3 == 0x2) {
+        // ghash.cwr rs1, sel -- rd encoded x0.
+        instr->set_op_type(AuthType::GH_CWR);
+        instr->set_src_reg(0, rs1, RegType::Integer);
+      } else if (funct3 == 0x3) {
+        // ghash.crd rd, sel -- Y is the only readable field.
+        if (authArgs.sel > 0x3) {
+          std::abort();
+        }
+        instr->set_op_type(AuthType::GH_CRD);
+        instr->set_dest_reg(rd, RegType::Integer);
+      } else {
+        switch (funct7 & 0x7) {
+        case 0: instr->set_op_type(AuthType::GH_INIT); break;
+        case 1: instr->set_op_type(AuthType::GH_BLOCK); break;
+        default: std::abort();
+        }
+      }
+      instr->set_args(authArgs);
+      break;
+    }
+#endif
     if (funct3 != 0x0 && funct3 != 0x1) {
       std::abort();
     }

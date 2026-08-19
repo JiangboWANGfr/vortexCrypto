@@ -989,7 +989,276 @@ inline void aes_gcm_hw_s3_body(kernel_arg_t* __UNIFORM__ arg) {
   }
 }
 
+
+// ---------------------------------------------------------------------------
+// S2: one lane still owns one message, but the 128-bit state moves out of the
+// general-purpose registers and into a per-(warp, lane) context, so one
+// instruction advances a whole AES round or a whole GHASH block update.
+//
+// The message-to-lane mapping is the SAME as hw_s1 -- sixteen messages per warp
+// at t16 -- which is what separates S2 from S3. Only the instruction granularity
+// changes, so a comparison against hw_s1 isolates granularity from layout.
+
+#ifdef VX_CFG_EXT_SYM_S2_ENABLE
+// One AES-128 encryption out of the lane's own context. The counter block is
+// packed exactly as aes128_encrypt_hw packs it -- one column per word, row 0 in
+// the low byte -- because the engine reuses this unit's existing byte order.
+__attribute__((always_inline))
+inline void aes128_encrypt_s2(const uint32_t in[4], uint32_t out[4]) {
+  vx_aes_cwr(in[0], 0);
+  vx_aes_cwr(in[1], 1);
+  vx_aes_cwr(in[2], 2);
+  vx_aes_cwr(in[3], 3);
+  // begin leaves rnd = 1, so the first middle round produces K1 with Rcon[1].
+  vx_aes_begin();
+  vx_aes_rndm();   // round 1
+  vx_aes_rndm();
+  vx_aes_rndm();
+  vx_aes_rndm();
+  vx_aes_rndm();
+  vx_aes_rndm();
+  vx_aes_rndm();
+  vx_aes_rndm();
+  vx_aes_rndm();   // round 9
+  vx_aes_rndf();   // round 10, no MixColumns
+  out[0] = vx_aes_crd(0);
+  out[1] = vx_aes_crd(1);
+  out[2] = vx_aes_crd(2);
+  out[3] = vx_aes_crd(3);
+}
+#endif
+
+#ifdef VX_CFG_EXT_AUTH_S2_ENABLE
+// Y <- (Y ^ X)*H for this lane. The XOR that the software path writes as
+// `y[i] ^= v` is inside the instruction, so the accumulator never leaves the
+// context and the kernel only supplies X.
+__attribute__((always_inline))
+inline void ghash_absorb_s2(uint32_t x0, uint32_t x1, uint32_t x2, uint32_t x3) {
+  vx_ghash_cwr(x0, 0);
+  vx_ghash_cwr(x1, 1);
+  vx_ghash_cwr(x2, 2);
+  vx_ghash_cwr(x3, 3);
+  vx_ghash_block();
+}
+#endif
+
+#ifdef VX_CFG_EXT_SYM_S2_ENABLE
+enum { S2_AES_ONLY = 0,   // stateful AES, software GHASH -- isolates the round
+       S2_BOTH     = 1 }; // stateful AES and stateful GHASH
+
+template <int ENGINE, int LAYOUT = LAYOUT_CONTIG>
+inline void aes_gcm_hw_s2_body(kernel_arg_t* __UNIFORM__ arg) {
+  // No local memory and no key schedule: the engine derives K1..K10 from K0 on
+  // the fly, so only the cipher key is uploaded. That is four words per thread
+  // once, against the 44 the shipped kernel copies into LMEM per CTA.
+  uint32_t k0[4];
+  {
+    const uint32_t* rk_src = (const uint32_t*)arg->rk_addr;
+    for (int i = 0; i < 4; ++i) {
+      k0[i] = bswap32(rk_src[i]);
+    }
+  }
+  vx_aes_cwr(k0[0], 4);
+  vx_aes_cwr(k0[1], 5);
+  vx_aes_cwr(k0[2], 6);
+  vx_aes_cwr(k0[3], 7);
+
+  uint32_t h[4];
+  {
+    const uint8_t* hp = (const uint8_t*)arg->h_addr;
+    for (int i = 0; i < 4; ++i) {
+      h[i] = vx_brev8(load_le32(hp + 4 * i));
+    }
+  }
+#ifdef VX_CFG_EXT_AUTH_S2_ENABLE
+  if (ENGINE == S2_BOTH) {
+    vx_ghash_cwr(h[0], 4);
+    vx_ghash_cwr(h[1], 5);
+    vx_ghash_cwr(h[2], 6);
+    vx_ghash_cwr(h[3], 7);
+  }
+#endif
+
+  const uint32_t num_msgs = arg->num_msgs;
+  const uint32_t blocks = arg->blocks_per_msg;
+  const uint32_t tail = arg->tail_bytes;
+  const uint32_t aad_bytes = arg->aad_bytes;
+  const uint8_t* aad = (const uint8_t*)arg->aad_addr;
+  const uint32_t msg_bytes = 16u * blocks + tail;
+  const uint32_t msg_stride = 16u * (blocks + (tail != 0u ? 1u : 0u));
+  const uint8_t* iv_base = (const uint8_t*)arg->iv_addr;
+  const uint8_t* src_base = (const uint8_t*)arg->src_addr;
+  uint8_t* dst_base = (uint8_t*)arg->dst_addr;
+  uint8_t* tag_base = (uint8_t*)arg->tag_addr;
+
+  const uint32_t stride = gridDim.x * blockDim.x;
+  for (uint32_t msg = blockIdx.x * blockDim.x + threadIdx.x; msg < num_msgs;
+       msg += stride) {
+    const uint8_t* iv = iv_base + GCM_IV_BYTES * msg;
+    uint32_t j0[4];
+    j0[0] = load_le32(iv);
+    j0[1] = load_le32(iv + 4);
+    j0[2] = load_le32(iv + 8);
+    j0[3] = 0x01000000u;
+
+    uint32_t ctr[4] = {j0[0], j0[1], j0[2], j0[3]};
+    // Only the software-GHASH arm keeps an accumulator in registers; with the
+    // stateful engine Y lives in the context and is reset by ghash.init.
+    uint32_t y[4] = {0, 0, 0, 0};
+#ifdef VX_CFG_EXT_AUTH_S2_ENABLE
+    if (ENGINE == S2_BOTH) {
+      vx_ghash_init();
+    }
+#endif
+
+    for (uint32_t off = 0; off < aad_bytes; off += 16) {
+      const uint32_t n = (aad_bytes - off < 16u) ? (aad_bytes - off) : 16u;
+      uint8_t padded[16] = {0};
+      for (uint32_t i = 0; i < n; ++i) {
+        padded[i] = aad[off + i];
+      }
+#ifdef VX_CFG_EXT_AUTH_S2_ENABLE
+      if (ENGINE == S2_BOTH) {
+        ghash_absorb_s2(vx_brev8(load_le32(padded)),
+                        vx_brev8(load_le32(padded + 4)),
+                        vx_brev8(load_le32(padded + 8)),
+                        vx_brev8(load_le32(padded + 12)));
+      } else
+#endif
+      {
+        for (int i = 0; i < 4; ++i) {
+          y[i] ^= vx_brev8(load_le32(padded + 4 * i));
+        }
+        ghash_mul_hw(h, y);
+      }
+    }
+
+    const uint8_t* pt = src_base + (size_t)msg_stride * msg;
+    uint8_t* ct = dst_base + (size_t)msg_stride * msg;
+
+    for (uint32_t b = 0; b < blocks; ++b) {
+      ctr[3] = bswap32(bswap32(ctr[3]) + 1);
+
+      uint32_t ks[4];
+      aes128_encrypt_s2(ctr, ks);
+
+      // Same pointer-walk addressing as the shipped kernel: section 18.2
+      // records that writing this as base-plus-offset costs 20.6% of the
+      // cycles, which would swamp what this kernel is here to measure. The
+      // interleaved arm exists because comparing S2 against the S3 rows
+      // otherwise confounds instruction granularity with memory layout: S3
+      // coalesces because a quad's four lanes touch consecutive words, and S2
+      // inherits S1's sixteen scattered messages.
+      const uint32_t* pt_w;
+      uint32_t* ct_w;
+      if (LAYOUT == LAYOUT_INTERLEAVED) {
+        const size_t blk = (size_t)16 * ((size_t)b * num_msgs + msg);
+        pt_w = (const uint32_t*)(src_base + blk);
+        ct_w = (uint32_t*)(dst_base + blk);
+      } else {
+        pt_w = (const uint32_t*)(pt + 16 * b);
+        ct_w = (uint32_t*)(ct + 16 * b);
+      }
+      uint32_t c[4];
+      for (int i = 0; i < 4; ++i) {
+        c[i] = pt_w[i] ^ ks[i];
+        ct_w[i] = c[i];
+      }
+#ifdef VX_CFG_EXT_AUTH_S2_ENABLE
+      if (ENGINE == S2_BOTH) {
+        ghash_absorb_s2(vx_brev8(c[0]), vx_brev8(c[1]),
+                        vx_brev8(c[2]), vx_brev8(c[3]));
+      } else
+#endif
+      {
+        for (int i = 0; i < 4; ++i) {
+          y[i] ^= vx_brev8(c[i]);
+        }
+        ghash_mul_hw(h, y);
+      }
+    }
+
+    if (tail != 0) {
+      ctr[3] = bswap32(bswap32(ctr[3]) + 1);
+      uint32_t ks[4];
+      aes128_encrypt_s2(ctr, ks);
+      uint8_t padded[16] = {0};
+      for (uint32_t i = 0; i < tail; ++i) {
+        const uint8_t k = (uint8_t)(ks[i >> 2] >> (8 * (i & 3)));
+        const uint8_t cb = (uint8_t)(pt[16 * blocks + i] ^ k);
+        ct[16 * blocks + i] = cb;
+        padded[i] = cb;
+      }
+#ifdef VX_CFG_EXT_AUTH_S2_ENABLE
+      if (ENGINE == S2_BOTH) {
+        ghash_absorb_s2(vx_brev8(load_le32(padded)),
+                        vx_brev8(load_le32(padded + 4)),
+                        vx_brev8(load_le32(padded + 8)),
+                        vx_brev8(load_le32(padded + 12)));
+      } else
+#endif
+      {
+        for (int i = 0; i < 4; ++i) {
+          y[i] ^= vx_brev8(load_le32(padded + 4 * i));
+        }
+        ghash_mul_hw(h, y);
+      }
+    }
+
+    const uint64_t abits = (uint64_t)aad_bytes * 8u;
+    const uint64_t cbits = (uint64_t)msg_bytes * 8u;
+#ifdef VX_CFG_EXT_AUTH_S2_ENABLE
+    if (ENGINE == S2_BOTH) {
+      ghash_absorb_s2(vx_brev8(bswap32((uint32_t)(abits >> 32))),
+                      vx_brev8(bswap32((uint32_t)abits)),
+                      vx_brev8(bswap32((uint32_t)(cbits >> 32))),
+                      vx_brev8(bswap32((uint32_t)cbits)));
+      y[0] = vx_ghash_crd(0);
+      y[1] = vx_ghash_crd(1);
+      y[2] = vx_ghash_crd(2);
+      y[3] = vx_ghash_crd(3);
+    } else
+#endif
+    {
+      y[0] ^= vx_brev8(bswap32((uint32_t)(abits >> 32)));
+      y[1] ^= vx_brev8(bswap32((uint32_t)abits));
+      y[2] ^= vx_brev8(bswap32((uint32_t)(cbits >> 32)));
+      y[3] ^= vx_brev8(bswap32((uint32_t)cbits));
+      ghash_mul_hw(h, y);
+    }
+
+    uint32_t ej0[4];
+    aes128_encrypt_s2(j0, ej0);
+    uint8_t* tag = tag_base + GCM_TAG_BYTES * msg;
+    for (int i = 0; i < 4; ++i) {
+      store_le32(tag + 4 * i, vx_brev8(y[i]) ^ ej0[i]);
+    }
+  }
+}
+#endif  // VX_CFG_EXT_SYM_S2_ENABLE
+
 } // namespace
+
+#ifdef VX_CFG_EXT_SYM_S2_ENABLE
+// Stateful AES round, software GHASH. Isolates the round instruction the way
+// hw_s3f isolates the fused subgroup round.
+__kernel void aes_gcm_hw_s2a(kernel_arg_t* __UNIFORM__ arg) {
+  aes_gcm_hw_s2_body<S2_AES_ONLY>(arg);
+}
+#endif
+
+#if defined(VX_CFG_EXT_SYM_S2_ENABLE) && defined(VX_CFG_EXT_AUTH_S2_ENABLE)
+// Both engines stateful: one instruction per AES round and one per GHASH block.
+__kernel void aes_gcm_hw_s2(kernel_arg_t* __UNIFORM__ arg) {
+  aes_gcm_hw_s2_body<S2_BOTH>(arg);
+}
+
+// The same kernel with ONLY the payload layout changed, so that the difference
+// against the S3 rows can be attributed to granularity rather than coalescing.
+__kernel void aes_gcm_hw_s2_ilv(kernel_arg_t* __UNIFORM__ arg) {
+  aes_gcm_hw_s2_body<S2_BOTH, LAYOUT_INTERLEAVED>(arg);
+}
+#endif
 
 __kernel void aes_gcm_hw_s3(kernel_arg_t* __UNIFORM__ arg) {
   aes_gcm_hw_s3_body<S3_ROUTING_SOFTWARE>(arg);

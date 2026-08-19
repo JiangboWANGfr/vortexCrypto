@@ -75,6 +75,16 @@
     `define EXT_GFX_ANY_ENABLED 0
 `endif
 
+// Convenience flag: the custom-3 (0x7B) opcode arm is decoded. Two unrelated
+// features share it -- the fused subgroup round and the stateful per-lane AES
+// engine -- and the SystemVerilog preprocessor has no boolean `ifdef, so the
+// arm is guarded by this derived macro rather than by either feature.
+`ifdef VX_CFG_EXT_SYM_SG4_ENABLE
+    `define EXT_SYM_EXT4_ARM
+`elsif VX_CFG_EXT_SYM_S2_ENABLE
+    `define EXT_SYM_EXT4_ARM
+`endif
+
 // Convenience flag: any crypto extension is enabled. Gates the shared
 // SYM+AUTH dispatch-stall MPM counter, which is summed across both units
 // because the MPM core-class CSR window has only one slot left.

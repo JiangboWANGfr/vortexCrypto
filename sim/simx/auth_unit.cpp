@@ -15,6 +15,7 @@
 #include "core.h"
 #include "scheduler.h"
 #include "debug.h"
+#include <iostream>
 
 // The whole unit is conditional: this file is always in SRCS, but the op-type
 // enums it uses only exist when the extension is enabled.
@@ -58,8 +59,49 @@ static inline uint64_t brev8(uint64_t x, uint32_t width) {
   return r;
 }
 
+#if defined(VX_CFG_EXT_AUTH_SG4_ENABLE) || defined(VX_CFG_EXT_AUTH_S2_ENABLE)
+// Schoolbook 128x128 carry-less product in the reflected limb domain, folded
+// by the R=0x87 reduction. Shared by ghmul.sg4, which spreads the operands one
+// limb per lane, and by ghash.block, which holds all four limbs in one lane's
+// context: the arithmetic is identical and a second copy would drift.
+static void gf128_mul_reflected(const uint32_t a[4], const uint32_t b[4],
+                                uint32_t r[4]) {
+  auto clmul64 = [](uint32_t x, uint32_t y) -> uint64_t {
+    uint64_t acc = 0;
+    for (int k = 0; k < 32; ++k) {
+      if ((y >> k) & 1) {
+        acc ^= ((uint64_t)x) << k;
+      }
+    }
+    return acc;
+  };
+  auto mul87 = [](uint32_t x) -> uint64_t {
+    uint64_t e = (uint64_t)x;
+    return e ^ (e << 1) ^ (e << 2) ^ (e << 7);
+  };
+  uint32_t p[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+  for (uint32_t i = 0; i < 4; ++i) {
+    for (uint32_t j = 0; j < 4; ++j) {
+      uint64_t prod = clmul64(a[i], b[j]);
+      p[i+j]   ^= (uint32_t)prod;
+      p[i+j+1] ^= (uint32_t)(prod >> 32);
+    }
+  }
+  uint64_t m4 = mul87(p[4]), m5 = mul87(p[5]);
+  uint64_t m6 = mul87(p[6]), m7 = mul87(p[7]);
+  uint64_t mc = mul87((uint32_t)(m7 >> 32));
+  r[0] = p[0] ^ (uint32_t)m4 ^ (uint32_t)mc;
+  r[1] = p[1] ^ (uint32_t)(m4 >> 32) ^ (uint32_t)m5;
+  r[2] = p[2] ^ (uint32_t)(m5 >> 32) ^ (uint32_t)m6;
+  r[3] = p[3] ^ (uint32_t)(m6 >> 32) ^ (uint32_t)m7;
+}
+#endif
+
 AuthUnit::AuthUnit(const SimContext& ctx, const char* name, Core* core)
   : FuncUnit<VX_CFG_NUM_AUTH_BLOCKS>(ctx, name, core)
+#ifdef VX_CFG_EXT_AUTH_S2_ENABLE
+  , gh_ctx_((size_t)VX_CFG_NUM_WARPS * VX_CFG_NUM_THREADS)
+#endif
 {}
 
 uint32_t AuthUnit::latency_of(const instr_trace_t* trace) const {
@@ -83,6 +125,60 @@ void AuthUnit::execute(instr_trace_t* trace) {
   const uint32_t width = (uint32_t)(sizeof(Word) * 8);
   const uint64_t mask = (width >= 64) ? ~0ull : ((1ull << width) - 1);
 
+#ifdef VX_CFG_EXT_AUTH_S2_ENABLE
+  if (auth_type == AuthType::GH_CWR   || auth_type == AuthType::GH_CRD
+   || auth_type == AuthType::GH_INIT  || auth_type == AuthType::GH_BLOCK) {
+    // Each lane runs its own message, so the thread mask is honoured here --
+    // the opposite of the ghmul.sg4 rule below, which ignores it because a
+    // converged quad is an architectural precondition there.
+    auto authArgs = std::get<IntrAuthArgs>(trace->instr_ptr->get_args());
+    const uint32_t sel = authArgs.sel & 0x7;
+    for (uint32_t t = 0; t < num_threads; ++t) {
+      if (!tmask.test(t))
+        continue;
+      auto& c = this->ctx_of(trace->wid, t);
+      switch (auth_type) {
+      case AuthType::GH_CWR:
+        if (sel < 4) {
+          c.x[sel] = (uint32_t)rs1_data[t].u;
+        } else {
+          c.h[sel - 4] = (uint32_t)rs1_data[t].u;
+          c.h_written |= (1u << (sel - 4));
+        }
+        break;
+      case AuthType::GH_CRD:
+        rd_data[t].u = c.y[sel];
+        break;
+      case AuthType::GH_INIT:
+        for (int i = 0; i < 4; ++i) {
+          c.y[i] = 0;
+        }
+        break;
+      case AuthType::GH_BLOCK: {
+        // Same reasoning as aes.begin: an unwritten H would silently
+        // authenticate under the previous kernel's subkey.
+        if (c.h_written != 0xf) {
+          std::cout << "error: ghash.block with an unwritten H (warp "
+                    << trace->wid << ", lane " << t << ")" << std::endl;
+          std::abort();
+        }
+        uint32_t a[4], r[4];
+        for (int i = 0; i < 4; ++i) {
+          a[i] = c.y[i] ^ c.x[i];
+        }
+        gf128_mul_reflected(a, c.h, r);
+        for (int i = 0; i < 4; ++i) {
+          c.y[i] = r[i];
+        }
+      } break;
+      default:
+        break;
+      }
+    }
+    return;
+  }
+#endif
+
 #ifdef VX_CFG_EXT_AUTH_SG4_ENABLE
   if (auth_type == AuthType::GHMUL_SG4) {
     // The quad's rs1 and rs2 are one 128-bit value each, a limb per lane. The
@@ -91,38 +187,15 @@ void AuthUnit::execute(instr_trace_t* trace) {
     // brev8 conventions are unchanged. The source lane's mask is deliberately
     // not consulted: the instruction requires a converged quad, and this is the
     // rule the RTL implements.
-    auto clmul64 = [](uint32_t x, uint32_t y) -> uint64_t {
-      uint64_t acc = 0;
-      for (int k = 0; k < 32; ++k) {
-        if ((y >> k) & 1) {
-          acc ^= ((uint64_t)x) << k;
-        }
-      }
-      return acc;
-    };
-    auto mul87 = [](uint32_t x) -> uint64_t {
-      uint64_t e = (uint64_t)x;
-      return e ^ (e << 1) ^ (e << 2) ^ (e << 7);
-    };
     for (uint32_t q = 0; q + 3 < num_threads; q += 4) {
       if (!tmask.test(q) && !tmask.test(q+1) && !tmask.test(q+2) && !tmask.test(q+3))
         continue;
-      uint32_t p[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+      uint32_t a[4], b[4], r[4];
       for (uint32_t i = 0; i < 4; ++i) {
-        for (uint32_t j = 0; j < 4; ++j) {
-          uint64_t prod = clmul64((uint32_t)rs1_data[q+i].u, (uint32_t)rs2_data[q+j].u);
-          p[i+j]   ^= (uint32_t)prod;
-          p[i+j+1] ^= (uint32_t)(prod >> 32);
-        }
+        a[i] = (uint32_t)rs1_data[q+i].u;
+        b[i] = (uint32_t)rs2_data[q+i].u;
       }
-      uint64_t m4 = mul87(p[4]), m5 = mul87(p[5]);
-      uint64_t m6 = mul87(p[6]), m7 = mul87(p[7]);
-      uint64_t mc = mul87((uint32_t)(m7 >> 32));
-      uint32_t r[4];
-      r[0] = p[0] ^ (uint32_t)m4 ^ (uint32_t)mc;
-      r[1] = p[1] ^ (uint32_t)(m4 >> 32) ^ (uint32_t)m5;
-      r[2] = p[2] ^ (uint32_t)(m5 >> 32) ^ (uint32_t)m6;
-      r[3] = p[3] ^ (uint32_t)(m6 >> 32) ^ (uint32_t)m7;
+      gf128_mul_reflected(a, b, r);
       for (uint32_t c = 0; c < 4; ++c) {
         if (tmask.test(q + c)) {
           rd_data[q + c].u = r[c];

@@ -241,12 +241,23 @@ enum class SymType {
   // Fused subgroup AES round, opt-in behind VX_CFG_EXT_SYM_SG4_ENABLE. Reads
   // across an aligned quad of lanes and requires the quad to be converged.
   AESRM_SG4,
-  AESRF_SG4
+  AESRF_SG4,
+  // Stateful per-lane AES engine, opt-in behind VX_CFG_EXT_SYM_S2_ENABLE.
+  // Each lane holds a full AES context keyed by (warp, lane); one round
+  // instruction advances every lane by a whole round. Unlike the SG4 forms
+  // these read no other lane, so the thread mask IS honoured: a masked lane
+  // must not advance its context.
+  AES_CWR,
+  AES_CRD,
+  AES_BEGIN,
+  AES_RNDM,
+  AES_RNDF
 };
 
 struct IntrSymArgs {
   uint32_t bs : 2;      // AES32* byte select, from instr[31:30]
   uint32_t shamt : 5;   // RORI rotate amount, from instr[24:20]
+  uint32_t sel : 3;     // AES_CWR/AES_CRD context word, from funct7[2:0]
 };
 #endif
 
@@ -262,7 +273,18 @@ enum class AuthType {
   // Stateless subgroup GF(2^128) multiply: the quad's rs1 and rs2 are read as
   // 128-bit values one limb per lane, and each lane receives its limb of the
   // product. Requires a converged quad; the source lane's mask is not consulted.
-  GHMUL_SG4
+  GHMUL_SG4,
+  // Stateful per-lane GHASH engine, opt-in behind VX_CFG_EXT_AUTH_S2_ENABLE.
+  // One BLOCK performs Y <- (Y ^ X)*H mod P for every lane out of its own
+  // context. The thread mask is honoured, as for the AES engine.
+  GH_CWR,
+  GH_CRD,
+  GH_INIT,
+  GH_BLOCK
+};
+
+struct IntrAuthArgs {
+  uint32_t sel : 3;     // GH_CWR/GH_CRD context word, from funct7[2:0]
 };
 #endif
 
@@ -903,6 +925,9 @@ using IntrArgs = std::variant<
 #endif
 #ifdef VX_CFG_EXT_SYM_ENABLE
 , IntrSymArgs
+#endif
+#ifdef VX_CFG_EXT_AUTH_ENABLE
+, IntrAuthArgs
 #endif
 >;
 

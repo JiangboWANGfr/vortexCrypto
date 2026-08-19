@@ -102,6 +102,31 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
                                             : clmul_prod[XLEN-1:0];
     end
 
+// GF(2^128) primitives in the reflected limb domain. Declared outside both
+// feature guards because ghmul.sg4 and the stateful per-lane engine use the
+// same arithmetic, and a second copy would drift. A function with no caller
+// elaborates to nothing.
+    function automatic logic [2*XLEN-1:0] clmul64 (input logic [XLEN-1:0] a,
+                                                   input logic [XLEN-1:0] b);
+        logic [2*XLEN-1:0] acc;
+        acc = '0;
+        for (int k = 0; k < XLEN; ++k) begin
+            if (b[k]) begin
+                acc ^= ({{XLEN{1'b0}}, a} << k);
+            end
+        end
+        return acc;
+    endfunction
+
+    // Multiply by the constant 0x87, the reduction of x^128. Four shifted XORs
+    // rather than a full multiplier, exactly as the ghred32 path does it.
+    function automatic logic [2*XLEN-1:0] mul87 (input logic [XLEN-1:0] x);
+        logic [2*XLEN-1:0] e;
+        e = {{XLEN{1'b0}}, x};
+        return e ^ (e << 1) ^ (e << 2) ^ (e << 7);
+    endfunction
+
+
 `ifdef VX_CFG_EXT_AUTH_SG4_ENABLE
     // Stateless subgroup GF(2^128) multiply.
     //
@@ -123,26 +148,6 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
     if ((NUM_LANES < 4) || ((NUM_LANES % 4) != 0)) begin : g_sg4_guard
         VX_auth_ghash_sg4_requires_NUM_LANES_multiple_of_4 __config_error();
     end
-
-    function automatic logic [2*XLEN-1:0] clmul64 (input logic [XLEN-1:0] a,
-                                                   input logic [XLEN-1:0] b);
-        logic [2*XLEN-1:0] acc;
-        acc = '0;
-        for (int k = 0; k < XLEN; ++k) begin
-            if (b[k]) begin
-                acc ^= ({{XLEN{1'b0}}, a} << k);
-            end
-        end
-        return acc;
-    endfunction
-
-    // Multiply by the constant 0x87, the reduction of x^128. Four shifted XORs
-    // rather than a full multiplier, exactly as the ghred32 path does it.
-    function automatic logic [2*XLEN-1:0] mul87 (input logic [XLEN-1:0] x);
-        logic [2*XLEN-1:0] e;
-        e = {{XLEN{1'b0}}, x};
-        return e ^ (e << 1) ^ (e << 2) ^ (e << 7);
-    endfunction
 
     wire is_ghmul = (execute_if.data.op_type == INST_AUTH_GHMUL_SG4);
     wire [NUM_LANES-1:0][XLEN-1:0] ghmul_result;
@@ -185,16 +190,140 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
     wire [NUM_LANES-1:0][XLEN-1:0] unit_result = auth_result;
 `endif
 
+`ifdef VX_CFG_EXT_AUTH_S2_ENABLE
+    // ------------------------------------------------------------------
+    // Stateful per-lane GHASH engine (section 22 of the crypto proposal).
+    //
+    // Each lane owns H, Y and X keyed by (warp, lane), and one ghash.block
+    // performs the whole update Y <- (Y ^ X)*H for every lane. The XOR that the
+    // software path writes as `y[i] ^= v` is inside the instruction, so the
+    // accumulator never leaves the context.
+    //
+    // ONE 128x128 multiplier is instantiated and shared: the engine walks one
+    // lane per cycle, so ghash.block occupies the unit for NUM_LANES cycles.
+    // That is the whole point -- a single-cycle form would need one multiplier
+    // per lane, which at t16 across two cores is four times the ghmul.sg4 array
+    // that already measured +46,423 ALMs on the DE10-Pro.
+    //
+    // Masked lanes still consume their cycle. Skipping them would make the
+    // instruction's latency depend on the thread mask, and a cipher unit whose
+    // timing varies with control flow is a side channel for no gain.
+    localparam int NW = `VX_CFG_NUM_WARPS;
+    localparam int LANE_W = (NUM_LANES > 1) ? $clog2(NUM_LANES) : 1;
+
+    reg [NW-1:0][NUM_LANES-1:0][3:0][XLEN-1:0] gctx_h;
+    reg [NW-1:0][NUM_LANES-1:0][3:0][XLEN-1:0] gctx_y;
+    reg [NW-1:0][NUM_LANES-1:0][3:0][XLEN-1:0] gctx_x;
+
+    wire [NW_WIDTH-1:0] g2_wid = execute_if.data.header.wid;
+    wire [2:0] g2_sel = execute_if.data.op_args.sym.shamt[2:0];
+
+    wire g2_cwr   = (execute_if.data.op_type == INST_AUTH_GH_CWR);
+    wire g2_crd   = (execute_if.data.op_type == INST_AUTH_GH_CRD);
+    wire g2_init  = (execute_if.data.op_type == INST_AUTH_GH_INIT);
+    wire g2_block = (execute_if.data.op_type == INST_AUTH_GH_BLOCK);
+    wire g2_any   = g2_cwr | g2_crd | g2_init | g2_block;
+
+    reg  [LANE_W-1:0] g2_lane;
+    wire g2_last_lane = (g2_lane == LANE_W'(NUM_LANES - 1));
+
+    // The one shared multiplier, its operands selected by the lane walker.
+    wire [3:0][XLEN-1:0] g2_a, g2_b;
+    for (genvar c = 0; c < 4; ++c) begin : g_g2_operand
+        assign g2_a[c] = gctx_y[g2_wid][g2_lane][c] ^ gctx_x[g2_wid][g2_lane][c];
+        assign g2_b[c] = gctx_h[g2_wid][g2_lane][c];
+    end
+
+    logic [7:0][XLEN-1:0] g2_pp;
+    always @(*) begin
+        logic [2*XLEN-1:0] prod;
+        g2_pp = '0;
+        prod = '0;
+        for (int i = 0; i < 4; ++i) begin
+            for (int j = 0; j < 4; ++j) begin
+                prod = clmul64(g2_a[i], g2_b[j]);
+                g2_pp[i+j]   = g2_pp[i+j]   ^ prod[XLEN-1:0];
+                g2_pp[i+j+1] = g2_pp[i+j+1] ^ prod[2*XLEN-1:XLEN];
+            end
+        end
+    end
+
+    wire [2*XLEN-1:0] g2_m4 = mul87(g2_pp[4]);
+    wire [2*XLEN-1:0] g2_m5 = mul87(g2_pp[5]);
+    wire [2*XLEN-1:0] g2_m6 = mul87(g2_pp[6]);
+    wire [2*XLEN-1:0] g2_m7 = mul87(g2_pp[7]);
+    wire [2*XLEN-1:0] g2_mc = mul87(g2_m7[2*XLEN-1:XLEN]);
+
+    // The carry-out of the last fold is absorbed by the reduction, so only the
+    // low limb of mc is meaningful; the same is true of the ghmul.sg4 path.
+    `UNUSED_VAR (g2_mc)
+
+    wire [3:0][XLEN-1:0] g2_r;
+    assign g2_r[0] = g2_pp[0] ^ g2_m4[XLEN-1:0] ^ g2_mc[XLEN-1:0];
+    assign g2_r[1] = g2_pp[1] ^ g2_m4[2*XLEN-1:XLEN] ^ g2_m5[XLEN-1:0];
+    assign g2_r[2] = g2_pp[2] ^ g2_m5[2*XLEN-1:XLEN] ^ g2_m6[XLEN-1:0];
+    assign g2_r[3] = g2_pp[3] ^ g2_m6[2*XLEN-1:XLEN] ^ g2_m7[XLEN-1:0];
+
+    wire g2_fire = execute_if.valid && geb_ready;
+
+    always @(posedge clk) begin
+        if (reset) begin
+            g2_lane <= '0;
+        end else if (g2_fire) begin
+            if (g2_block) begin
+                g2_lane <= g2_last_lane ? '0 : (g2_lane + LANE_W'(1));
+                if (execute_if.data.header.tmask[g2_lane]) begin
+                    for (int c = 0; c < 4; ++c) begin
+                        gctx_y[g2_wid][g2_lane][c] <= g2_r[c];
+                    end
+                end
+            end else if (g2_init) begin
+                for (int i = 0; i < NUM_LANES; ++i) begin
+                    if (execute_if.data.header.tmask[i]) begin
+                        for (int c = 0; c < 4; ++c) begin
+                            gctx_y[g2_wid][i][c] <= '0;
+                        end
+                    end
+                end
+            end else if (g2_cwr) begin
+                for (int i = 0; i < NUM_LANES; ++i) begin
+                    if (execute_if.data.header.tmask[i]) begin
+                        if (g2_sel[2] == 1'b0) begin
+                            gctx_x[g2_wid][i][g2_sel[1:0]] <= execute_if.data.rs1_data[i];
+                        end else begin
+                            gctx_h[g2_wid][i][g2_sel[1:0]] <= execute_if.data.rs1_data[i];
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    wire [NUM_LANES-1:0][XLEN-1:0] g2_out;
+    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_g2_rd
+        assign g2_out[i] = g2_crd ? gctx_y[g2_wid][i][g2_sel[1:0]]
+                         : (g2_any ? '0 : unit_result[i]);
+    end
+
+    wire unit_done = ~g2_block | g2_last_lane;
+`else
+    wire [NUM_LANES-1:0][XLEN-1:0] g2_out = unit_result;
+    wire unit_done = 1'b1;
+`endif
+
     `UNUSED_VAR (execute_if.data.rs3_data)
+
+    wire geb_ready;
+    assign execute_if.ready = geb_ready && unit_done;
 
     VX_elastic_buffer #(
         .DATAW ($bits(auth_header_t) + (NUM_LANES * XLEN))
     ) rsp_buf (
         .clk       (clk),
         .reset     (reset),
-        .valid_in  (execute_if.valid),
-        .ready_in  (execute_if.ready),
-        .data_in   ({execute_if.data.header, unit_result}),
+        .valid_in  (execute_if.valid && unit_done),
+        .ready_in  (geb_ready),
+        .data_in   ({execute_if.data.header, g2_out}),
         .data_out  ({result_if.data.header,  result_if.data.data}),
         .valid_out (result_if.valid),
         .ready_out (result_if.ready)

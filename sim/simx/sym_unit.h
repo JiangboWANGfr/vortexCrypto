@@ -14,6 +14,7 @@
 #pragma once
 
 #include "func_unit.h"
+#include <vector>
 
 #ifdef VX_CFG_EXT_SYM_ENABLE
 
@@ -32,6 +33,29 @@ private:
   void execute(instr_trace_t* trace);
 
   uint32_t latency_of(const instr_trace_t* trace) const;
+
+#ifdef VX_CFG_EXT_SYM_S2_ENABLE
+  // One AES context per (warp, lane). It must be keyed by the warp as well as
+  // the lane: warps interleave freely, so a context held per lane alone would
+  // be clobbered by whichever warp issued last.
+  //
+  // The state and the key are packed the way the rest of this unit packs them
+  // -- one column per word, row 0 in the low byte -- which is the packing the
+  // kernel produces by byte-swapping the host's big-endian round keys.
+  struct AesCtx {
+    uint32_t s[4] = {0, 0, 0, 0};    // working state, one column per word
+    uint32_t k0[4] = {0, 0, 0, 0};   // cipher key, written once per key
+    uint32_t k[4] = {0, 0, 0, 0};    // current round key
+    uint32_t rnd = 0;                // next round to produce; begin sets 1
+    uint32_t k0_written = 0;         // one bit per k0 limb, for the valid check
+  };
+
+  std::vector<AesCtx> aes_ctx_;
+
+  AesCtx& ctx_of(uint32_t wid, uint32_t lane) {
+    return aes_ctx_[wid * VX_CFG_NUM_THREADS + lane];
+  }
+#endif
 };
 
 }

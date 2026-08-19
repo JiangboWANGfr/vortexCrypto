@@ -14,6 +14,7 @@
 #pragma once
 
 #include "func_unit.h"
+#include <vector>
 
 #ifdef VX_CFG_EXT_AUTH_ENABLE
 
@@ -32,6 +33,26 @@ private:
   void execute(instr_trace_t* trace);
 
   uint32_t latency_of(const instr_trace_t* trace) const;
+
+#ifdef VX_CFG_EXT_AUTH_S2_ENABLE
+  // One GHASH context per (warp, lane), for the same reason the AES engine
+  // needs one: warps interleave, so a per-lane context alone would be shared
+  // between them. All three fields are held in the reflected limb domain the
+  // rest of this unit already uses, so the kernel's brev8 conventions do not
+  // change.
+  struct GhCtx {
+    uint32_t h[4] = {0, 0, 0, 0};
+    uint32_t y[4] = {0, 0, 0, 0};
+    uint32_t x[4] = {0, 0, 0, 0};
+    uint32_t h_written = 0;   // one bit per H limb, for the valid check
+  };
+
+  std::vector<GhCtx> gh_ctx_;
+
+  GhCtx& ctx_of(uint32_t wid, uint32_t lane) {
+    return gh_ctx_[wid * VX_CFG_NUM_THREADS + lane];
+  }
+#endif
 };
 
 }

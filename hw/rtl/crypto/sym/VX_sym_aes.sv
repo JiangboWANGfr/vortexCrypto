@@ -179,16 +179,193 @@ module VX_sym_aes import VX_gpu_pkg::*; #(
     wire [NUM_LANES-1:0][`VX_CFG_XLEN-1:0] unit_result = aes_result;
 `endif
 
+`ifdef VX_CFG_EXT_SYM_S2_ENABLE
+    // ------------------------------------------------------------------
+    // Stateful per-lane AES engine (section 22 of the crypto proposal).
+    //
+    // Every lane owns a full AES context keyed by (warp, lane). It must be
+    // keyed by the warp too: warps interleave freely, so a per-lane context
+    // alone would be clobbered by whichever warp issued last.
+    //
+    // A round takes FOUR cycles and produces one output column per cycle, so
+    // the S-box array is sized for one column of every lane -- 4*NUM_LANES
+    // rather than the 16*NUM_LANES a single-cycle round would need. The unit
+    // holds execute_if.ready low for the first three, which is also the whole
+    // hazard mechanism: these instructions are encoded rd = x0 and write no
+    // architectural register, so the scoreboard cannot order two of them. A
+    // single global busy interlock is enough because the pipeline into this
+    // unit is in-order and anything queued behind a round wants the same
+    // hardware anyway.
+    //
+    // Unlike the SG4 forms above, no lane reads another, so the thread mask IS
+    // honoured: a masked lane must not advance its context.
+    localparam int NW = `VX_CFG_NUM_WARPS;
+
+    // Round constants, FIPS-197 section 5.2, indexed by the round being
+    // produced (1..10). aes.begin leaves rnd = 1 so the first middle round
+    // produces K1 with Rcon[1].
+    function automatic logic [7:0] aes_rcon (input logic [3:0] r);
+        case (r)
+            4'd1:  return 8'h01;
+            4'd2:  return 8'h02;
+            4'd3:  return 8'h04;
+            4'd4:  return 8'h08;
+            4'd5:  return 8'h10;
+            4'd6:  return 8'h20;
+            4'd7:  return 8'h40;
+            4'd8:  return 8'h80;
+            4'd9:  return 8'h1b;
+            default: return 8'h36;
+        endcase
+    endfunction
+
+    reg [NW-1:0][NUM_LANES-1:0][3:0][31:0] ctx_s;
+    reg [NW-1:0][NUM_LANES-1:0][3:0][31:0] ctx_k0;
+    reg [NW-1:0][NUM_LANES-1:0][3:0][31:0] ctx_k;
+    reg [NW-1:0][NUM_LANES-1:0][3:0]       ctx_rnd;
+
+    wire [NW_WIDTH-1:0] s2_wid = execute_if.data.header.wid;
+    wire [2:0] s2_sel = execute_if.data.op_args.sym.shamt[2:0];
+
+    wire s2_cwr   = (execute_if.data.op_type == INST_SYM_AES_CWR);
+    wire s2_crd   = (execute_if.data.op_type == INST_SYM_AES_CRD);
+    wire s2_begin = (execute_if.data.op_type == INST_SYM_AES_BEGIN);
+    wire s2_rndm  = (execute_if.data.op_type == INST_SYM_AES_RNDM);
+    wire s2_rndf  = (execute_if.data.op_type == INST_SYM_AES_RNDF);
+    wire s2_round = s2_rndm | s2_rndf;
+
+    reg  [1:0] s2_phase;
+    wire s2_last_phase = (s2_phase == 2'd3);
+
+    // Carried across the four phases of one round.
+    reg [NUM_LANES-1:0][2:0][31:0] s2_ns;      // columns 0..2, latched
+    reg [NUM_LANES-1:0][2:0][31:0] s2_nk;      // key words 0..2, latched
+    reg [NUM_LANES-1:0][31:0]      s2_nk_prev;
+
+    wire [NUM_LANES-1:0][31:0] s2_col;   // state column produced this phase
+    wire [NUM_LANES-1:0][31:0] s2_kw;    // round-key word produced this phase
+
+    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_s2_lane
+        wire [3:0][31:0] cs = ctx_s[s2_wid][i];
+        wire [3:0][31:0] ck = ctx_k[s2_wid][i];
+        wire [3:0]       cr = ctx_rnd[s2_wid][i];
+
+        // K_rnd from K_{rnd-1}: t = SubWord(RotWord(k3)) ^ Rcon[rnd]. RotWord
+        // takes row 0 to the top, which in this packing (row 0 in the low byte)
+        // is a rotate right by one byte.
+        wire [31:0] rotk = {ck[3][7:0], ck[3][31:8]};
+        wire [31:0] subk = {aes_sbox_fwd(rotk[31:24]), aes_sbox_fwd(rotk[23:16]),
+                            aes_sbox_fwd(rotk[15:8]),  aes_sbox_fwd(rotk[7:0])};
+        wire [31:0] tw   = subk ^ {24'b0, aes_rcon(cr)};
+
+        // The key words chain, so word c needs word c-1: one per phase matches
+        // the state column schedule exactly.
+        assign s2_kw[i] = ck[s2_phase]
+                        ^ ((s2_phase == 2'd0) ? tw : s2_nk_prev[i]);
+
+        // ShiftRows makes output column j take byte r from column (j+r)&3 --
+        // the same relation the SG4 round implements across lanes, here within
+        // one lane's own state.
+        wire [3:0][31:0] terms;
+        for (genvar r = 0; r < 4; ++r) begin : g_s2_step
+            wire [1:0]  src = s2_phase + 2'(r);
+            wire [7:0]  b8  = cs[src][8*r +: 8];
+            wire [7:0]  sb  = aes_sbox_fwd(b8);
+            wire [31:0] so  = s2_rndm ? aes_mixcol_byte(sb) : {24'b0, sb};
+            assign terms[r] = rol32(so, 2'(r));
+        end
+        assign s2_col[i] = s2_kw[i] ^ terms[0] ^ terms[1] ^ terms[2] ^ terms[3];
+    end
+
+    // Column 3 is produced in the same cycle it is written back, so the final
+    // state takes it from the combinational output rather than the latch.
+    wire s2_fire = execute_if.valid && eb_ready;
+
+    always @(posedge clk) begin
+        if (reset) begin
+            s2_phase <= 2'd0;
+            ctx_rnd  <= '0;
+        end else if (s2_fire) begin
+            if (s2_round) begin
+                s2_phase <= s2_last_phase ? 2'd0 : (s2_phase + 2'd1);
+                for (int i = 0; i < NUM_LANES; ++i) begin
+                    if (execute_if.data.header.tmask[i]) begin
+                        s2_nk_prev[i] <= s2_kw[i];
+                        if (!s2_last_phase) begin
+                            s2_ns[i][s2_phase[1:0]] <= s2_col[i];
+                            s2_nk[i][s2_phase[1:0]] <= s2_kw[i];
+                        end else begin
+                            ctx_s[s2_wid][i][0] <= s2_ns[i][0];
+                            ctx_s[s2_wid][i][1] <= s2_ns[i][1];
+                            ctx_s[s2_wid][i][2] <= s2_ns[i][2];
+                            ctx_s[s2_wid][i][3] <= s2_col[i];
+                            ctx_k[s2_wid][i][0] <= s2_nk[i][0];
+                            ctx_k[s2_wid][i][1] <= s2_nk[i][1];
+                            ctx_k[s2_wid][i][2] <= s2_nk[i][2];
+                            ctx_k[s2_wid][i][3] <= s2_kw[i];
+                            ctx_rnd[s2_wid][i]  <= ctx_rnd[s2_wid][i] + 4'd1;
+                        end
+                    end
+                end
+            end else if (s2_begin) begin
+                for (int i = 0; i < NUM_LANES; ++i) begin
+                    if (execute_if.data.header.tmask[i]) begin
+                        for (int c = 0; c < 4; ++c) begin
+                            ctx_s[s2_wid][i][c] <= ctx_s[s2_wid][i][c]
+                                                 ^ ctx_k0[s2_wid][i][c];
+                            ctx_k[s2_wid][i][c] <= ctx_k0[s2_wid][i][c];
+                        end
+                        ctx_rnd[s2_wid][i] <= 4'd1;
+                    end
+                end
+            end else if (s2_cwr) begin
+                for (int i = 0; i < NUM_LANES; ++i) begin
+                    if (execute_if.data.header.tmask[i]) begin
+                        if (s2_sel[2] == 1'b0) begin
+                            ctx_s[s2_wid][i][s2_sel[1:0]] <= execute_if.data.rs1_data[i];
+                        end else begin
+                            ctx_k0[s2_wid][i][s2_sel[1:0]] <= execute_if.data.rs1_data[i];
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    wire [NUM_LANES-1:0][`VX_CFG_XLEN-1:0] s2_result;
+    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_s2_rd
+        assign s2_result[i] = ctx_s[s2_wid][i][s2_sel[1:0]];
+    end
+
+    wire s2_any = s2_cwr | s2_crd | s2_begin | s2_round;
+
+    wire [NUM_LANES-1:0][`VX_CFG_XLEN-1:0] out_result;
+    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_out
+        assign out_result[i] = s2_crd ? s2_result[i]
+                             : (s2_any ? '0 : unit_result[i]);
+    end
+
+    // A round is not complete until its fourth phase; everything else finishes
+    // in the cycle it is accepted.
+    wire unit_done = ~s2_round | s2_last_phase;
+`else
+    wire [NUM_LANES-1:0][`VX_CFG_XLEN-1:0] out_result = unit_result;
+    wire unit_done = 1'b1;
+`endif
+
     `UNUSED_VAR (execute_if.data.rs3_data)
+
+    wire eb_ready;
+    assign execute_if.ready = eb_ready && unit_done;
 
     VX_elastic_buffer #(
         .DATAW ($bits(sym_header_t) + (NUM_LANES * `VX_CFG_XLEN))
     ) rsp_buf (
         .clk       (clk),
         .reset     (reset),
-        .valid_in  (execute_if.valid),
-        .ready_in  (execute_if.ready),
-        .data_in   ({execute_if.data.header,  unit_result}),
+        .valid_in  (execute_if.valid && unit_done),
+        .ready_in  (eb_ready),
+        .data_in   ({execute_if.data.header,  out_result}),
         .data_out  ({result_if.data.header,   result_if.data.data}),
         .valid_out (result_if.valid),
         .ready_out (result_if.ready)

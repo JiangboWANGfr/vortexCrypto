@@ -94,6 +94,45 @@ inline uint32_t vx_aesrf_sg4(uint32_t rk_col, uint32_t state_col) {
 }
 #endif
 
+// Stateful per-lane AES engine (section 22 of the crypto proposal). Every lane
+// owns a full 128-bit AES context indexed by (warp, lane); one round
+// instruction advances a whole round for every lane, and lanes never read each
+// other, so unlike the SG4 forms these honour the thread mask and need no
+// convergence.
+//
+// Custom-3 (0x7B): funct3 3 = context write, 4 = context read, 5 = the three
+// context operations selected by funct7. funct7[6:3] must be zero. Everything
+// except the read is encoded with rd = x0, which the decoder already turns into
+// no writeback, so ordering comes from the unit rather than the scoreboard --
+// hence the volatile asm, which is what keeps the compiler from reordering the
+// chain.
+//
+// `sel` must be a compile-time constant: 0-3 select the state columns S0..S3
+// and 4-7 the cipher-key limbs K0_0..K0_3. Reads accept 0-3 only.
+#ifdef VX_CFG_EXT_SYM_S2_ENABLE
+#define vx_aes_cwr(data, sel)                                                  \
+    __asm__ volatile (".insn r %0, 3, %1, x0, %2, x0"                          \
+                      :: "i"(0x7B), "i"(sel), "r"((uint32_t)(data)))
+
+#define vx_aes_crd(sel)                                                        \
+    ({ uint32_t _vx_o;                                                         \
+       __asm__ volatile (".insn r %1, 4, %2, %0, x0, x0"                       \
+                         : "=r"(_vx_o) : "i"(0x7B), "i"(sel));                 \
+       _vx_o; })
+
+// S ^= K0; K = K0; rnd = 1. The round counter starts at 1 so that the first
+// aes.rndm produces K1 with Rcon[1]; starting it at 0 is the off-by-one the
+// proposal's first draft had.
+#define vx_aes_begin()                                                         \
+    __asm__ volatile (".insn r %0, 5, 0, x0, x0, x0" :: "i"(0x7B))
+
+#define vx_aes_rndm()                                                          \
+    __asm__ volatile (".insn r %0, 5, 1, x0, x0, x0" :: "i"(0x7B))
+
+#define vx_aes_rndf()                                                          \
+    __asm__ volatile (".insn r %0, 5, 2, x0, x0, x0" :: "i"(0x7B))
+#endif
+
 #ifdef __cplusplus
 }
 #endif

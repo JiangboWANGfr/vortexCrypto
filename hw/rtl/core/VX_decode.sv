@@ -805,7 +805,7 @@ module VX_decode import
                     default:;
                 endcase
             end
-        `ifdef VX_CFG_EXT_SYM_SG4_ENABLE
+        `ifdef EXT_SYM_EXT4_ARM
             INST_EXT4: begin
                 // Fused subgroup AES round. INST_EXT4 was declared and decoded
                 // by neither model, so like INST_EXT3 this arm cannot collide
@@ -813,6 +813,44 @@ module VX_decode import
                 // No immediate: the four byte steps are enumerated inside the
                 // instruction, so sym_args_t is unchanged and its fields are
                 // assigned explicitly because the decoder's default is 'x.
+            `ifdef VX_CFG_EXT_SYM_S2_ENABLE
+                // Stateful per-lane AES engine: funct3 3 = context write,
+                // 4 = context read, 5 = begin/rndm/rndf by funct7[1:0].
+                // funct7[2:0] carries `sel`, which rides sym_args_t.shamt --
+                // that struct's width is asserted against INST_ARGS_BITS, so a
+                // new field would widen the whole issue payload for one
+                // three-bit immediate.
+                //
+                // Everything but the read is encoded rd = x0, and VX_decode's
+                // own `wb` is `use_regs[RD] && rd != 0`, so no writeback and no
+                // scoreboard entry are produced. Ordering therefore cannot come
+                // from the scoreboard; the unit stalls instead.
+                if (funct3 == 3'h3) begin
+                    ex_type = EX_SYM;
+                    op_type = INST_OP_BITS'(INST_SYM_AES_CWR);
+                    op_args.sym.bs = 2'b0;
+                    op_args.sym.shamt = {2'b0, funct7[2:0]};
+                    `USED_IREG (rs1);
+                end
+                if (funct3 == 3'h4) begin
+                    ex_type = EX_SYM;
+                    op_type = INST_OP_BITS'(INST_SYM_AES_CRD);
+                    op_args.sym.bs = 2'b0;
+                    op_args.sym.shamt = {2'b0, funct7[2:0]};
+                    `USED_IREG (rd);
+                end
+                if (funct3 == 3'h5) begin
+                    ex_type = EX_SYM;
+                    op_args.sym.bs = 2'b0;
+                    op_args.sym.shamt = 5'b0;
+                    case (funct7[1:0])
+                        2'h0: op_type = INST_OP_BITS'(INST_SYM_AES_BEGIN);
+                        2'h1: op_type = INST_OP_BITS'(INST_SYM_AES_RNDM);
+                        default: op_type = INST_OP_BITS'(INST_SYM_AES_RNDF);
+                    endcase
+                end
+            `endif
+            `ifdef VX_CFG_EXT_SYM_SG4_ENABLE
                 if (funct3 == 3'h0 || funct3 == 3'h1) begin
                     ex_type = EX_SYM;
                     op_type = INST_OP_BITS'(funct3[0] ? INST_SYM_AESRF_SG4
@@ -823,6 +861,7 @@ module VX_decode import
                     `USED_IREG (rs1);
                     `USED_IREG (rs2);
                 end
+            `endif
             `ifdef VX_CFG_EXT_AUTH_SG4_ENABLE
                 // Stateless subgroup GF(2^128) multiply shares this opcode arm,
                 // so it requires VX_CFG_EXT_SYM_SG4_ENABLE to be set as well.
@@ -838,6 +877,33 @@ module VX_decode import
         `endif
         `ifdef VX_CFG_EXT_AUTH_ENABLE
             INST_EXT3: begin
+            `ifdef VX_CFG_EXT_AUTH_S2_ENABLE
+                // Stateful per-lane GHASH engine: funct3 2 = context write,
+                // 3 = context read, 4 = init/block by funct7[0]. `sel` rides
+                // sym_args_t.shamt for the same reason the AES engine's does;
+                // the AUTH ops carry no args struct of their own.
+                if (funct3 == 3'h2) begin
+                    ex_type = EX_AUTH;
+                    op_type = INST_OP_BITS'(INST_AUTH_GH_CWR);
+                    op_args.sym.bs = 2'b0;
+                    op_args.sym.shamt = {2'b0, funct7[2:0]};
+                    `USED_IREG (rs1);
+                end
+                if (funct3 == 3'h3) begin
+                    ex_type = EX_AUTH;
+                    op_type = INST_OP_BITS'(INST_AUTH_GH_CRD);
+                    op_args.sym.bs = 2'b0;
+                    op_args.sym.shamt = {2'b0, funct7[2:0]};
+                    `USED_IREG (rd);
+                end
+                if (funct3 == 3'h4) begin
+                    ex_type = EX_AUTH;
+                    op_args.sym.bs = 2'b0;
+                    op_args.sym.shamt = 5'b0;
+                    op_type = INST_OP_BITS'(funct7[0] ? INST_AUTH_GH_BLOCK
+                                                      : INST_AUTH_GH_INIT);
+                end
+            `endif
                 // Custom fused GF(2^128) reduction. INST_EXT3 was entirely
                 // undecoded, so unlike the ratified crypto encodings this arm
                 // cannot collide with anything: funct3 0 = GHRED32L, 1 = GHRED32H.

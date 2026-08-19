@@ -112,6 +112,34 @@ inline uint32_t vx_ghmul_sg4(uint32_t a_limb, uint32_t h_limb) {
 }
 #endif
 
+// Stateful per-lane GHASH engine (section 22). One ghash.block performs the
+// whole 128-bit update Y <- (Y ^ X)*H mod P for every lane out of its own
+// context, in the same reflected limb domain the rest of this header uses.
+//
+// Custom-2 (0x5B): funct3 2 = context write, 3 = context read, 4 = init/block.
+// Same encoding rules as the AES engine: funct7[6:3] zero, rd = x0 on
+// everything but the read, volatile to keep the chain in order.
+//
+// `sel` must be a compile-time constant: 0-3 select the input limbs X0..X3 and
+// 4-7 the hash subkey limbs H0..H3. Reads return Y and accept 0-3 only.
+#ifdef VX_CFG_EXT_AUTH_S2_ENABLE
+#define vx_ghash_cwr(data, sel)                                                \
+    __asm__ volatile (".insn r %0, 2, %1, x0, %2, x0"                          \
+                      :: "i"(0x5B), "i"(sel), "r"((uint32_t)(data)))
+
+#define vx_ghash_crd(sel)                                                      \
+    ({ uint32_t _vx_o;                                                         \
+       __asm__ volatile (".insn r %1, 3, %2, %0, x0, x0"                       \
+                         : "=r"(_vx_o) : "i"(0x5B), "i"(sel));                 \
+       _vx_o; })
+
+#define vx_ghash_init()                                                        \
+    __asm__ volatile (".insn r %0, 4, 0, x0, x0, x0" :: "i"(0x5B))
+
+#define vx_ghash_block()                                                       \
+    __asm__ volatile (".insn r %0, 4, 1, x0, x0, x0" :: "i"(0x5B))
+#endif
+
 #ifdef __cplusplus
 }
 #endif

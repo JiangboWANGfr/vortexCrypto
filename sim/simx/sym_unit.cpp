@@ -15,6 +15,7 @@
 #include "core.h"
 #include "scheduler.h"
 #include "debug.h"
+#include <iostream>
 
 // The whole unit is conditional: this file is always in SRCS, but the op-type
 // enums it uses only exist when the extension is enabled.
@@ -61,8 +62,33 @@ static inline uint32_t rol32(uint32_t x, uint32_t n) {
   return n ? ((x << n) | (x >> (32 - n))) : x;
 }
 
+#ifdef VX_CFG_EXT_SYM_S2_ENABLE
+// AES-128 round constants, FIPS-197 section 5.2. Indexed by the round being
+// produced, 1..10; entry 0 is unused and present only to keep the indexing
+// literal.
+static const uint8_t kAesRcon[11] = {
+  0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
+};
+
+static inline uint32_t ror32(uint32_t x, uint32_t n) {
+  n &= 31;
+  return n ? ((x >> n) | (x << (32 - n))) : x;
+}
+
+// SubWord over a column word in this unit's packing (row 0 in the low byte).
+static inline uint32_t aes_subword(uint32_t w) {
+  return (uint32_t)kAesSbox[w & 0xff]
+       | ((uint32_t)kAesSbox[(w >> 8) & 0xff] << 8)
+       | ((uint32_t)kAesSbox[(w >> 16) & 0xff] << 16)
+       | ((uint32_t)kAesSbox[(w >> 24) & 0xff] << 24);
+}
+#endif
+
 SymUnit::SymUnit(const SimContext& ctx, const char* name, Core* core)
   : FuncUnit<VX_CFG_NUM_SYM_BLOCKS>(ctx, name, core)
+#ifdef VX_CFG_EXT_SYM_S2_ENABLE
+  , aes_ctx_((size_t)VX_CFG_NUM_WARPS * VX_CFG_NUM_THREADS)
+#endif
 {}
 
 uint32_t SymUnit::latency_of(const instr_trace_t* trace) const {
@@ -89,6 +115,91 @@ void SymUnit::execute(instr_trace_t* trace) {
   auto symArgs = std::get<IntrSymArgs>(instrArgs);
   uint32_t bs = symArgs.bs & 0x3;
   uint32_t shamt = symArgs.shamt & 0x1F;
+
+#ifdef VX_CFG_EXT_SYM_S2_ENABLE
+  if (sym_type == SymType::AES_CWR   || sym_type == SymType::AES_CRD
+   || sym_type == SymType::AES_BEGIN || sym_type == SymType::AES_RNDM
+   || sym_type == SymType::AES_RNDF) {
+    // Every lane owns a full context and reads no other lane, so unlike the
+    // SG4 forms the thread mask IS honoured: a masked lane must not advance.
+    // Getting this backwards is silent -- the context is unobservable except
+    // through AES_CRD, so a wrongly advanced lane surfaces only as a wrong tag
+    // many blocks later.
+    const uint32_t sel = symArgs.sel & 0x7;
+    for (uint32_t t = 0; t < num_threads; ++t) {
+      if (!tmask.test(t))
+        continue;
+      auto& c = this->ctx_of(trace->wid, t);
+      switch (sym_type) {
+      case SymType::AES_CWR:
+        if (sel < 4) {
+          c.s[sel] = (uint32_t)rs1_data[t].u;
+        } else {
+          c.k0[sel - 4] = (uint32_t)rs1_data[t].u;
+          c.k0_written |= (1u << (sel - 4));
+        }
+        break;
+      case SymType::AES_CRD:
+        rd_data[t].u = c.s[sel];
+        break;
+      case SymType::AES_BEGIN:
+        // The context has no architectural initial value and survives across
+        // kernel launches, so a kernel that forgets to write K0 would silently
+        // encrypt under whatever key the previous one left behind. simx refuses
+        // instead; see the note in the proposal on why the RTL stays permissive.
+        if (c.k0_written != 0xf) {
+          std::cout << "error: aes.begin with an unwritten K0 (warp " << trace->wid
+                    << ", lane " << t << ")" << std::endl;
+          std::abort();
+        }
+        for (int i = 0; i < 4; ++i) {
+          c.k[i] = c.k0[i];
+          c.s[i] ^= c.k0[i];
+        }
+        c.rnd = 1;
+        break;
+      case SymType::AES_RNDM:
+      case SymType::AES_RNDF: {
+        if (c.rnd < 1 || c.rnd > 10) {
+          std::cout << "error: AES round " << c.rnd << " out of range (warp "
+                    << trace->wid << ", lane " << t << ")" << std::endl;
+          std::abort();
+        }
+        // Produce K_rnd from K_{rnd-1}: t = SubWord(RotWord(k3)) ^ Rcon[rnd].
+        // RotWord takes row 0 to the top, which in this packing is ror32 by 8.
+        uint32_t tw = aes_subword(ror32(c.k[3], 8)) ^ (uint32_t)kAesRcon[c.rnd];
+        uint32_t nk[4];
+        nk[0] = c.k[0] ^ tw;
+        nk[1] = c.k[1] ^ nk[0];
+        nk[2] = c.k[2] ^ nk[1];
+        nk[3] = c.k[3] ^ nk[2];
+        // ShiftRows makes output column j take byte r from column (j+r)&3,
+        // which is the same relation the SG4 round implements across lanes.
+        const bool is_mix = (sym_type == SymType::AES_RNDM);
+        uint32_t ns[4];
+        for (uint32_t j = 0; j < 4; ++j) {
+          uint32_t acc = nk[j];
+          for (uint32_t r = 0; r < 4; ++r) {
+            uint8_t byte = (uint8_t)((c.s[(j + r) & 3] >> (8 * r)) & 0xff);
+            uint8_t sb = kAesSbox[byte];
+            uint32_t so = is_mix ? aes_mixcol_byte(sb) : (uint32_t)sb;
+            acc ^= rol32(so, 8 * r);
+          }
+          ns[j] = acc;
+        }
+        for (int i = 0; i < 4; ++i) {
+          c.s[i] = ns[i];
+          c.k[i] = nk[i];
+        }
+        c.rnd += 1;
+      } break;
+      default:
+        break;
+      }
+    }
+    return;
+  }
+#endif
 
   if (sym_type == SymType::AESRM_SG4 || sym_type == SymType::AESRF_SG4) {
     // Lane j of each aligned quad produces state column j of the next round,

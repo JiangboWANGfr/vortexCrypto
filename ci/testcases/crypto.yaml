@@ -214,6 +214,42 @@ tests:
 # The subgroup GF(2^128) multiply (section 21.5). It is a null as a performance
 # result and is kept as evidence, but it is a cross-lane instruction in two
 # models and that is exactly what rots silently, so it gets both drivers.
+# The stateful per-lane engines (section 22). simx only, and deliberately so:
+# there is no RTL for them yet, so rtlsim would not have the instructions at all.
+# They are kernels in the tree and a kernel with no coverage rots -- these are
+# the only ones here that carry architectural state across instructions, so a
+# change to the context indexing or to the key schedule would be silent.
+# The AAD/tail case matters more here than elsewhere: the tail path re-enters
+# aes.begin mid-message, which is where a wrong round counter would show.
+- id: crypto-aes-gcm-s2-aes
+  via: make-run
+  drivers:
+  - simx
+  dir: tests/crypto/aes_gcm
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE
+  vars:
+    OPTS: -n64 -b4 -t5 -a20 -i9
+- id: crypto-aes-gcm-s2
+  via: make-run
+  drivers:
+  - simx
+  dir: tests/crypto/aes_gcm
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE
+  vars:
+    OPTS: -n64 -b4 -t5 -a20 -i10
+# The interleaved-layout twin, for the same reason hw_s1_ilv has a case: its
+# host path lays the reference out differently and that is what rots silently.
+- id: crypto-aes-gcm-s2-ilv
+  via: make-run
+  drivers:
+  - simx
+  dir: tests/crypto/aes_gcm
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE
+  vars:
+    OPTS: -n64 -b4 -i11
 - id: crypto-aes-gcm-s3-ghmul
   via: make-run
   drivers:

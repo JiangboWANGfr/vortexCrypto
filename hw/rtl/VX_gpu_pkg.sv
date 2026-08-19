@@ -539,6 +539,16 @@ package VX_gpu_pkg;
     // lanes, so it is only meaningful when the lane count is a multiple of four.
     localparam INST_SYM_AESRM_SG4 = 4'h3;
     localparam INST_SYM_AESRF_SG4 = 4'h4;
+    // Stateful per-lane AES engine (section 22 of the crypto proposal). Opt-in
+    // behind VX_CFG_EXT_SYM_S2_ENABLE. Each lane owns a full 128-bit AES
+    // context indexed by (warp, lane); one round instruction advances a whole
+    // round for every lane. CWR/CRD move one 32-bit limb; BEGIN/RNDM/RNDF write
+    // no architectural register and are encoded with rd = x0.
+    localparam INST_SYM_AES_CWR   = 4'h5;
+    localparam INST_SYM_AES_CRD   = 4'h6;
+    localparam INST_SYM_AES_BEGIN = 4'h7;
+    localparam INST_SYM_AES_RNDM  = 4'h8;
+    localparam INST_SYM_AES_RNDF  = 4'h9;
     localparam INST_SYM_BITS      = 4;
 `endif
 
@@ -555,6 +565,13 @@ package VX_gpu_pkg;
     // 128-bit pair held one limb per lane across an aligned quad. Opt-in behind
     // VX_CFG_EXT_AUTH_SG4_ENABLE; see hw/rtl/crypto/auth/VX_auth_ghash.sv.
     localparam INST_AUTH_GHMUL_SG4 = 4'h5;
+    // Stateful per-lane GHASH engine (section 22). Opt-in behind
+    // VX_CFG_EXT_AUTH_S2_ENABLE. One BLOCK instruction performs a whole
+    // 128-bit update Y <- (Y ^ X)*H for every lane from its own context.
+    localparam INST_AUTH_GH_CWR   = 4'h6;
+    localparam INST_AUTH_GH_CRD   = 4'h7;
+    localparam INST_AUTH_GH_INIT  = 4'h8;
+    localparam INST_AUTH_GH_BLOCK = 4'h9;
     localparam INST_AUTH_BITS     = 4;
 `endif
 
