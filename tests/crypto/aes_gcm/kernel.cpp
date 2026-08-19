@@ -379,6 +379,63 @@ inline void aes128_encrypt_hw(const uint32_t* rk, const uint32_t in[4],
   out[0] = t0; out[1] = t1; out[2] = t2; out[3] = t3;
 }
 
+// SUBGROUP-COOPERATIVE (S3) FORM OF THE SAME BLOCK ENCRYPTION -- A PROBE.
+//
+// Lane c of each aligned group of four holds AES state column c, so the four
+// columns of one block live in four lanes instead of four registers of one
+// lane. ShiftRows is then a lane rotation rather than a choice of register:
+// aes32esmi's byte-step `bs` makes output column j consume state column
+// (j + bs) & 3 (see the lane-local form above, where t0 reads s0,s1,s2,s3 and
+// t1 reads s1,s2,s3,s0), so at step p lane c must read lane (c + p) & 3 of the
+// same aligned quad.
+//
+// Nothing here is new hardware. `vx_shfl_idx` is decoded in every build --
+// custom0, funct7=0x01, funct3=7, not behind any enable -- and resolves the
+// source as `lane = (i & mask) | (bval & ~mask)` guarded by
+// `lane <= (i & mask) | (cval & ~mask)`. With mask = 0x3c, cval = 3 and a
+// PER-LANE bval = (c + p) & 3 that is exactly the aligned rotate. bval must be
+// per-lane: a compile-time constant there makes every lane of the quad read the
+// same source, which is a broadcast and computes the wrong cipher.
+//
+// mask = 0x3c is the width-portable spelling. The RTL slices LANE_BITS from bit
+// 12 (VX_alu_int.sv:184) so it truncates to 0xc at 16 threads and 0x1c at 32,
+// while simx keeps six bits (alu_unit.cpp:279); `bval & ~mask` preserves bits
+// 0-1 in every case, and at 4 threads the mask degenerates to 0 with the whole
+// warp as one quad, which is still the same rotate.
+//
+// The quad must be converged: all four lanes are read by every rotate, and the
+// two models disagree about a masked source lane (RTL falls back to the reading
+// lane, simx does not). main.cpp refuses a message count that is not a multiple
+// of four, which is what keeps every quad whole here.
+__attribute__((always_inline))
+inline uint32_t aes128_encrypt_sg4(const uint32_t* rk, uint32_t c,
+                                   uint32_t b1, uint32_t b2, uint32_t b3,
+                                   uint32_t in_col) {
+  uint32_t s = in_col ^ rk[c];
+
+  for (int round = 1; round < AES128_ROUNDS; ++round) {
+    const uint32_t s1 = (uint32_t)vx_shfl_idx(s, (int)b1, 3, 0x3c);
+    const uint32_t s2 = (uint32_t)vx_shfl_idx(s, (int)b2, 3, 0x3c);
+    const uint32_t s3 = (uint32_t)vx_shfl_idx(s, (int)b3, 3, 0x3c);
+    uint32_t t = rk[4 * round + c];
+    t = vx_aes32esmi(t, s,  0);
+    t = vx_aes32esmi(t, s1, 1);
+    t = vx_aes32esmi(t, s2, 2);
+    t = vx_aes32esmi(t, s3, 3);
+    s = t;
+  }
+
+  const uint32_t s1 = (uint32_t)vx_shfl_idx(s, (int)b1, 3, 0x3c);
+  const uint32_t s2 = (uint32_t)vx_shfl_idx(s, (int)b2, 3, 0x3c);
+  const uint32_t s3 = (uint32_t)vx_shfl_idx(s, (int)b3, 3, 0x3c);
+  uint32_t t = rk[4 * AES128_ROUNDS + c];
+  t = vx_aes32esi(t, s,  0);
+  t = vx_aes32esi(t, s1, 1);
+  t = vx_aes32esi(t, s2, 2);
+  t = vx_aes32esi(t, s3, 3);
+  return t;
+}
+
 // y = y * h over GF(2^128) mod x^128 + x^7 + x^2 + x + 1, both in the
 // reflected limb domain. Schoolbook 4x4; Karatsuba trades 14 clmul for 11 xor
 // here, which is a wash at this width and is not worth the complexity until
@@ -408,9 +465,17 @@ inline void ghash_mul_hw(const uint32_t h[4], uint32_t y[4]) {
   y[0] = r0; y[1] = r1; y[2] = r2; y[3] = r3;
 }
 
-} // namespace
+// The keystream generator the message loop below uses. KS_LANE_LOCAL is the
+// shipped S1 form -- one lane computes a whole block. KS_SUBGROUP_4 is the S3
+// probe: four lanes cooperate on one block, and the group round-robins over the
+// four messages it owns so that the payload, the GHASH half and the number of
+// messages in flight per warp are all left exactly as they are. The only thing
+// that differs between the two instantiations is where the keystream comes
+// from, which is what makes the difference between them attributable.
+enum { KS_LANE_LOCAL = 0, KS_SUBGROUP_4 = 1 };
 
-__kernel void aes_gcm_hw_s1(kernel_arg_t* __UNIFORM__ arg) {
+template <int KS>
+inline void aes_gcm_hw_body(kernel_arg_t* __UNIFORM__ arg) {
   hw_lmem_layout_t* lm = (hw_lmem_layout_t*)__local_mem();
 
   {
@@ -422,6 +487,13 @@ __kernel void aes_gcm_hw_s1(kernel_arg_t* __UNIFORM__ arg) {
     }
   }
   __syncthreads();
+
+  // Lane position inside the aligned quad, and the three rotate descriptors it
+  // needs. Loop-invariant, so they are computed once here rather than per round.
+  const uint32_t sg4_c  = (uint32_t)(vx_thread_id() & 3);
+  const uint32_t sg4_b1 = (sg4_c + 1u) & 3u;
+  const uint32_t sg4_b2 = (sg4_c + 2u) & 3u;
+  const uint32_t sg4_b3 = (sg4_c + 3u) & 3u;
 
   // Reflect H once per thread; it is loop-invariant across every block.
   uint32_t h[4];
@@ -487,7 +559,23 @@ __kernel void aes_gcm_hw_s1(kernel_arg_t* __UNIFORM__ arg) {
       ctr[3] = bswap32(bswap32(ctr[3]) + 1);
 
       uint32_t ks[4];
-      aes128_encrypt_hw(lm->rk, ctr, ks);
+      if (KS == KS_SUBGROUP_4) {
+        // Distribute: after the transpose lane i holds column i of the counter
+        // belonging to message p of this quad, for p = 0..3.
+        uint32_t q0, q1, q2, q3;
+        vx_transpose4(ctr[0], ctr[1], ctr[2], ctr[3], q0, q1, q2, q3);
+        // Four cooperative passes, one per message the quad owns.
+        const uint32_t r0 = aes128_encrypt_sg4(lm->rk, sg4_c, sg4_b1, sg4_b2, sg4_b3, q0);
+        const uint32_t r1 = aes128_encrypt_sg4(lm->rk, sg4_c, sg4_b1, sg4_b2, sg4_b3, q1);
+        const uint32_t r2 = aes128_encrypt_sg4(lm->rk, sg4_c, sg4_b1, sg4_b2, sg4_b3, q2);
+        const uint32_t r3 = aes128_encrypt_sg4(lm->rk, sg4_c, sg4_b1, sg4_b2, sg4_b3, q3);
+        // Collect: the transpose is its own inverse, so each lane gets its own
+        // message's four keystream words back and the rest of the loop is
+        // unchanged.
+        vx_transpose4(r0, r1, r2, r3, ks[0], ks[1], ks[2], ks[3]);
+      } else {
+        aes128_encrypt_hw(lm->rk, ctr, ks);
+      }
 
       // Word-wise, not via load_le32/store_le32: those are byte-at-a-time, and
       // RISC-V's strict-alignment default stops LLVM widening them, costing 16
@@ -544,4 +632,24 @@ __kernel void aes_gcm_hw_s1(kernel_arg_t* __UNIFORM__ arg) {
       store_le32(tag + 4 * i, vx_brev8(y[i]) ^ ej0[i]);
     }
   }
+}
+
+} // namespace
+
+__kernel void aes_gcm_hw_s1(kernel_arg_t* __UNIFORM__ arg) {
+  aes_gcm_hw_body<KS_LANE_LOCAL>(arg);
+}
+
+// S3 PROBE -- subgroup-cooperative keystream, built out of instructions that
+// already exist so the question can be measured before any RTL is written.
+// It is expected to be SLOWER than aes_gcm_hw_s1: it issues the same number of
+// aes32 per block (four lanes doing a quarter of the work each is the same
+// warp-instruction count as one lane doing all of it), and adds three rotates
+// per round plus two 4x4 transposes per block on top. What it measures is the
+// conversion rate of that added issue pressure, which is what decides whether a
+// fused subgroup round instruction -- which would delete the rotates and fold
+// the four aes32 into one -- could ever clear this application's floor.
+// See section 17 of docs/proposals/crypto_isa_proposal.md.
+__kernel void aes_gcm_hw_sg4(kernel_arg_t* __UNIFORM__ arg) {
+  aes_gcm_hw_body<KS_SUBGROUP_4>(arg);
 }

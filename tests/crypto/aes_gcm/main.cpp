@@ -37,18 +37,23 @@ struct impl_t {
   const char* kernel;
   const char* label;
   bool needs_units;   // issues aes32*/clmul*, so requires EX_SYM and EX_AUTH
+  bool needs_quad;    // reads across aligned groups of four lanes
 };
 
 const impl_t kImpls[] = {
-  { "aes_gcm_sw_ttable", "sw_ttable", false },
+  { "aes_gcm_sw_ttable", "sw_ttable", false, false },
   // Same host program, buffers, vectors, counter reduction and output format;
   // only the device code differs, which is the whole point of selecting by -i
   // rather than building a second application.
-  { "aes_gcm_hw_s1",     "hw_s1", true },
+  { "aes_gcm_hw_s1",     "hw_s1", true, false },
   // Bit-identical to sw_ttable; see kernel.cpp. Measures the apparatus, not
   // the cipher, and it is the software kernel's own floor -- the existing
   // ghash_mul_hw probe reads 0.00% here because this kernel never calls it.
-  { "aes_gcm_sw_ttable_perm", "sw_perm", false },
+  { "aes_gcm_sw_ttable_perm", "sw_perm", false, false },
+  // S3 probe: the same AEAD with the keystream computed by four cooperating
+  // lanes. Built out of the shuffle that already exists, so it measures the
+  // subgroup layout before any RTL is written. See kernel.cpp.
+  { "aes_gcm_hw_sg4",    "hw_sg4", true, true },
 };
 
 const uint32_t kNumImpls = (uint32_t)(sizeof(kImpls) / sizeof(kImpls[0]));
@@ -287,6 +292,18 @@ int main(int argc, char** argv) {
   CHECK(vx_device_query(dev, VX_CAPS_NUM_CORES, &num_cores));
   CHECK(vx_device_query(dev, VX_CAPS_NUM_WARPS, &num_warps));
   CHECK(vx_device_query(dev, VX_CAPS_NUM_THREADS, &num_threads));
+
+  // A subgroup kernel reads every lane of its aligned quad, and the two models
+  // disagree about what a masked source lane returns (VX_alu_int.sv:219 falls
+  // back to the reading lane, sim/simx/alu_unit.cpp:291-296 does not). A partial
+  // quad is therefore not a slow case here, it is an unsupported one: refuse it
+  // rather than compute something that only one driver agrees with.
+  if (kImpls[g_impl].needs_quad && (g_num_msgs % 4) != 0) {
+    std::printf("SKIPPED: impl '%s' needs whole groups of four lanes; -n must "
+                "be a multiple of 4, got %u\n", kImpls[g_impl].label, g_num_msgs);
+    vx_device_release(dev);
+    return 1;
+  }
 
   if (g_tail_bytes > 15) {
     std::printf("FAILED: -t must be 0..15 (a tail is what is left after whole "

@@ -155,3 +155,17 @@ tests:
   via: blackbox
   app: crypto/chacha_poly
   args: -n64 -b1 -i0
+# The S3 probe (section 17). It fired its own kill rules and is kept as evidence
+# rather than as a candidate, but it is a kernel in the tree and a kernel in the
+# tree with no coverage rots: it is the only thing here that issues a cross-lane
+# instruction, and the two models disagree about a masked source lane, so a
+# change to SHFL would break it silently. simx only -- it is not a measurement.
+- id: crypto-aes-gcm-sg4-probe
+  via: make-run
+  drivers:
+  - simx
+  dir: tests/crypto/aes_gcm
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE
+  vars:
+    OPTS: -n64 -b4 -i3
