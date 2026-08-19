@@ -2152,9 +2152,20 @@ spill traffic is 8.23 of the 16.23 added instructions, and by the breakdown
 above those are the ones costing 131-cycle loads. There is nothing left for the
 instruction to convert.
 
-**Verdict: do not build it.** Two pre-registered rules fired, and the
-re-derivation on the measured decomposition removes the premise rather than
-weakening it. Recorded as a null. The reserved encoding stays unspent.
+**Verdict for THIS composition: do not build it.** Two pre-registered rules
+fired, and the re-derivation removes the premise for the composition measured
+here. Recorded as a null; the reserved encoding stays unspent.
+
+> **Correction, and it matters more than the verdict.** The paragraph above
+> originally read "do not build it" without qualification, which took a result
+> about one composition and applied it to the instruction. That is wrong, and
+> section 18.5 states the corrected arithmetic. The +4.7% figure adds this
+> composition's 8.23 spill instructions per block, and those exist only because
+> the quad round-robins over four messages and has to transpose in and out. In
+> the mapping where a quad owns ONE message end to end there is no transpose and
+> no seam, and a fused round instruction issues 2.75 warp-instructions per block
+> against the shipped kernel's 10 -- a fourfold reduction on the AES path, not
+> instruction neutrality. Nothing measured here bears on that instruction.
 
 **What this does not kill.** The probe deliberately kept the payload, the GHASH
 half and the number of messages in flight per warp exactly as they are, by
@@ -2286,11 +2297,13 @@ adds routing. Against that it offers a fourfold cut in payload D-cache
 that request count is not what binds here: the interleaved kernel cut bank
 stalls 24% and still lost 25%.
 
-**S3 for AES-GCM is closed.** Not because a subgroup instruction cannot be
-built, but because both mappings cost about +60% instructions in software, the
-one measurable upside moved the wrong way when tested directly, and the fused
-instruction that would recover the routing has already been shown in 17.7 to be
-instruction-positive once the layout cost is counted.
+**Withdrawn.** This section originally concluded "S3 for AES-GCM is closed", and
+that conclusion does not survive its own arithmetic. The +64% above is the cost
+of the SOFTWARE probe of that mapping -- shuffles standing in for routing that
+would be wiring -- not the cost of the mapping with the instruction built. It
+was then combined with 17.7's +4.7%, which carries a seam the mapping does not
+have. Two different compositions, neither of them the one being ruled out. See
+18.5.
 
 ### 18.4 The finding that outlives the question
 
@@ -2305,3 +2318,188 @@ than every S2 and S3 result here, and second only to the memory-configuration
 change of section 15.1. **The apparatus's sensitivity to source-level layout now
 exceeds the effect size of the thing being studied.** Until that is understood,
 another instruction-set probe on this kernel measures the tide.
+
+### 18.5 Corrected: what S3 actually is, and what it would cost
+
+The correction came from the user and it is structural, not a matter of wording.
+**S3 is a mapping of a message onto a subgroup, not a substitution of one
+instruction for another.** Written out for `t16`:
+
+| | S1 | S3 |
+| --- | --- | --- |
+| lanes per message | 1 | 4 |
+| messages per warp | 16 | **4** |
+| AES state | 128 bits in one lane | one 32-bit column per lane |
+| ciphertext block | 16 bytes in one lane | one word per lane |
+| GHASH `Y`, `H` | four limbs in one lane | one limb per lane |
+| AES to GHASH | nothing to do | nothing to do -- the layout never changes |
+
+Everything stays distributed from the counter to the tag: counter word ->
+state column -> ciphertext word -> GHASH limb. That is what makes it S3 rather
+than a lane-local kernel that borrows a subgroup for ten rounds.
+
+**The two things measured in sections 17 and 18 are not that.** Section 17's
+probe keeps 16 messages per warp and transposes into a subgroup layout for the
+AES and back out for a lane-local GHASH; section 18.1's diagnostic changes the
+buffer layout and nothing else. Both are compositions that a real S3 does not
+contain, and both carry costs it does not pay -- above all the two 4x4
+transposes per block and the eight extra live values they force, measured at
+8.23 of the 16.23 added instructions per block.
+
+**The corrected instruction arithmetic**, per block, against the shipped
+`hw_s1`'s 25.90 warp-instructions per block at the recorded point:
+
+| AES path | per block-round | per block |
+| --- | ---: | ---: |
+| S1: 16 `aes32` advance 16 blocks | 1.00 | 10.00 |
+| byte-granular `.sg4`: 4 advance 4 blocks | 1.00 | 10.00 |
+| **fused `aesrm.sg4`: 1 advances 4 blocks** | **0.25** | **2.75** |
+| software probe of S3: 3 rotates + 4 `aes32` advance 4 blocks | 1.75 | 17.50 |
+
+So the fused round is a **fourfold reduction on the AES path**, from 10.00 to
+2.75 per block. Section 17.1 said the byte-granular form is instruction-neutral
+and that the saving needs the fuse, and that much was right; 17.7 then priced
+the fuse at +4.7% by adding the seam's spill traffic, which the real mapping
+does not have. **That number is withdrawn.**
+
+GHASH follows the same shape. `ghash_mul_hw` is 81 instructions in one lane,
+5.06 warp-instructions per block; distributed across a quad with rotates and
+selects standing in for routing it is roughly 9.5 per block in software, and
+with a fused stateless group multiply it would be under 1. Together the two
+dominant paths go from 15.06 per block to about **3.25 with both instructions
+fused** -- a 45% cut of the whole stream, not the +4.7% this document previously
+recorded.
+
+**What is still unmeasured, and it is the whole risk.** Three things, none of
+them derivable:
+
+- **Message parallelism falls from 16 per warp to 4.** The kernel is
+  scoreboard-stalled 88% of the time waiting on loads at 64 to 92 cycles;
+  removing three quarters of the independent work in flight is the single
+  largest threat to the mapping, and section 17's probe was deliberately built
+  to avoid testing it.
+- **Payload coalescing.** Four lanes reading four consecutive words of one block
+  keeps each message contiguous, so the temporal reuse 18.1 found decisive is
+  preserved *and* four lanes share one line. That is a third access pattern,
+  and neither measurement here bounds it.
+- **The real cost of a distributed GHASH**, which is an estimate above and
+  nothing more.
+
+All three are properties of the data layout, not of the instruction count, so
+all three are measurable with the instructions this tree already has: `SHFL`
+supplies the routing, and the software composition computes bit-for-bit what a
+fused instruction would. The instruction count is the one quantity that differs,
+and it is the one quantity that can be calculated exactly. That is the whole
+reason the probe comes before the RTL.
+
+## 19. The layout tide has a mechanism, and a two-instruction fix
+
+Section 18.4 said the apparatus's sensitivity to source-level layout exceeds the
+effect size of the thing being studied, and that until it was understood another
+instruction-set probe measured the tide. It is now understood.
+
+### 19.1 The mechanism
+
+Every hart's stack is placed by `vx_start.S`:
+
+```
+sp = VX_MEM_STACK_BASE_ADDR - (mhartid << VX_MEM_STACK_LOG2_SIZE)
+```
+
+with `VX_MEM_STACK_LOG2_SIZE = 13` (`VX_types.toml:22`), confirmed in the
+compiled prologue: `lui sp, 0xffff0 / csrr t0, mhartid / slli t1, t0, 0xd /
+sub sp, sp, t1`. **Consecutive harts' stacks are 8192 bytes apart, and the harts
+of a warp are consecutive.**
+
+That the stride makes a warp-wide stack access a divergent gather was already
+known and is written into the kernels: `tests/crypto/aes_gcm/kernel.cpp:339-345`
+says "vx_start.S gives each hart a stack 8 KB apart, so a single sp-relative
+access in a warp becomes NUM_THREADS distinct cache lines 8 KB apart -- a fully
+divergent gather on a single-banked L1". What was not noticed is the arithmetic
+one step further:
+
+- D-cache: 16,384 bytes, 4 ways, 64-byte lines -> **64 sets**, spanning
+  64 x 64 = **4096 bytes** of address.
+- The stack stride is 8192 = 2 x 4096, an exact multiple of the set span.
+- Therefore every lane's copy of the *same* stack slot has the **same set
+  index**. It is not merely a divergent gather across sets; it is
+  `NUM_THREADS` accesses into **one** 4-way set.
+
+At 16 threads that is a 16-way conflict on four ways, on every access to every
+spilled value. It also evicts whatever else was living in that set -- which is
+why a handful of extra spill accesses can cost far more than themselves.
+
+### 19.2 The intervention, and it is two instructions
+
+`VX_MEM_STACK_LOG2_SIZE` has exactly one consumer in the whole tree: the two
+sites in `vx_start.S`. No MMU check, no memory map, no linker script -- the
+linker script never mentions the stack at all -- no runtime allocator, no
+assertion. So the blast radius of changing the placement is that one file.
+
+Added, **off by default**, behind `VX_MEM_STACK_SKEW_LOG2`:
+
+```
+  sll   t1, t0, VX_MEM_STACK_SKEW_LOG2
+  sub   sp, sp, t1
+```
+
+At `SKEW = 6` each hart's stack is displaced a further 64 bytes, which rotates
+the set index by one per hart, so the lanes of a warp land in distinct sets
+instead of colliding. Cost: two instructions of startup and 64 bytes per hart of
+address space -- 8 KiB across the 128 harts of the recorded shape.
+
+Verified as taken effect rather than assumed, by disassembling the prologue: two
+shifts appear, `slli t1, t0, 0xd` and `slli t1, t0, 0x6`. Every kernel's retired
+instruction count rises by exactly 16 -- two instructions on each of the eight
+warps -- which is the second, independent confirmation that the change is exactly
+what it claims to be and nothing more.
+
+### 19.3 Measured
+
+`c2w4t16`, rtlsim, one tree, one commit, shape asserted per row from the
+application's banner:
+
+| kernel | skew off | skew on | |
+| --- | ---: | ---: | ---: |
+| `aes_gcm` sw_ttable, `-n128 -b64` | 9,454,077 | 7,065,173 | **-25.27%** |
+| `chacha_poly` sw, `-n128 -b16` | 1,469,082 | 923,628 | **-37.13%** |
+| `aes_gcm` hw_s1_ofs, `-n128 -b64` | 695,177 | 468,748 | **-32.57%** |
+| `aes_gcm` hw_s1, `-n128 -b64` | 580,088 | 543,229 | -6.35% |
+| `sgemm -n128` | 927,672 | 927,056 | **-0.07%** |
+| `vecadd -n16384` | 49,840 | 49,891 | **+0.10%** |
+
+**The last two rows are the result.** `sgemm` and `vecadd` do not spill, and they
+do not move: a tenth of a per cent, an order of magnitude inside this
+apparatus's floor. A change that perturbed layout in general would have moved
+them. This one moves exactly the kernels that carry stack traffic, in proportion
+to how much they carry -- `chacha_poly`, which section 9 measured at thirty live
+values on a thirty-two register machine with 145 static `lw` and 108 `sw`, moves
+most.
+
+**Section 18.2's specimen inverts.** `hw_s1_ofs` was 19.84% *slower* than
+`hw_s1`; with the skew it is 13.7% *faster*. The largest unexplained layout
+movement in this document is not merely explained, it changes sign once the
+aliasing is removed -- which is what an explanation is supposed to do.
+
+### 19.4 What this settles and what it costs
+
+**Settles.** The mediating variable section 14 proposed for the post-AAD
+regression -- "it added live values across the message loop, which can shift
+register allocation and therefore spill addresses" -- is right in outline, and
+the missing half is why a shifted spill address matters so much: it is a
+conflict on a single set, not a bank pattern. Section 14's LMEM bank-conflict
+account explains the floor of a kernel that gathers into local memory;
+`chacha_poly` requests `lmem_size = 0` and moves 37% here, which is the
+counterexample 14.1 recorded and could not account for.
+
+**Does not settle.** Section 18.1's interleaving result is untouched by this: it
+moved the payload, not the stack. And nothing here says the remaining movements
+are all spill-mediated; it says the largest ones are.
+
+**Costs, if it were made the default.** Every recorded row in this document was
+measured without it, so switching would invalidate all of them -- sections 5, 6,
+9, 11, 12, 15, 16, 17 and 18 -- and the CI perf baselines with them. It is left
+opt-in for that reason. The decision is worth taking deliberately: a 25 to 37%
+improvement on the two software baselines is larger than every instruction-set
+effect recorded in this project, and larger than the memory-configuration change
+of section 15.1.
