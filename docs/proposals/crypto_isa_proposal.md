@@ -1955,9 +1955,16 @@ cross-algorithm row compares like with like for the first time since section 12.
 
 ## 17. S3 pre-registered: what a subgroup-cooperative AES would have to convert
 
-This section is written **before** the measurement it describes, and committed
-before the numbers exist, for the reason section 15 gives: a prediction stated
-afterwards is not a prediction.
+This section states a prediction and a decision rule before reading the result,
+for the reason section 15 gives: a prediction stated afterwards is not a
+prediction. **The exact provenance, because it is weaker than the ideal and the
+difference matters:** 17.1 to 17.5 were written while the probe runs were in
+flight and committed (`f830089c6`) before their numbers were read -- but the
+runs had already written some rows to disk by then, so git proves only that the
+prediction preceded the *reading*, not that it preceded the *measurement*. A
+reader should weigh it as an author's account rather than as a timestamped
+pre-registration. The rule below was not adjusted after the fact; 17.6 records
+which parts of the prediction failed, and by how much.
 
 S3 in the taxonomy this project now uses is a *subgroup-cooperative, stateless*
 extension: the algorithm's state is distributed across lanes' general registers,
@@ -2061,3 +2068,118 @@ written so that the ambiguous outcome stops the work rather than licensing it.
 I expect **KILL-B**: `r` between 0.15 and 0.40, and the probe landing between
 +5% and +12% of cycles. If it is built anyway I expect the fused form to land
 within +/-6% of `hw_s1`, inside the floor, quotable only as a null.
+
+### 17.6 Measured: the probe fires two of its own kill rules
+
+`aes_gcm_hw_sg4` computes the correct AEAD on both drivers at the first attempt,
+with **identical retired-instruction counts on rtlsim and simx** (51,555 at the
+tree default), so the lane rotation, the transposes and the per-lane round-key
+indexing are right and the two models agree about the cross-lane path.
+
+Recorded point, `c2w4t16`, `-n128 -b64`, rtlsim, one tree, one commit:
+
+| | hw_s1 | hw_sg4 | |
+| --- | ---: | ---: | ---: |
+| cycles | 580,088 | 1,078,038 | **+85.84%** |
+| instrs | 212,170 | 345,128 | **+62.66%** |
+| instrs/block | 25.900 | 42.13 | +16.23 |
+| bytes/cycle | 0.2260 | 0.1216 | |
+
+Three rtlsim runs at the probe point returned 1,078,038 / 345,128 identically.
+simx reads 555,063 and 1,079,043 for the same pair.
+
+**Both halves of 17.5's prediction failed, and in the same direction.** It said
+the probe would land at +5% to +12% of cycles for +30.9% instructions; it landed
+at **+85.8% for +62.7%**. The instruction model was wrong, and the cycle
+prediction that rested on it was wrong by seven times.
+
+**KILL-C fires.** The prediction was +30.9% instructions; the measurement is
++62.66%. The excess decomposes, and it is stable across a fourfold change in
+problem size (+16.23 per block at `-b64`, +16.36 at `-b16`), so it is all in the
+block loop:
+
+| component | per block | |
+| --- | ---: | --- |
+| rotates | +7.50 | 3 per round x 10 rounds x 4 passes / 16 blocks |
+| transposes | +0.50 | 8 wgather / 16 blocks |
+| **residual** | **+8.23** | not predicted |
+
+The residual is spill traffic, and the disassembly says so: `aes_gcm_hw_sg4`
+carries **179 `sp`-relative accesses against `aes_gcm_hw_s1`'s 125**, for 1,112
+static instructions against 983. Crossing the seam requires the four transposed
+counters and the four results live simultaneously across four AES computations,
+which is eight values on top of a kernel that already fills the register file.
+The descriptor packing, the other candidate, is not the cause: the two kernels
+differ by two `or` instructions in total, so the loop-invariant descriptors are
+hoisted as intended.
+
+**KILL-A fires too, and harder.** `r = 85.84 / 62.66 = 1.370`, against 0.837 for
+the highest rate this machine has ever shown. Cycles rose *faster* than
+instructions, which means the added instructions are more expensive than the
+average one. The pipeline breakdown at `-b16` says exactly where they went
+(separate PERF runs, shape asserted from the application's banner):
+
+| per core, `-n128 -b16` | hw_s1 | hw_sg4 | |
+| --- | ---: | ---: | ---: |
+| loads | 61,548 | 70,552 | +14.6% |
+| **average load latency** | **91.69** | **130.98** | **+42.8%** |
+| D-cache requests | 19,388 | 29,352 | +51.4% |
+| D-cache read misses | 7,403 (39% hit) | 16,173 (**24% hit**) | +118% |
+| bank stalls | 20,873 | 32,633 | +56% |
+| instruction mix | sym 38%, alu 33% | sym **24%**, alu **52%** | |
+| crypto backpressure | 0% | 0% | |
+
+**The subgroup layout does not merely add ALU work; it adds D-cache traffic to
+the one part of this machine that was already binding.** Read hit rate falls
+from 39% to 24%, misses more than double, and average load latency goes from 92
+to 131 cycles. Section 13.3's rule -- loads convert, arithmetic does not -- holds
+here with its sign reversed: this design adds loads, and they converted.
+
+### 17.7 The consequence for the fused instruction, and the verdict
+
+The whole case for `aesrm.sg4` was that it deletes the rotates and folds four
+`aes32` into one, which section 17.1 priced at -27.0% of the instruction stream.
+That price assumed the seam was free. Measured, it is not:
+
+```
+fused = 25.900 + 16.23 (measured SG4 cost) - 7.50 (rotates) - 7.50 (4 aes32 -> 1)
+      = 27.13 instructions per block  =  +4.7% against hw_s1
+```
+
+**The fused subgroup round is instruction-positive in this composition, not
+-27%.** It removes the two cheap components and leaves the expensive one: the
+spill traffic is 8.23 of the 16.23 added instructions, and by the breakdown
+above those are the ones costing 131-cycle loads. There is nothing left for the
+instruction to convert.
+
+**Verdict: do not build it.** Two pre-registered rules fired, and the
+re-derivation on the measured decomposition removes the premise rather than
+weakening it. Recorded as a null. The reserved encoding stays unspent.
+
+**What this does not kill.** The probe deliberately kept the payload, the GHASH
+half and the number of messages in flight per warp exactly as they are, by
+having each quad round-robin over the four messages it owns. That choice is what
+created the seam, and the seam is what killed it. The other mapping -- four lanes
+to *one* message, lane `c` holding column `c` throughout -- has no seam and no
+transposes, reads the payload as four consecutive words per quad instead of
+sixteen 1024-byte-strided ones, and holds one state word per lane instead of
+four. It also cuts the messages in flight per warp by four and **cannot be built
+without a distributed GHASH**, because `ghash_mul_hw` takes four limbs in one
+lane. That is the form worth measuring next, and it is measurable the same way:
+a distributed GHASH is expressible as `clmul` plus `SHFL` plus an XOR reduction,
+so it needs no RTL either.
+
+**What the exercise establishes independently of the result.** A subgroup design
+in this tree can be falsified for the cost of one kernel file. `SHFL`, `WGATHER`
+and `vx_transpose4` are decoded in every build, so the S3 tier has a zero-RTL
+instrument, and section 10's standing request -- that deciding S2/S3 needs "a
+critical-path measurement, or a prototype, not another warp scan" -- is now
+answerable without spending an opcode, a PE, a conformance harness or a
+re-baselining.
+
+**One baseline movement, recorded.** Templating the hardware body on the
+keystream generator moved `hw_s1` from 594,958 to **580,088** cycles (-2.50%)
+for +8 instructions, the same shape of layout movement section 16.4 records for
+the software kernel. It is below this kernel's 4.68% floor and is not
+attributable; both rows above were measured after it, in one tree, so the
+comparison between them is unaffected.
