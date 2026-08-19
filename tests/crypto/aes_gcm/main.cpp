@@ -38,22 +38,27 @@ struct impl_t {
   const char* label;
   bool needs_units;   // issues aes32*/clmul*, so requires EX_SYM and EX_AUTH
   bool needs_quad;    // reads across aligned groups of four lanes
+  bool interleaved;   // block b of every message stored together (diagnostic)
 };
 
 const impl_t kImpls[] = {
-  { "aes_gcm_sw_ttable", "sw_ttable", false, false },
+  { "aes_gcm_sw_ttable", "sw_ttable", false, false, false },
   // Same host program, buffers, vectors, counter reduction and output format;
   // only the device code differs, which is the whole point of selecting by -i
   // rather than building a second application.
-  { "aes_gcm_hw_s1",     "hw_s1", true, false },
+  { "aes_gcm_hw_s1",     "hw_s1", true, false, false },
   // Bit-identical to sw_ttable; see kernel.cpp. Measures the apparatus, not
   // the cipher, and it is the software kernel's own floor -- the existing
   // ghash_mul_hw probe reads 0.00% here because this kernel never calls it.
-  { "aes_gcm_sw_ttable_perm", "sw_perm", false, false },
+  { "aes_gcm_sw_ttable_perm", "sw_perm", false, false, false },
   // S3 probe: the same AEAD with the keystream computed by four cooperating
   // lanes. Built out of the shuffle that already exists, so it measures the
   // subgroup layout before any RTL is written. See kernel.cpp.
-  { "aes_gcm_hw_sg4",    "hw_sg4", true, true },
+  { "aes_gcm_hw_sg4",    "hw_sg4", true, true, false },
+  // The shipped hardware kernel with ONLY the payload layout changed. A
+  // diagnostic that bounds what better streaming locality could be worth; see
+  // section 18 of the proposal.
+  { "aes_gcm_hw_s1_ilv", "hw_s1_ilv", true, false, true },
 };
 
 const uint32_t kNumImpls = (uint32_t)(sizeof(kImpls) / sizeof(kImpls[0]));
@@ -305,6 +310,16 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  // The interleaved layout addresses whole blocks only; the partial-tail path
+  // still indexes contiguously, so a tail under that layout would be wrong
+  // rather than slow.
+  if (kImpls[g_impl].interleaved && g_tail_bytes != 0) {
+    std::printf("SKIPPED: impl '%s' is a whole-block layout; -t must be 0, "
+                "got %u\n", kImpls[g_impl].label, g_tail_bytes);
+    vx_device_release(dev);
+    return 1;
+  }
+
   if (g_tail_bytes > 15) {
     std::printf("FAILED: -t must be 0..15 (a tail is what is left after whole "
                 "blocks); got %u\n", g_tail_bytes);
@@ -358,6 +373,27 @@ int main(int argc, char** argv) {
 
   std::vector<uint8_t> ref_ct(data_bytes);
   std::vector<uint8_t> ref_tag((size_t)GCM_TAG_BYTES * g_num_msgs);
+  if (kImpls[g_impl].interleaved) {
+    // Same cipher, same messages; only where their bytes sit differs. Gather
+    // each message into a contiguous scratch, encrypt it, scatter it back, so
+    // the byte-for-byte comparison below still covers the whole buffer.
+    std::vector<uint8_t> mpt(msg_bytes), mct(msg_bytes);
+    for (uint32_t m = 0; m < g_num_msgs; ++m) {
+      for (uint32_t b = 0; b < g_blocks_per_msg; ++b) {
+        std::memcpy(&mpt[(size_t)AES_BLOCK_BYTES * b],
+                    &h_pt[(size_t)AES_BLOCK_BYTES * ((size_t)b * g_num_msgs + m)],
+                    AES_BLOCK_BYTES);
+      }
+      aes_gcm_ref::gcm_encrypt(rk, h, &h_iv[(size_t)GCM_IV_BYTES * m],
+                               h_aad.data(), g_aad_bytes, mpt.data(),
+                               g_blocks_per_msg, 0, mct.data(),
+                               &ref_tag[(size_t)GCM_TAG_BYTES * m]);
+      for (uint32_t b = 0; b < g_blocks_per_msg; ++b) {
+        std::memcpy(&ref_ct[(size_t)AES_BLOCK_BYTES * ((size_t)b * g_num_msgs + m)],
+                    &mct[(size_t)AES_BLOCK_BYTES * b], AES_BLOCK_BYTES);
+      }
+    }
+  } else {
   for (uint32_t m = 0; m < g_num_msgs; ++m) {
     aes_gcm_ref::gcm_encrypt(rk, h, &h_iv[(size_t)GCM_IV_BYTES * m],
                              h_aad.data(), g_aad_bytes,
@@ -365,6 +401,7 @@ int main(int argc, char** argv) {
                              g_tail_bytes,
                              &ref_ct[(size_t)msg_stride * m],
                              &ref_tag[(size_t)GCM_TAG_BYTES * m]);
+  }
   }
 
   vx_buffer_h rk_buf, te_buf, ht_buf, h_buf, iv_buf, src_buf, dst_buf, tag_buf,

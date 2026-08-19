@@ -169,3 +169,15 @@ tests:
   configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE
   vars:
     OPTS: -n64 -b4 -i3
+# The payload-layout diagnostic of section 18.1. Same reasoning as the probe
+# above: it is a kernel in the tree, and its host path lays the reference out
+# differently, which is the part that would rot silently.
+- id: crypto-aes-gcm-ilv-diag
+  via: make-run
+  drivers:
+  - simx
+  dir: tests/crypto/aes_gcm
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE
+  vars:
+    OPTS: -n64 -b4 -i4

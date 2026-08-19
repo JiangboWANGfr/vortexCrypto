@@ -474,7 +474,19 @@ inline void ghash_mul_hw(const uint32_t h[4], uint32_t y[4]) {
 // from, which is what makes the difference between them attributable.
 enum { KS_LANE_LOCAL = 0, KS_SUBGROUP_4 = 1 };
 
-template <int KS>
+// Where block b of message m lives. LAYOUT_CONTIG is the shipped arrangement:
+// each message is one contiguous run, so one warp-load touches NUM_LANES lines
+// msg_stride apart. LAYOUT_INTERLEAVED puts block b of every message together,
+// so the same warp-load touches NUM_LANES consecutive 16-byte blocks -- four
+// lines instead of sixteen at 16 lanes.
+//
+// This is a DIAGNOSTIC, not a proposal: a server handling independent records
+// does not get to choose that layout. It exists to put a ceiling on what any
+// scheme that improves payload locality -- including a subgroup mapping that
+// gives four lanes to one block -- could be worth, without building one.
+enum { LAYOUT_CONTIG = 0, LAYOUT_INTERLEAVED = 1 };
+
+template <int KS, int LAYOUT = LAYOUT_CONTIG>
 inline void aes_gcm_hw_body(kernel_arg_t* __UNIFORM__ arg) {
   hw_lmem_layout_t* lm = (hw_lmem_layout_t*)__local_mem();
 
@@ -581,8 +593,20 @@ inline void aes_gcm_hw_body(kernel_arg_t* __UNIFORM__ arg) {
       // RISC-V's strict-alignment default stops LLVM widening them, costing 16
       // lbu + 16 sb per block instead of 4 + 4. The buffers are vx_mem_alloc'd
       // and indexed at 16-byte granularity, so word access is aligned.
-      const uint32_t* pt_w = (const uint32_t*)(pt + 16 * b);
-      uint32_t* ct_w = (uint32_t*)(ct + 16 * b);
+      // The contiguous arm must stay byte-identical to what it was before the
+      // layout parameter existed: rewriting it as an offset from src_base cost
+      // hw_s1 1,504 instructions and 20.6% of its cycles, which is four times
+      // this kernel's floor. The diagnostic arm may compute what it likes.
+      const uint32_t* pt_w;
+      uint32_t* ct_w;
+      if (LAYOUT == LAYOUT_INTERLEAVED) {
+        const size_t blk = (size_t)16 * ((size_t)b * num_msgs + msg);
+        pt_w = (const uint32_t*)(src_base + blk);
+        ct_w = (uint32_t*)(dst_base + blk);
+      } else {
+        pt_w = (const uint32_t*)(pt + 16 * b);
+        ct_w = (uint32_t*)(ct + 16 * b);
+      }
       for (int i = 0; i < 4; ++i) {
         const uint32_t c = pt_w[i] ^ ks[i];
         ct_w[i] = c;
@@ -638,6 +662,14 @@ inline void aes_gcm_hw_body(kernel_arg_t* __UNIFORM__ arg) {
 
 __kernel void aes_gcm_hw_s1(kernel_arg_t* __UNIFORM__ arg) {
   aes_gcm_hw_body<KS_LANE_LOCAL>(arg);
+}
+
+// The shipped kernel with ONLY the payload layout changed, so the difference
+// between this row and hw_s1 is the streaming access pattern and nothing else.
+// It measures the ceiling for the one mechanism the subgroup probe of section
+// 17 left unrefuted; see section 18.
+__kernel void aes_gcm_hw_s1_ilv(kernel_arg_t* __UNIFORM__ arg) {
+  aes_gcm_hw_body<KS_LANE_LOCAL, LAYOUT_INTERLEAVED>(arg);
 }
 
 // S3 PROBE -- subgroup-cooperative keystream, built out of instructions that
