@@ -23,6 +23,13 @@ CLOCK_MHZ=${VX_DE10PRO_CLOCK_MHZ:-200}
 # the unit.
 EXT_SYM=${VX_DE10PRO_EXT_SYM:-1}
 EXT_AUTH=${VX_DE10PRO_EXT_AUTH:-1}
+# Subgroup (four-lane) forms of the two units, section 20 and 21.5 of the crypto
+# proposal. Off by default: they read across an aligned quad of lanes, so they
+# elaborate only when the lane count is a multiple of four, and every recorded
+# DE10-Pro result so far was built without them. Each requires its own parent
+# unit, and the AUTH one additionally rides the SYM opcode arm in VX_decode.sv.
+EXT_SYM_SG4=${VX_DE10PRO_EXT_SYM_SG4:-0}
+EXT_AUTH_SG4=${VX_DE10PRO_EXT_AUTH_SG4:-0}
 
 if [[ ! "$NUM_CORES" =~ ^[1-9][0-9]*$ \
    || ! "$NUM_WARPS" =~ ^[1-9][0-9]*$ \
@@ -46,10 +53,22 @@ EXT_INCLUDES=()
 if [[ "$EXT_SYM" != 0 ]]; then
     EXT_MACROS+=('VX_CFG_EXT_SYM_ENABLE=1')
     EXT_INCLUDES+=("$VORTEX_HOME/hw/rtl/crypto/sym")
+    if [[ "$EXT_SYM_SG4" != 0 ]]; then
+        EXT_MACROS+=('VX_CFG_EXT_SYM_SG4_ENABLE=1')
+    fi
 fi
 if [[ "$EXT_AUTH" != 0 ]]; then
     EXT_MACROS+=('VX_CFG_EXT_AUTH_ENABLE=1')
     EXT_INCLUDES+=("$VORTEX_HOME/hw/rtl/crypto/auth")
+    # The multiply decodes on the SYM opcode arm, so without the SYM subgroup
+    # macro its encoding is never reached and the datapath would be dead logic.
+    if [[ "$EXT_AUTH_SG4" != 0 && "$EXT_SYM_SG4" != 0 ]]; then
+        EXT_MACROS+=('VX_CFG_EXT_AUTH_SG4_ENABLE=1')
+    fi
+fi
+if [[ "$EXT_AUTH_SG4" != 0 && "$EXT_SYM_SG4" == 0 ]]; then
+    echo "error: VX_DE10PRO_EXT_AUTH_SG4 requires VX_DE10PRO_EXT_SYM_SG4" >&2
+    exit 1
 fi
 
 if [[ ! -d "$PROJECT_DIR" ]]; then
