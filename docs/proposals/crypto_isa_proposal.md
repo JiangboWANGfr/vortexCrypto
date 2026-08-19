@@ -2623,3 +2623,109 @@ kernels measured in the same configuration. What does not stand is any statement
 of the form "the subgroup layout costs X%": those numbers were the aliasing,
 and section 19's control shows why it took this long to see it -- the two
 ordinary applications used as sanity checks do not spill, so they never moved.
+
+## 21. The fused subgroup round, built and measured: 30% faster than the shipped kernel
+
+Section 20 ended with an arithmetic argument that the routing a software S3 pays
+for would be wiring in hardware, and could not say what that was worth in
+cycles. It is now built.
+
+### 21.1 The instruction
+
+```
+aesrm.sg4 rd, rs1, rs2      # middle round   custom-3 (0x7B), funct3 = 0
+aesrf.sg4 rd, rs1, rs2      # final round    custom-3 (0x7B), funct3 = 1
+```
+
+`rs1` is this lane's round-key column, `rs2` its state column, `rd` the next
+state column. One instruction advances a whole 128-bit state held one column per
+lane across an aligned quad. No immediate: the four byte steps are enumerated
+inside the instruction, so `sym_args_t` is unchanged and `INST_SYM_BITS` already
+had room.
+
+**The cross-lane network is a fixed byte transpose, not a crossbar.** Lane `j`
+produces column `j`, which by ShiftRows takes byte `r` from column `(j+r)&3`,
+and under this layout that column is in lane `(j+r)&3`. The source index is a
+genvar expression -- `((i/4)*4) + ((i+r)%4)` -- so it elaborates to wiring:
+sixteen bytes in, sixteen out, per quad, with no mux. Enumerating the four steps
+also collapses the two 4:1 muxes the lane-local `aes32esmi` needs, `sel_byte` on
+`bs` and `rol32` on `bs`, into constants.
+
+**Convergence is an architectural precondition, not a convention.** Every lane
+of a quad is read by every other, and neither model consults the source lane's
+mask -- deliberately, so the two cannot drift the way `SHFL` currently does
+(`VX_alu_int.sv:219` falls back to the reading lane, `alu_unit.cpp:291-296` does
+not). Section 20.1 records what a divergent region costs here: a correct
+counter, a correct lane mapping and a wrong cipher in every byte, silently.
+
+Opt-in behind `VX_CFG_EXT_SYM_SG4_ENABLE`, and a build with `SIMD_WIDTH` not a
+multiple of four fails elaboration by name -- Verilator reports
+`%Error-MODMISSING: VX_sym_aes_sg4_requires_NUM_LANES_multiple_of_4` -- using
+the same nonexistent-module trick as the XLEN guard, because `STATIC_ASSERT`
+expands to nothing under `SYNTHESIS`.
+
+It was correct on simx and on rtlsim at the first attempt, including with AAD,
+and the two models return identical retired-instruction counts.
+
+### 21.2 Measured
+
+`c2w4t16`, `-n128 -b64`, rtlsim, one tree, with the per-hart stack skew of
+section 19:
+
+| | cycles | instrs | vs hw_s1 |
+| --- | ---: | ---: | --- |
+| hw_s1 (shipped) | 543,229 | 212,186 | |
+| hw_s3, software routing | 691,665 | 479,618 | +27.3% cycles |
+| **hw_s3f, fused round** | **379,655** | 252,978 | **-30.1% cycles**, +19.2% instrs |
+
+Two runs at the recorded point return identical counts; simx reads 369,303, a
+2.7% model gap.
+
+**Against the software S3 the fused round removes 47.3% of the instructions and
+45.1% of the cycles: r = 0.95.** That is the first arithmetic instruction
+removal in this project to convert at all, let alone one for one. Every previous
+one had the wrong sign -- `ghred32` -1.96% instructions for +10.2% cycles,
+`rori` -24.4% for +13.8%, the `ilp` variant identical in count for +7.4%.
+
+**And the GHASH half is still entirely software-routed.** The -30.1% is what the
+AES half alone is worth.
+
+### 21.3 The two fixes are not separable
+
+The same instruction, the same kernel, without the stack skew:
+
+| | cycles | vs hw_s1 |
+| --- | ---: | ---: |
+| hw_s3f, stack as shipped | 1,060,903 | **+82.9%** |
+| hw_s3f, per-hart skew | 379,655 | **-30.1%** |
+
+**On the machine as shipped the fused subgroup round looks like a 83%
+regression. On the same machine with two instructions of startup changed it is a
+30% gain.** Nothing else differs. Section 17 and section 18 each measured a
+subgroup design on the first of those machines and ruled against it; this is why
+those rulings were withdrawn, and it is the strongest possible statement of what
+section 19's aliasing was costing.
+
+### 21.4 What is now known, and what is still not
+
+Known: the subgroup layout is buildable with a fixed byte transpose, it agrees
+bit-exactly across both models, it requires a converged quad, and with the AES
+round fused it is **30% faster than the kernel every ISA claim in this document
+is measured against**, on a layout that also reads at a 97% D-cache hit rate
+(section 20.3).
+
+Not known, and this method cannot reach it:
+
+- **Timing and area.** The fused datapath is four S-box instances and four
+  MixColumns per lane where the shipped one has one of each, against two 4:1
+  muxes recovered. `sym_aes` is 1,284 ALM per core at 16 lanes, 0.6% of a
+  208,513-ALM design with 4.0% of period slack, so the area is affordable on
+  paper -- but neither the fitter nor the timing analyser has seen it.
+- **`ghmul.sg4`.** The GHASH half is still software-routed and is now the
+  majority of what remains: about 24 of the 30.88 warp-instructions per block.
+  Section 13.1 measured GHASH acceleration as negative twice, but both of those
+  were S2 -- stateful, lane-local -- and this would be a stateless group
+  operation on a layout that did not exist then.
+- **Whether the recorded configuration should move again.** Every row in this
+  document is measured without the stack skew; sections 19, 20 and 21 are the
+  case for changing that, and it is not a decision to take inside a section.
