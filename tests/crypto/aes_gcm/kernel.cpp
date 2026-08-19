@@ -926,7 +926,8 @@ inline void aes_gcm_hw_s3_body(kernel_arg_t* __UNIFORM__ arg) {
       ctr = bswap32(bswap32(ctr) + inc);
       uint32_t ks;
 #ifdef VX_CFG_EXT_SYM_SG4_ENABLE
-      if (ROUND == S3_ROUTING_FUSED) {
+      // Both fused modes use the fused round; only S3_ROUTING_SOFTWARE does not.
+      if (ROUND != S3_ROUTING_SOFTWARE) {
         ks = aes128_encrypt_sg4f(lm->rk, c, ctr);
       } else
 #endif
@@ -976,7 +977,7 @@ inline void aes_gcm_hw_s3_body(kernel_arg_t* __UNIFORM__ arg) {
 
     uint32_t ej0;
 #ifdef VX_CFG_EXT_SYM_SG4_ENABLE
-    if (ROUND == S3_ROUTING_FUSED) {
+    if (ROUND != S3_ROUTING_SOFTWARE) {
       ej0 = aes128_encrypt_sg4f(lm->rk, c, j0);
     } else
 #endif
