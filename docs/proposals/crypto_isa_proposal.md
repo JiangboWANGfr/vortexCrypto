@@ -2721,14 +2721,13 @@ Not known, and this method cannot reach it:
   muxes recovered. `sym_aes` is 1,284 ALM per core at 16 lanes, 0.6% of a
   208,513-ALM design with 4.0% of period slack, so the area is affordable on
   paper -- but neither the fitter nor the timing analyser has seen it.
-- **`ghmul.sg4`.** Built; see 21.5. Correct in both models and a regression
-  against fusing the AES alone, for a reason that is in the code generator
-  rather than in the instruction.
+- **`ghmul.sg4`.** Built; see 21.5. With both instructions fused the kernel
+  reaches 3.76x the shipped one.
 - **Whether the recorded configuration should move again.** Every row in this
   document is measured without the stack skew; sections 19, 20 and 21 are the
   case for changing that, and it is not a decision to take inside a section.
 
-### 21.5 `ghmul.sg4`: built, correct, and it makes things worse
+### 21.5 `ghmul.sg4`: built, and the two fused instructions together are 3.76x
 
 The GHASH half was the majority of what remained after 21.2, so it was built on
 the same terms.
@@ -2750,33 +2749,50 @@ A = (0x11111111, 0x22222222, 0x33333333, 0x44444444), H = (0x01020304 .. 07).
 Correct on both drivers with AAD, at the tree default and at `c2w4t16` where four
 quads share a warp; two runs identical.
 
-**And it is a regression against fusing the AES alone.** `c2w4t16`, `-n128 -b64`,
-rtlsim, stack skew on:
+**Measured, and it is the largest result in this document.** `c2w4t16`,
+`-n128 -b64`, rtlsim, stack skew on, one tree:
 
 | | cycles | instrs | vs hw_s1 |
 | --- | ---: | ---: | ---: |
-| hw_s1 | 543,229 | 212,186 | |
-| hw_s3f, AES fused | 371,139 | 236,138 | **-31.7%** |
-| hw_s3g, both fused | 435,335 | 322,594 | -19.9% |
+| hw_s1, shipped | 543,229 | 212,186 | |
+| hw_s3f, AES fused | 371,139 | 236,138 | -31.7% |
+| **hw_s3g, both fused** | **144,612** | **96,658** | **-73.4% cycles, -54.4% instructions** |
 
-The instruction removes what it was designed to remove: the software distributed
-multiply is eight shuffles and eleven `clmul`-class operations per call, and
-`aes_gcm_hw_s3g` carries **36 custom encodings against `hw_s3f`'s 85, and 325
-static instructions against 530**. Statically the kernel is 39% smaller.
+**3.76x the shipped kernel**, on identical output, with both models agreeing on
+retired counts and two runs identical. Per block, from a `-b8`/`-b64` marginal
+fit: 15.2 cycles against the shipped kernel's 62.18, and 11.25 instructions
+against 25.25.
 
-**Dynamically it retires 37% more.** 322,594 against 236,138. A kernel half the
-size that executes half again as many instructions is a code-generation effect,
-not an instruction-set one: with the routing gone the loop body is small enough
-that clang stops unrolling it, and the per-iteration counter, address and branch
-work costs more than the fusion saved. Forcing `#pragma unroll 2` recovers part
-of it -- 440,070 to 435,335 -- and nothing like all.
+Cycles fell further than instructions -- 73.4% against 54.4%, a conversion rate
+of 1.35 -- which is the opposite of everything else measured in this project and
+is what a layout with a 97% D-cache hit rate (20.3) does once the instruction
+stream stops being the thing in the way.
 
-**Recorded as a null with the cause unresolved.** What is established: the
-instruction is correct in both models, its area cost is a fourfold multiplier
-array on the largest crypto block, and composing it into this kernel loses 12
-percentage points against fusing the AES round alone. What is not established is
-why a smaller kernel retires more instructions, and until that is understood the
-GHASH fusion should not be read as either a win or a loss on its own terms.
+### 21.6 Correction: the first version of 21.5 was wrong, and the bug was mine
 
-**The AES fusion is the result of this section.** It stands at -31.7%, it does
-not depend on the multiply, and it costs no new multiplier.
+The paragraph this replaced reported `ghmul.sg4` as a **regression**: -19.9%
+against `hw_s3f`'s -31.7%, with 37% more retired instructions from a kernel 39%
+smaller statically, attributed to clang declining to unroll a smaller loop body.
+
+That was a bug in the probe kernel, not a code-generation effect. The routing
+template selected the fused AES round with
+
+```
+if (ROUND == S3_ROUTING_FUSED)
+```
+
+and the both-fused kernel is `S3_ROUTING_FUSED_ALL`, so it took the `else` and
+ran the **software** AES with three shuffles per round alongside the fused
+multiply. It was never "both fused".
+
+**What identified it was the instruction mix, not the disassembly.** Static
+analysis went in circles for several rounds: loop sizes, unroll factors, spill
+counts. The dynamic per-class counters settled it in one run -- `sym` was 25% of
+the stream at 10.6 instructions per block, and the fused round issues 2.75, while
+the software form issues exactly 4 `aes32` per round over ten rounds across four
+lanes, which is 10.0. The arithmetic named the culprit.
+
+The lesson worth keeping: **a per-class dynamic count discriminates where a
+static instruction count cannot.** Sections 17 and 18 both spent effort on static
+`sp`-relative counts and disassembly listings; in each case the counters would
+have been faster.
