@@ -2183,3 +2183,125 @@ for +8 instructions, the same shape of layout movement section 16.4 records for
 the software kernel. It is below this kernel's 4.68% floor and is not
 attributable; both rows above were measured after it, in one tree, so the
 comparison between them is unaffected.
+
+## 18. The other subgroup mapping, and the tide it would have to be measured against
+
+Section 17 killed the mapping that keeps the payload lane-local. The mapping it
+left standing gives four lanes to *one* message -- lane `c` holds column `c`
+throughout, no transposes, one state word per lane, and the block's sixteen
+bytes read as four consecutive words by the quad. It has one advantage nothing
+in section 17 refuted: **payload locality**. It also cannot be built without a
+distributed GHASH, because `ghash_mul_hw` takes four limbs in one lane.
+
+Rather than build the distributed GHASH to find out, the locality was measured
+on its own.
+
+### 18.1 The diagnostic: interleaving the payload is 25% slower, not faster
+
+`aes_gcm_hw_s1_ilv` is the shipped hardware kernel with **only** the payload
+layout changed: block `b` of every message stored together, so one warp-load
+touches four 64-byte lines instead of sixteen. It is a diagnostic and not a
+proposal -- a server handling independent records does not choose its buffer
+layout -- but it moves the access pattern in the direction a subgroup mapping
+would, four times fewer lines per load instruction, without any cross-lane
+machinery.
+
+At the recorded point, `c2w4t16`, `-n128 -b64`, rtlsim, one tree:
+
+| | cycles | instrs | vs hw_s1 |
+| --- | ---: | ---: | ---: |
+| hw_s1 | 580,088 | 212,170 | |
+| hw_s1_ilv | 871,210 | 214,682 | **+50.19%** cycles, +1.18% instructions |
+
+simx agrees in direction and size (+30.0%). The pipeline breakdown says why
+(`-b16`, separate PERF runs, shape asserted from the banner):
+
+| per core | hw_s1 | hw_s1_ilv | |
+| --- | ---: | ---: | ---: |
+| D-cache read misses | 7,403 (**39%** hit) | 11,909 (**26%** hit) | +61% |
+| average load latency | 91.69 | 115.30 | +25.8% |
+| D-cache requests | 19,388 | 23,356 | +20.5% |
+| bank stalls | 20,873 (48% util) | 15,792 (**60%** util) | **-24%** |
+
+**The coalescing worked and the kernel got slower anyway.** Bank stalls fell by a
+quarter and bank utility rose from 48% to 60% -- the thing the layout was
+supposed to improve, improved. What it destroyed is temporal reuse: in the
+shipped layout a 64-byte line holds four *consecutive blocks of one message* and
+is hit on the next three loop iterations, which is where the 39% read hit rate
+comes from. Interleaved, a line holds four blocks of four *different* messages,
+consumed in one instruction, and the next iteration is two kilobytes away.
+Misses rise 61% and latency follows, and this kernel is scoreboard-stalled 88%
+of the time waiting on exactly that latency.
+
+**What this does not settle.** The mapping that gives four lanes to one message
+keeps each message contiguous, so it would keep the temporal reuse *and* share
+each sixteen-byte block across four lanes. That is a third pattern, not the one
+measured here, and this diagnostic does not bound it. The honest statement is
+that the obvious way to buy cross-lane payload locality costs 25% at equal
+addressing, and the mechanism it lost through is the one the subgroup mapping
+would have to protect.
+
+### 18.2 The accident that is the biggest number in this section
+
+The first version of the layout parameter rewrote the *contiguous* arm as
+`src_base + (msg_stride * msg + 16 * b)` instead of leaving it as the pointer
+walk `pt + 16 * b`. Semantically identical addressing, same buffer, same order.
+
+| hw_s1 | cycles | instrs |
+| --- | ---: | ---: |
+| pointer walk (shipped) | 580,088 | 212,170 |
+| computed offset | 699,757 | 213,674 |
+| | **+20.63%** | +0.71% |
+
+**1,504 added instructions cost 119,669 cycles: 79.6 cycles per instruction.**
+Restoring the pointer walk returned the kernel to 580,088 / 212,170, byte for
+byte, so the attribution is exact rather than inferred.
+
+That is **4.4x this kernel's widest floor sample** and larger than every
+instruction-set effect measured in this project apart from the shape change of
+section 15.1. It also decomposes cleanly against 18.1, which is the check that
+both numbers are real: measured at equal addressing style, interleaving costs
++25.13%; addressing style alone costs +20.63%; 1.2063 x 1.2513 = **1.5095**
+against the 1.5019 measured for the two together.
+
+### 18.3 What the remaining mapping would cost, from measured parts
+
+The distributed GHASH was not built, and this is an estimate with its
+derivation, not a measurement. `ghash_mul_hw` is 16 `clmul` + 16 `clmulh` + 32
+XOR for the schoolbook product and 17 more for the reduction: **81 instructions
+per block in one lane, 5.06 warp-instructions per block across sixteen.**
+Distributed over a quad, lane `i` holding limb `i`, each lane computes four
+products, and every `clmulh` term lands in the *next* lane's limb -- so the
+products cannot be accumulated without cross-lane movement. Counting one rotate
+plus a select per step, plus the fold, the quad needs roughly 56
+warp-instructions per block, and a warp of four quads advances four blocks with
+them: **about 14 warp-instructions per block, against 5.06.**
+
+Adding the AES rotates already measured at +7.50 per block, the mapping lands
+near **+16 warp-instructions per block, +64%** -- the same order as the mapping
+section 17 measured (+62.7%), for the same structural reason. Distributing work
+that is already parallel across lanes does not reduce warp-instructions; it
+adds routing. Against that it offers a fourfold cut in payload D-cache
+*requests* on a kernel whose stall is load *latency*, and 18.1 has just shown
+that request count is not what binds here: the interleaved kernel cut bank
+stalls 24% and still lost 25%.
+
+**S3 for AES-GCM is closed.** Not because a subgroup instruction cannot be
+built, but because both mappings cost about +60% instructions in software, the
+one measurable upside moved the wrong way when tested directly, and the fused
+instruction that would recover the routing has already been shown in 17.7 to be
+instruction-positive once the layout cost is counted.
+
+### 18.4 The finding that outlives the question
+
+Section 16.4 recorded four measured layout movements and no account that fits
+them. This section adds a fifth, and it is the largest and the cleanest: a
+source-level rewrite with no semantic content, exactly attributable because
+reverting it restored the number byte for byte, worth **20.6%** on the kernel
+every instruction-set claim in this document is measured against.
+
+That is larger than the AES S1 extension's margin over its own floor, larger
+than every S2 and S3 result here, and second only to the memory-configuration
+change of section 15.1. **The apparatus's sensitivity to source-level layout now
+exceeds the effect size of the thing being studied.** Until that is understood,
+another instruction-set probe on this kernel measures the tide.
