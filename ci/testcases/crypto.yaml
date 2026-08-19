@@ -181,3 +181,17 @@ tests:
   configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE
   vars:
     OPTS: -n64 -b4 -i4
+# True S3 (section 20): a quad of four lanes owns one message end to end. It is
+# the only kernel here that is wrong if a quad ever diverges, and the failure is
+# silent -- correct counter, correct lane mapping, wrong cipher -- so it is worth
+# a case on both drivers rather than one.
+- id: crypto-aes-gcm-s3
+  via: make-run
+  drivers:
+  - simx
+  - rtlsim
+  dir: tests/crypto/aes_gcm
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE
+  vars:
+    OPTS: -n64 -b4 -a20 -i6

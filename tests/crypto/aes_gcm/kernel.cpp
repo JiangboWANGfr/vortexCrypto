@@ -484,7 +484,11 @@ enum { KS_LANE_LOCAL = 0, KS_SUBGROUP_4 = 1 };
 // does not get to choose that layout. It exists to put a ceiling on what any
 // scheme that improves payload locality -- including a subgroup mapping that
 // gives four lanes to one block -- could be worth, without building one.
-enum { LAYOUT_CONTIG = 0, LAYOUT_INTERLEAVED = 1 };
+// LAYOUT_CONTIG_OFS is the SAME layout as LAYOUT_CONTIG, addressed as
+// base-plus-offset instead of a pointer walk. Semantically identical; it is
+// kept as a specimen because it costs 20.6% (section 18.2) and that number is
+// the largest unexplained movement recorded in this project.
+enum { LAYOUT_CONTIG = 0, LAYOUT_INTERLEAVED = 1, LAYOUT_CONTIG_OFS = 2 };
 
 template <int KS, int LAYOUT = LAYOUT_CONTIG>
 inline void aes_gcm_hw_body(kernel_arg_t* __UNIFORM__ arg) {
@@ -603,6 +607,10 @@ inline void aes_gcm_hw_body(kernel_arg_t* __UNIFORM__ arg) {
         const size_t blk = (size_t)16 * ((size_t)b * num_msgs + msg);
         pt_w = (const uint32_t*)(src_base + blk);
         ct_w = (uint32_t*)(dst_base + blk);
+      } else if (LAYOUT == LAYOUT_CONTIG_OFS) {
+        const size_t blk = (size_t)msg_stride * msg + (size_t)16 * b;
+        pt_w = (const uint32_t*)(src_base + blk);
+        ct_w = (uint32_t*)(dst_base + blk);
       } else {
         pt_w = (const uint32_t*)(pt + 16 * b);
         ct_w = (uint32_t*)(ct + 16 * b);
@@ -658,6 +666,101 @@ inline void aes_gcm_hw_body(kernel_arg_t* __UNIFORM__ arg) {
   }
 }
 
+
+// ---------------------------------------------------------------------------
+// TRUE S3: a quad of four lanes owns ONE message from the counter to the tag.
+//
+// Nothing is ever collected back into a single lane. Lane c of each aligned quad
+// holds, throughout: counter word c, AES state column c, ciphertext word c, and
+// GHASH limb c. There is no transpose anywhere, which is what distinguishes this
+// from the probe of section 17 -- that one kept sixteen messages per warp and
+// paid two 4x4 transposes per block for it.
+//
+// The price is message parallelism: a warp of sixteen lanes now carries four
+// messages instead of sixteen. That is the thing this kernel exists to measure.
+
+// Rotate within the aligned quad: lane k receives lane `src` of the quad, where
+// the descriptor was built with bval = src. See aes128_encrypt_sg4 for why the
+// descriptor must be per-lane and why mask = 0x3c is the width-portable form.
+__attribute__((always_inline))
+inline uint32_t sg4_rot(uint32_t v, uint32_t desc) {
+  size_t r;
+  __asm__ volatile (".insn r %1, 7, 1, %0, %2, %3"
+                    : "=r"(r)
+                    : "i"(RISCV_CUSTOM0), "r"((size_t)v), "r"((size_t)desc));
+  return (uint32_t)r;
+}
+
+inline uint32_t sg4_desc(uint32_t src_lane) {
+  return (0x3cu << 12) | (3u << 6) | (src_lane & 3u);
+}
+
+// y = y * H over GF(2^128) with BOTH operands distributed: lane c holds limb c
+// of y, and H is replicated because it is uniform for the whole key.
+//
+// The schoolbook product is p[i+j] ^= clmul(y[i],h[j]), p[i+j+1] ^= clmulh(...).
+// Rotating y by j makes lane k hold y[(k-j)&3], so at step j lane k computes the
+// term whose limb index is k when k >= j, and k+4 when the rotate wrapped. Each
+// lane therefore accumulates two words: PL for p[k] and PH for p[k+4].
+//
+// The clmulh half of every term belongs one limb higher, which is the NEXT lane,
+// so it is rotated up by one and steered on arrival: it lands in the high half
+// when it came from lane 3 (p[4]) or when its source had wrapped (p[s+5]), and
+// in the low half otherwise (p[s+1]).
+//
+// The fold is the same shape. p[k+4] times R contributes to r[k] in this lane
+// and, through clmulh, to r[k+1] in the next -- except from lane 3, where it is
+// the final carry and folds into r[0] with one more multiply.
+//
+// Predicates are arithmetic masks, not branches: the quad must stay converged
+// because every step reads all four lanes.
+//
+// Every operand is a scalar, and the four steps are written out. Passing the H
+// limbs and the rotate descriptors as arrays indexed by the loop counter puts
+// them on the stack and reloads them in the innermost loop, which on this
+// machine is the most expensive thing a kernel can do; see section 19.
+template <int J>
+__attribute__((always_inline))
+inline void ghash_step_sg4(uint32_t c, uint32_t src_hi, uint32_t rot_j,
+                           uint32_t rot_up1, uint32_t hj, uint32_t y,
+                           uint32_t& pl, uint32_t& ph) {
+  const uint32_t yj = (J == 0) ? y : sg4_rot(y, rot_j);
+  const uint32_t lo = vx_clmul(yj, hj);
+  const uint32_t hi = vx_clmulh(yj, hj);
+
+  const uint32_t wrap = (uint32_t)0 - (uint32_t)(c < (uint32_t)J);
+  pl ^= lo & ~wrap;
+  ph ^= lo & wrap;
+
+  const uint32_t up = sg4_rot(hi, rot_up1);
+  const uint32_t tohi = (uint32_t)0
+                      - (uint32_t)((c == 0u) | (src_hi < (uint32_t)J));
+  pl ^= up & ~tohi;
+  ph ^= up & tohi;
+}
+
+__attribute__((always_inline))
+inline uint32_t ghash_mul_sg4(uint32_t c, uint32_t rot1, uint32_t rot2,
+                              uint32_t rot3, uint32_t h0, uint32_t h1,
+                              uint32_t h2, uint32_t h3, uint32_t y) {
+  uint32_t pl = 0, ph = 0;
+  const uint32_t src_hi = (c - 1u) & 3u;   // where this lane's clmulh comes from
+  const uint32_t rot_up1 = rot1;
+
+  ghash_step_sg4<0>(c, src_hi, 0u,   rot_up1, h0, y, pl, ph);
+  ghash_step_sg4<1>(c, src_hi, rot1, rot_up1, h1, y, pl, ph);
+  ghash_step_sg4<2>(c, src_hi, rot2, rot_up1, h2, y, pl, ph);
+  ghash_step_sg4<3>(c, src_hi, rot3, rot_up1, h3, y, pl, ph);
+
+  // fold p[4..7] back with x^128 == 0x87
+  const uint32_t R = 0x87;
+  pl ^= vx_clmul(ph, R);
+  const uint32_t up2 = sg4_rot(vx_clmulh(ph, R), rot_up1);
+  // lane 0 receives lane 3's, which is the carry out of the top limb
+  pl ^= (c == 0u) ? vx_clmul(up2, R) : up2;
+  return pl;
+}
+
 } // namespace
 
 __kernel void aes_gcm_hw_s1(kernel_arg_t* __UNIFORM__ arg) {
@@ -672,6 +775,13 @@ __kernel void aes_gcm_hw_s1_ilv(kernel_arg_t* __UNIFORM__ arg) {
   aes_gcm_hw_body<KS_LANE_LOCAL, LAYOUT_INTERLEAVED>(arg);
 }
 
+// Specimen, not a candidate: byte-for-byte the same work and the same addresses
+// as aes_gcm_hw_s1, written as base-plus-offset. It is 20.6% slower. Kept so the
+// measurement can be repeated and the mechanism chased; see section 18.2.
+__kernel void aes_gcm_hw_s1_ofs(kernel_arg_t* __UNIFORM__ arg) {
+  aes_gcm_hw_body<KS_LANE_LOCAL, LAYOUT_CONTIG_OFS>(arg);
+}
+
 // S3 PROBE -- subgroup-cooperative keystream, built out of instructions that
 // already exist so the question can be measured before any RTL is written.
 // It is expected to be SLOWER than aes_gcm_hw_s1: it issues the same number of
@@ -684,4 +794,125 @@ __kernel void aes_gcm_hw_s1_ilv(kernel_arg_t* __UNIFORM__ arg) {
 // See section 17 of docs/proposals/crypto_isa_proposal.md.
 __kernel void aes_gcm_hw_sg4(kernel_arg_t* __UNIFORM__ arg) {
   aes_gcm_hw_body<KS_SUBGROUP_4>(arg);
+}
+
+// TRUE S3, built out of instructions that already exist: a quad owns one
+// message end to end, the layout never changes, and there is no transpose. The
+// AES path is the same aes128_encrypt_sg4 the section 17 probe used; what is new
+// is that the ciphertext and the GHASH accumulator stay distributed too, so the
+// quad never has to collect a block into one lane.
+//
+// Instruction count is deliberately NOT what this measures: in software the
+// routing costs three rotates per AES round and eight per GHASH multiply, where
+// a fused instruction would be wiring. What it measures is everything that is
+// not derivable -- the memory access pattern, the register pressure, and the
+// cost of carrying four messages per warp instead of sixteen.
+__kernel void aes_gcm_hw_s3(kernel_arg_t* __UNIFORM__ arg) {
+  hw_lmem_layout_t* lm = (hw_lmem_layout_t*)__local_mem();
+
+  {
+    const uint32_t* rk_src = (const uint32_t*)arg->rk_addr;
+    const uint32_t tid = threadIdx.x;
+    const uint32_t nthreads = blockDim.x;
+    for (uint32_t i = tid; i < AES128_RK_BYTES / 4; i += nthreads) {
+      lm->rk[i] = bswap32(rk_src[i]);
+    }
+  }
+  __syncthreads();
+
+  // Position in the quad, and the two rotate families. AES at byte step p wants
+  // column (c+p)&3; GHASH at step j wants limb (c-j)&3. rot_up1 is the same
+  // descriptor as rot_down[1] and is named separately because it is used for a
+  // different purpose -- moving a clmulh term one limb up.
+  const uint32_t c = (uint32_t)(vx_thread_id() & 3);
+  const uint32_t ab1 = (c + 1u) & 3u;
+  const uint32_t ab2 = (c + 2u) & 3u;
+  const uint32_t ab3 = (c + 3u) & 3u;
+  const uint32_t rot1 = sg4_desc(c - 1u);
+  const uint32_t rot2 = sg4_desc(c - 2u);
+  const uint32_t rot3 = sg4_desc(c - 3u);
+  const uint32_t inc = (c == 3u) ? 1u : 0u;
+
+  // H is uniform for the key, so every lane keeps all four limbs.
+  const uint8_t* hp = (const uint8_t*)arg->h_addr;
+  const uint32_t h0 = vx_brev8(load_le32(hp));
+  const uint32_t h1 = vx_brev8(load_le32(hp + 4));
+  const uint32_t h2 = vx_brev8(load_le32(hp + 8));
+  const uint32_t h3 = vx_brev8(load_le32(hp + 12));
+
+  const uint32_t num_msgs = arg->num_msgs;
+  const uint32_t blocks = arg->blocks_per_msg;
+  const uint32_t aad_bytes = arg->aad_bytes;
+  const uint8_t* aad = (const uint8_t*)arg->aad_addr;
+  const uint32_t msg_bytes = 16u * blocks;   // whole blocks only; main.cpp refuses a tail
+  const uint8_t* iv_base = (const uint8_t*)arg->iv_addr;
+  const uint8_t* src_base = (const uint8_t*)arg->src_addr;
+  uint8_t* dst_base = (uint8_t*)arg->dst_addr;
+  uint8_t* tag_base = (uint8_t*)arg->tag_addr;
+
+  // One message per quad. All four lanes of a quad share the loop bound, so the
+  // quad is always converged even when other quads in the warp have exited.
+  const uint32_t quad = (blockIdx.x * blockDim.x + threadIdx.x) >> 2;
+  const uint32_t qstride = (gridDim.x * blockDim.x) >> 2;
+
+  for (uint32_t msg = quad; msg < num_msgs; msg += qstride) {
+    const uint8_t* iv = iv_base + GCM_IV_BYTES * msg;
+    // Lane c takes word c of J0; the trailing word is the counter, not the IV.
+    const uint32_t j0 = (c == 3u) ? 0x01000000u : load_le32(iv + 4 * c);
+    uint32_t ctr = j0;
+    uint32_t y = 0;
+
+    for (uint32_t off = 0; off < aad_bytes; off += 16) {
+      uint8_t pb[4] = {0};
+      for (uint32_t i = 0; i < 4; ++i) {
+        const uint32_t k = off + 4 * c + i;
+        if (k < aad_bytes) {
+          pb[i] = aad[k];
+        }
+      }
+      y ^= vx_brev8(load_le32(pb));
+      y = ghash_mul_sg4(c, rot1, rot2, rot3, h0, h1, h2, h3, y);
+    }
+
+    const uint8_t* pt = src_base + (size_t)msg_bytes * msg;
+    uint8_t* ct = dst_base + (size_t)msg_bytes * msg;
+
+    for (uint32_t b = 0; b < blocks; ++b) {
+      // inc32 touches only the trailing word, which lives in lane 3 -- but it is
+      // written branchlessly, because every rotate inside the AES below needs
+      // the quad converged and a divergent region here is enough to break it.
+      // Lanes 0-2 add zero, and bswap32 applied twice is the identity.
+      ctr = bswap32(bswap32(ctr) + inc);
+      const uint32_t ks = aes128_encrypt_sg4(lm->rk, c, ab1, ab2, ab3, ctr);
+      // Four lanes read four consecutive words of the same block, so a quad
+      // touches sixteen contiguous bytes where the lane-local kernel touches
+      // sixteen lines msg_stride apart.
+      const uint32_t* pt_w = (const uint32_t*)(pt + 16 * b);
+      uint32_t* ct_w = (uint32_t*)(ct + 16 * b);
+      const uint32_t cw = pt_w[c] ^ ks;
+      ct_w[c] = cw;
+      y ^= vx_brev8(cw);
+      y = ghash_mul_sg4(c, rot1, rot2, rot3, h0, h1, h2, h3, y);
+    }
+
+    // Length block: [len(A)]64 || [len(C)]64, one big-endian word per lane.
+    const uint64_t abits = (uint64_t)aad_bytes * 8u;
+    const uint64_t cbits = (uint64_t)msg_bytes * 8u;
+    uint32_t lw;
+    if (c == 0u) {
+      lw = (uint32_t)(abits >> 32);
+    } else if (c == 1u) {
+      lw = (uint32_t)abits;
+    } else if (c == 2u) {
+      lw = (uint32_t)(cbits >> 32);
+    } else {
+      lw = (uint32_t)cbits;
+    }
+    y ^= vx_brev8(bswap32(lw));
+    y = ghash_mul_sg4(c, rot1, rot2, rot3, h0, h1, h2, h3, y);
+
+    const uint32_t ej0 = aes128_encrypt_sg4(lm->rk, c, ab1, ab2, ab3, j0);
+    uint8_t* tag = tag_base + GCM_TAG_BYTES * msg;
+    store_le32(tag + 4 * c, vx_brev8(y) ^ ej0);
+  }
 }

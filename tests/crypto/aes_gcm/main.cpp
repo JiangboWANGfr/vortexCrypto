@@ -39,26 +39,33 @@ struct impl_t {
   bool needs_units;   // issues aes32*/clmul*, so requires EX_SYM and EX_AUTH
   bool needs_quad;    // reads across aligned groups of four lanes
   bool interleaved;   // block b of every message stored together (diagnostic)
+  bool no_tail;       // whole blocks only
 };
 
 const impl_t kImpls[] = {
-  { "aes_gcm_sw_ttable", "sw_ttable", false, false, false },
+  { "aes_gcm_sw_ttable", "sw_ttable", false, false, false, false },
   // Same host program, buffers, vectors, counter reduction and output format;
   // only the device code differs, which is the whole point of selecting by -i
   // rather than building a second application.
-  { "aes_gcm_hw_s1",     "hw_s1", true, false, false },
+  { "aes_gcm_hw_s1",     "hw_s1", true, false, false, false },
   // Bit-identical to sw_ttable; see kernel.cpp. Measures the apparatus, not
   // the cipher, and it is the software kernel's own floor -- the existing
   // ghash_mul_hw probe reads 0.00% here because this kernel never calls it.
-  { "aes_gcm_sw_ttable_perm", "sw_perm", false, false, false },
+  { "aes_gcm_sw_ttable_perm", "sw_perm", false, false, false, false },
   // S3 probe: the same AEAD with the keystream computed by four cooperating
   // lanes. Built out of the shuffle that already exists, so it measures the
   // subgroup layout before any RTL is written. See kernel.cpp.
-  { "aes_gcm_hw_sg4",    "hw_sg4", true, true, false },
+  { "aes_gcm_hw_sg4",    "hw_sg4", true, true, false, false },
   // The shipped hardware kernel with ONLY the payload layout changed. A
   // diagnostic that bounds what better streaming locality could be worth; see
   // section 18 of the proposal.
-  { "aes_gcm_hw_s1_ilv", "hw_s1_ilv", true, false, true },
+  { "aes_gcm_hw_s1_ilv", "hw_s1_ilv", true, false, true, true },
+  // Specimen for section 18.2: identical work, identical addresses, written as
+  // base-plus-offset rather than a pointer walk, and 20.6% slower.
+  { "aes_gcm_hw_s1_ofs", "hw_s1_ofs", true, false, false, false },
+  // TRUE S3: a quad of four lanes owns one message end to end, everything
+  // distributed, no transpose. Four messages per warp instead of sixteen.
+  { "aes_gcm_hw_s3",     "hw_s3", true, false, false, true },
 };
 
 const uint32_t kNumImpls = (uint32_t)(sizeof(kImpls) / sizeof(kImpls[0]));
@@ -313,8 +320,8 @@ int main(int argc, char** argv) {
   // The interleaved layout addresses whole blocks only; the partial-tail path
   // still indexes contiguously, so a tail under that layout would be wrong
   // rather than slow.
-  if (kImpls[g_impl].interleaved && g_tail_bytes != 0) {
-    std::printf("SKIPPED: impl '%s' is a whole-block layout; -t must be 0, "
+  if (kImpls[g_impl].no_tail && g_tail_bytes != 0) {
+    std::printf("SKIPPED: impl '%s' handles whole blocks only; -t must be 0, "
                 "got %u\n", kImpls[g_impl].label, g_tail_bytes);
     vx_device_release(dev);
     return 1;
