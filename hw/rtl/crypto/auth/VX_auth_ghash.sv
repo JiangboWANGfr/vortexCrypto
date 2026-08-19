@@ -224,16 +224,44 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
     wire g2_block = (execute_if.data.op_type == INST_AUTH_GH_BLOCK);
     wire g2_any   = g2_cwr | g2_crd | g2_init | g2_block;
 
-    reg  [LANE_W-1:0] g2_lane;
-    wire g2_last_lane = (g2_lane == LANE_W'(NUM_LANES - 1));
+    // The multiply is pipelined THREE deep, not just walked lane by lane. The
+    // first build put the whole chain -- a 64-entry context read mux, the XOR,
+    // sixteen clmul32, the partial-product accumulate, the mul87 fold and the
+    // context writeback -- in one cycle, and the Vortex clock fell from 208 MHz
+    // to 131 with every one of the two hundred worst paths inside this module.
+    //
+    // The AES engine next door reads the same kind of context and does not
+    // appear in that list, because each of its lanes reads its OWN entry: the
+    // lane index is a genvar, so only the warp is muxed. This engine walks the
+    // lanes with a counter, so its read is a 64:1 mux, and it then hangs a whole
+    // GF(2^128) multiply off the end of it.
+    //
+    //   S0  context read mux, a = Y ^ X, b = H
+    //   S1  sixteen clmul32 and the partial-product accumulate
+    //   S2  mul87 fold and the writeback into Y
+    //
+    // Throughput stays one lane per cycle, so ghash.block costs NUM_LANES + 2
+    // cycles instead of NUM_LANES -- two extra out of the ~441 a block-step
+    // takes. Lanes are independent, so there is no hazard between the stages.
+    localparam int STEP_W = $clog2(NUM_LANES + 2) + 1;
+    reg [STEP_W-1:0] g2_step;
+    wire [LANE_W-1:0] g2_rd_lane = g2_step[LANE_W-1:0];
+    wire g2_rd_active = g2_block && (g2_step < STEP_W'(NUM_LANES));
+    wire g2_done_step = (g2_step == STEP_W'(NUM_LANES + 1));
 
-    // The one shared multiplier, its operands selected by the lane walker.
+    // S0: the read mux, alone in its stage.
     wire [3:0][XLEN-1:0] g2_a, g2_b;
     for (genvar c = 0; c < 4; ++c) begin : g_g2_operand
-        assign g2_a[c] = gctx_y[g2_wid][g2_lane][c] ^ gctx_x[g2_wid][g2_lane][c];
-        assign g2_b[c] = gctx_h[g2_wid][g2_lane][c];
+        assign g2_a[c] = gctx_y[g2_wid][g2_rd_lane][c] ^ gctx_x[g2_wid][g2_rd_lane][c];
+        assign g2_b[c] = gctx_h[g2_wid][g2_rd_lane][c];
     end
 
+    reg                  g2_s1_valid;
+    reg [LANE_W-1:0]     g2_s1_lane;
+    reg [NW_WIDTH-1:0]   g2_s1_wid;
+    reg [3:0][XLEN-1:0]  g2_s1_a, g2_s1_b;
+
+    // S1: the multiply array, fed from the S0 latch.
     logic [7:0][XLEN-1:0] g2_pp;
     always @(*) begin
         logic [2*XLEN-1:0] prod;
@@ -241,17 +269,23 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
         prod = '0;
         for (int i = 0; i < 4; ++i) begin
             for (int j = 0; j < 4; ++j) begin
-                prod = clmul64(g2_a[i], g2_b[j]);
+                prod = clmul64(g2_s1_a[i], g2_s1_b[j]);
                 g2_pp[i+j]   = g2_pp[i+j]   ^ prod[XLEN-1:0];
                 g2_pp[i+j+1] = g2_pp[i+j+1] ^ prod[2*XLEN-1:XLEN];
             end
         end
     end
 
-    wire [2*XLEN-1:0] g2_m4 = mul87(g2_pp[4]);
-    wire [2*XLEN-1:0] g2_m5 = mul87(g2_pp[5]);
-    wire [2*XLEN-1:0] g2_m6 = mul87(g2_pp[6]);
-    wire [2*XLEN-1:0] g2_m7 = mul87(g2_pp[7]);
+    reg                  g2_s2_valid;
+    reg [LANE_W-1:0]     g2_s2_lane;
+    reg [NW_WIDTH-1:0]   g2_s2_wid;
+    reg [7:0][XLEN-1:0]  g2_s2_pp;
+
+    // S2: the fold, from the S1 latch.
+    wire [2*XLEN-1:0] g2_m4 = mul87(g2_s2_pp[4]);
+    wire [2*XLEN-1:0] g2_m5 = mul87(g2_s2_pp[5]);
+    wire [2*XLEN-1:0] g2_m6 = mul87(g2_s2_pp[6]);
+    wire [2*XLEN-1:0] g2_m7 = mul87(g2_s2_pp[7]);
     wire [2*XLEN-1:0] g2_mc = mul87(g2_m7[2*XLEN-1:XLEN]);
 
     // The carry-out of the last fold is absorbed by the reduction, so only the
@@ -259,22 +293,41 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
     `UNUSED_VAR (g2_mc)
 
     wire [3:0][XLEN-1:0] g2_r;
-    assign g2_r[0] = g2_pp[0] ^ g2_m4[XLEN-1:0] ^ g2_mc[XLEN-1:0];
-    assign g2_r[1] = g2_pp[1] ^ g2_m4[2*XLEN-1:XLEN] ^ g2_m5[XLEN-1:0];
-    assign g2_r[2] = g2_pp[2] ^ g2_m5[2*XLEN-1:XLEN] ^ g2_m6[XLEN-1:0];
-    assign g2_r[3] = g2_pp[3] ^ g2_m6[2*XLEN-1:XLEN] ^ g2_m7[XLEN-1:0];
+    assign g2_r[0] = g2_s2_pp[0] ^ g2_m4[XLEN-1:0] ^ g2_mc[XLEN-1:0];
+    assign g2_r[1] = g2_s2_pp[1] ^ g2_m4[2*XLEN-1:XLEN] ^ g2_m5[XLEN-1:0];
+    assign g2_r[2] = g2_s2_pp[2] ^ g2_m5[2*XLEN-1:XLEN] ^ g2_m6[XLEN-1:0];
+    assign g2_r[3] = g2_s2_pp[3] ^ g2_m6[2*XLEN-1:XLEN] ^ g2_m7[XLEN-1:0];
 
     wire g2_fire = execute_if.valid && geb_ready;
 
     always @(posedge clk) begin
         if (reset) begin
-            g2_lane <= '0;
+            g2_step     <= '0;
+            g2_s1_valid <= 1'b0;
+            g2_s2_valid <= 1'b0;
         end else if (g2_fire) begin
             if (g2_block) begin
-                g2_lane <= g2_last_lane ? '0 : (g2_lane + LANE_W'(1));
-                if (execute_if.data.header.tmask[g2_lane]) begin
+                g2_step <= g2_done_step ? '0 : (g2_step + STEP_W'(1));
+
+                // S0 -> S1. Masked lanes still walk: skipping them would make
+                // the instruction's latency depend on the thread mask, which is
+                // a side channel for no gain.
+                g2_s1_valid <= g2_rd_active && execute_if.data.header.tmask[g2_rd_lane];
+                g2_s1_lane  <= g2_rd_lane;
+                g2_s1_wid   <= g2_wid;
+                g2_s1_a     <= g2_a;
+                g2_s1_b     <= g2_b;
+
+                // S1 -> S2
+                g2_s2_valid <= g2_s1_valid;
+                g2_s2_lane  <= g2_s1_lane;
+                g2_s2_wid   <= g2_s1_wid;
+                g2_s2_pp    <= g2_pp;
+
+                // S2 -> context
+                if (g2_s2_valid) begin
                     for (int c = 0; c < 4; ++c) begin
-                        gctx_y[g2_wid][g2_lane][c] <= g2_r[c];
+                        gctx_y[g2_s2_wid][g2_s2_lane][c] <= g2_r[c];
                     end
                 end
             end else if (g2_init) begin
@@ -305,7 +358,7 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
                          : (g2_any ? '0 : unit_result[i]);
     end
 
-    wire unit_done = ~g2_block | g2_last_lane;
+    wire unit_done = ~g2_block | g2_done_step;
 `else
     wire [NUM_LANES-1:0][XLEN-1:0] g2_out = unit_result;
     wire unit_done = 1'b1;
