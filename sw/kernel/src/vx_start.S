@@ -96,6 +96,23 @@ __vx_cta_entry:
   csrr  t0, VX_CSR_MHARTID
   sll   t1, t0, VX_MEM_STACK_LOG2_SIZE
   sub   sp, sp, t1
+#ifdef VX_MEM_STACK_SKEW_LOG2
+  # Per-hart skew, opt-in and off by default.
+  #
+  # The stride above is a power of two and it is larger than the D-cache's set
+  # span, so every hart's copy of the same stack slot lands in the SAME cache
+  # set: at 8 KiB stride, 16 KiB / 4 ways / 64 B lines = 64 sets spanning 4 KiB,
+  # the set index bits are identical for every lane of a warp. A spilled value
+  # touched by a whole warp is then N accesses to one 4-way set. Skewing each
+  # hart by an extra 2^SKEW bytes rotates the set index by one per hart, so the
+  # lanes of a warp spread across distinct sets instead of colliding.
+  #
+  # Costs 2^SKEW bytes per hart of extra address space and two instructions of
+  # startup. Nothing else in the tree reads VX_MEM_STACK_LOG2_SIZE, so the blast
+  # radius is this file.
+  sll   t1, t0, VX_MEM_STACK_SKEW_LOG2
+  sub   sp, sp, t1
+#endif
 #ifdef NEED_TLS
   # set thread pointer register: each hart gets its own TLS image in the
   # address space after the BSS region. The image spans .tdata + .tbss,
@@ -221,6 +238,23 @@ init_regs:
   csrr  t0, VX_CSR_MHARTID
   sll   t1, t0, VX_MEM_STACK_LOG2_SIZE
   sub   sp, sp, t1
+#ifdef VX_MEM_STACK_SKEW_LOG2
+  # Per-hart skew, opt-in and off by default.
+  #
+  # The stride above is a power of two and it is larger than the D-cache's set
+  # span, so every hart's copy of the same stack slot lands in the SAME cache
+  # set: at 8 KiB stride, 16 KiB / 4 ways / 64 B lines = 64 sets spanning 4 KiB,
+  # the set index bits are identical for every lane of a warp. A spilled value
+  # touched by a whole warp is then N accesses to one 4-way set. Skewing each
+  # hart by an extra 2^SKEW bytes rotates the set index by one per hart, so the
+  # lanes of a warp spread across distinct sets instead of colliding.
+  #
+  # Costs 2^SKEW bytes per hart of extra address space and two instructions of
+  # startup. Nothing else in the tree reads VX_MEM_STACK_LOG2_SIZE, so the blast
+  # radius is this file.
+  sll   t1, t0, VX_MEM_STACK_SKEW_LOG2
+  sub   sp, sp, t1
+#endif
 
 #ifdef NEED_TLS
   # set thread pointer register: per-hart TLS image after the BSS region.
