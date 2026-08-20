@@ -3168,6 +3168,31 @@ of this AEAD and better than AES-GCM gets from S2.
 The optimum is at a different tier for each algorithm, and neither ordering is
 arbitrary.
 
+**Those speedups are each against their own baseline and must not be read across
+the row.** AES-GCM's block is 16 bytes and ChaCha20's is 64, so a cycle count per
+block means something four times different on each line. Normalised, at the
+memory-bound point:
+
+| | cycles/byte |
+| --- | ---: |
+| ChaCha20-Poly1305, `sw` | 12.31 |
+| ChaCha20-Poly1305, `rori` | 12.03 |
+| ChaCha20-Poly1305, S1 | 7.32 |
+| ChaCha20-Poly1305, S3 fused | 5.73 |
+| AES-GCM, S1 (`hw_s1`) | 3.89 |
+| **ChaCha20-Poly1305, S2** | **1.90** |
+| **AES-GCM, S3 (`hw_s3g`)** | **0.94** |
+
+So the best AES-GCM row is **2.01x faster per byte** than the best
+ChaCha20-Poly1305 row, which the per-block figures hide entirely -- 3.76x and
+3.9x sit next to each other and read as a tie.
+
+The second observation is worth as much as the first. ChaCha20-Poly1305's pure
+software row is **3.2x slower per byte than AES-GCM's S1**. ChaCha20 is fast on
+general-purpose CPUs precisely because they have wide SIMD and lack AES
+hardware; on a SIMT machine that already carries an AES datapath, the advantage
+inverts.
+
 **S2 pays in proportion to the state it evicts from the register file.** AES
 holds four words of state and four of round key, and RV32 has room; its S2
 removes instructions only, and returns 2.10x. ChaCha holds sixteen words plus
