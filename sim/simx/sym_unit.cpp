@@ -135,8 +135,8 @@ void SymUnit::execute(instr_trace_t* trace) {
         if (sel < 4) {
           c.s[sel] = (uint32_t)rs1_data[t].u;
         } else {
-          c.k0[sel - 4] = (uint32_t)rs1_data[t].u;
-          c.k0_written |= (1u << (sel - 4));
+          c.k[sel - 4] = (uint32_t)rs1_data[t].u;
+          c.k_written |= (1u << (sel - 4));
         }
         break;
       case SymType::AES_CRD:
@@ -147,14 +147,13 @@ void SymUnit::execute(instr_trace_t* trace) {
         // kernel launches, so a kernel that forgets to write K0 would silently
         // encrypt under whatever key the previous one left behind. simx refuses
         // instead; see the note in the proposal on why the RTL stays permissive.
-        if (c.k0_written != 0xf) {
-          std::cout << "error: aes.begin with an unwritten K0 (warp " << trace->wid
+        if (c.k_written != 0xf) {
+          std::cout << "error: aes.begin with an unwritten key (warp " << trace->wid
                     << ", lane " << t << ")" << std::endl;
           std::abort();
         }
         for (int i = 0; i < 4; ++i) {
-          c.k[i] = c.k0[i];
-          c.s[i] ^= c.k0[i];
+          c.s[i] ^= c.k[i];
         }
         c.rnd = 1;
         break;

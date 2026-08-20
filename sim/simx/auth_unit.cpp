@@ -140,7 +140,7 @@ void AuthUnit::execute(instr_trace_t* trace) {
       switch (auth_type) {
       case AuthType::GH_CWR:
         if (sel < 4) {
-          c.x[sel] = (uint32_t)rs1_data[t].u;
+          c.y[sel] ^= (uint32_t)rs1_data[t].u;
         } else {
           c.h[sel - 4] = (uint32_t)rs1_data[t].u;
           c.h_written |= (1u << (sel - 4));
@@ -162,11 +162,8 @@ void AuthUnit::execute(instr_trace_t* trace) {
                     << trace->wid << ", lane " << t << ")" << std::endl;
           std::abort();
         }
-        uint32_t a[4], r[4];
-        for (int i = 0; i < 4; ++i) {
-          a[i] = c.y[i] ^ c.x[i];
-        }
-        gf128_mul_reflected(a, c.h, r);
+        uint32_t r[4];
+        gf128_mul_reflected(c.y, c.h, r);
         for (int i = 0; i < 4; ++i) {
           c.y[i] = r[i];
         }

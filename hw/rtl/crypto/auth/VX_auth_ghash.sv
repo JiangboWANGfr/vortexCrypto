@@ -211,9 +211,12 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
     localparam int NW = `VX_CFG_NUM_WARPS;
     localparam int LANE_W = (NUM_LANES > 1) ? $clog2(NUM_LANES) : 1;
 
+    // No X register. ghash.cwr folds its limb straight into the accumulator, so
+    // the sequence four-writes-then-block still computes Y <- (Y ^ X)*H while
+    // storing 128 bits fewer per (warp, lane) -- 8,192 per core. It also takes
+    // one array out of the S0 read mux and the XOR out of that stage.
     reg [NW-1:0][NUM_LANES-1:0][3:0][XLEN-1:0] gctx_h;
     reg [NW-1:0][NUM_LANES-1:0][3:0][XLEN-1:0] gctx_y;
-    reg [NW-1:0][NUM_LANES-1:0][3:0][XLEN-1:0] gctx_x;
 
     wire [NW_WIDTH-1:0] g2_wid = execute_if.data.header.wid;
     wire [2:0] g2_sel = execute_if.data.op_args.sym.shamt[2:0];
@@ -252,7 +255,7 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
     // S0: the read mux, alone in its stage.
     wire [3:0][XLEN-1:0] g2_a, g2_b;
     for (genvar c = 0; c < 4; ++c) begin : g_g2_operand
-        assign g2_a[c] = gctx_y[g2_wid][g2_rd_lane][c] ^ gctx_x[g2_wid][g2_rd_lane][c];
+        assign g2_a[c] = gctx_y[g2_wid][g2_rd_lane][c];
         assign g2_b[c] = gctx_h[g2_wid][g2_rd_lane][c];
     end
 
@@ -342,7 +345,8 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
                 for (int i = 0; i < NUM_LANES; ++i) begin
                     if (execute_if.data.header.tmask[i]) begin
                         if (g2_sel[2] == 1'b0) begin
-                            gctx_x[g2_wid][i][g2_sel[1:0]] <= execute_if.data.rs1_data[i];
+                            gctx_y[g2_wid][i][g2_sel[1:0]] <= gctx_y[g2_wid][i][g2_sel[1:0]]
+                                                            ^ execute_if.data.rs1_data[i];
                         end else begin
                             gctx_h[g2_wid][i][g2_sel[1:0]] <= execute_if.data.rs1_data[i];
                         end

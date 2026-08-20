@@ -40,10 +40,11 @@ private:
   // between them. All three fields are held in the reflected limb domain the
   // rest of this unit already uses, so the kernel's brev8 conventions do not
   // change.
+  // No X register: ghash.cwr folds its limb straight into Y, so the sequence
+  // four-writes-then-block still computes Y <- (Y ^ X)*H with 128 bits fewer.
   struct GhCtx {
     uint32_t h[4] = {0, 0, 0, 0};
     uint32_t y[4] = {0, 0, 0, 0};
-    uint32_t x[4] = {0, 0, 0, 0};
     uint32_t h_written = 0;   // one bit per H limb, for the valid check
   };
 

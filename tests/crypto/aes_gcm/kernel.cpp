@@ -1004,11 +1004,21 @@ inline void aes_gcm_hw_s3_body(kernel_arg_t* __UNIFORM__ arg) {
 // packed exactly as aes128_encrypt_hw packs it -- one column per word, row 0 in
 // the low byte -- because the engine reuses this unit's existing byte order.
 __attribute__((always_inline))
-inline void aes128_encrypt_s2(const uint32_t in[4], uint32_t out[4]) {
+inline void aes128_encrypt_s2(const uint32_t k[4], const uint32_t in[4],
+                              uint32_t out[4]) {
   vx_aes_cwr(in[0], 0);
   vx_aes_cwr(in[1], 1);
   vx_aes_cwr(in[2], 2);
   vx_aes_cwr(in[3], 3);
+  // The engine keeps no copy of the cipher key, so the working round key is
+  // rewritten here rather than reset from a stored K0. Four writes per block
+  // against 128 bits in every hardware context; the key is already in
+  // registers, so this costs no loads. See section 22 of the proposal for why
+  // sharing one key per warp was rejected instead.
+  vx_aes_cwr(k[0], 4);
+  vx_aes_cwr(k[1], 5);
+  vx_aes_cwr(k[2], 6);
+  vx_aes_cwr(k[3], 7);
   // begin leaves rnd = 1, so the first middle round produces K1 with Rcon[1].
   vx_aes_begin();
   vx_aes_rndm();   // round 1
@@ -1058,11 +1068,6 @@ inline void aes_gcm_hw_s2_body(kernel_arg_t* __UNIFORM__ arg) {
       k0[i] = bswap32(rk_src[i]);
     }
   }
-  vx_aes_cwr(k0[0], 4);
-  vx_aes_cwr(k0[1], 5);
-  vx_aes_cwr(k0[2], 6);
-  vx_aes_cwr(k0[3], 7);
-
   uint32_t h[4];
   {
     const uint8_t* hp = (const uint8_t*)arg->h_addr;
@@ -1140,7 +1145,7 @@ inline void aes_gcm_hw_s2_body(kernel_arg_t* __UNIFORM__ arg) {
       ctr[3] = bswap32(bswap32(ctr[3]) + 1);
 
       uint32_t ks[4];
-      aes128_encrypt_s2(ctr, ks);
+      aes128_encrypt_s2(k0, ctr, ks);
 
       // Same pointer-walk addressing as the shipped kernel: section 18.2
       // records that writing this as base-plus-offset costs 20.6% of the
@@ -1181,7 +1186,7 @@ inline void aes_gcm_hw_s2_body(kernel_arg_t* __UNIFORM__ arg) {
     if (tail != 0) {
       ctr[3] = bswap32(bswap32(ctr[3]) + 1);
       uint32_t ks[4];
-      aes128_encrypt_s2(ctr, ks);
+      aes128_encrypt_s2(k0, ctr, ks);
       uint8_t padded[16] = {0};
       for (uint32_t i = 0; i < tail; ++i) {
         const uint8_t k = (uint8_t)(ks[i >> 2] >> (8 * (i & 3)));
@@ -1228,7 +1233,7 @@ inline void aes_gcm_hw_s2_body(kernel_arg_t* __UNIFORM__ arg) {
     }
 
     uint32_t ej0[4];
-    aes128_encrypt_s2(j0, ej0);
+    aes128_encrypt_s2(k0, j0, ej0);
     uint8_t* tag = tag_base + GCM_TAG_BYTES * msg;
     for (int i = 0; i < 4; ++i) {
       store_le32(tag + 4 * i, vx_brev8(y[i]) ^ ej0[i]);

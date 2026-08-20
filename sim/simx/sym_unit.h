@@ -42,12 +42,13 @@ private:
   // The state and the key are packed the way the rest of this unit packs them
   // -- one column per word, row 0 in the low byte -- which is the packing the
   // kernel produces by byte-swapping the host's big-endian round keys.
+  // No stored cipher key: software rewrites K before each aes.begin, which is
+  // four extra writes per block against 128 bits in every (warp, lane) context.
   struct AesCtx {
     uint32_t s[4] = {0, 0, 0, 0};    // working state, one column per word
-    uint32_t k0[4] = {0, 0, 0, 0};   // cipher key, written once per key
     uint32_t k[4] = {0, 0, 0, 0};    // current round key
     uint32_t rnd = 0;                // next round to produce; begin sets 1
-    uint32_t k0_written = 0;         // one bit per k0 limb, for the valid check
+    uint32_t k_written = 0;          // one bit per k limb, for the valid check
   };
 
   std::vector<AesCtx> aes_ctx_;

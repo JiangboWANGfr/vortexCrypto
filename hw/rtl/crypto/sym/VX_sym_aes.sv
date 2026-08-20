@@ -219,8 +219,19 @@ module VX_sym_aes import VX_gpu_pkg::*; #(
         endcase
     endfunction
 
+    // No cipher-key copy is kept. aes.begin used to reset the working key from a
+    // stored K0, which cost 128 bits in every one of the (warp, lane) contexts
+    // -- 16,384 bits per core -- to save software four writes per block. The key
+    // is already in registers on the software side, so it rewrites K before each
+    // begin instead: four extra aes.cwr per block, 0.25 instructions per block
+    // once amortised over the lanes, and no extra loads.
+    //
+    // Sharing one key per warp would have saved the same storage, but it would
+    // restrict a warp to sixteen messages under ONE key. Batching across TLS
+    // sessions -- different keys in the same warp -- is the case a GPU is for,
+    // and the benchmark here happens to be single-key, so adopting that
+    // restriction would have measured an ISA that cannot do the general job.
     reg [NW-1:0][NUM_LANES-1:0][3:0][31:0] ctx_s;
-    reg [NW-1:0][NUM_LANES-1:0][3:0][31:0] ctx_k0;
     reg [NW-1:0][NUM_LANES-1:0][3:0][31:0] ctx_k;
     reg [NW-1:0][NUM_LANES-1:0][3:0]       ctx_rnd;
 
@@ -312,8 +323,7 @@ module VX_sym_aes import VX_gpu_pkg::*; #(
                     if (execute_if.data.header.tmask[i]) begin
                         for (int c = 0; c < 4; ++c) begin
                             ctx_s[s2_wid][i][c] <= ctx_s[s2_wid][i][c]
-                                                 ^ ctx_k0[s2_wid][i][c];
-                            ctx_k[s2_wid][i][c] <= ctx_k0[s2_wid][i][c];
+                                                 ^ ctx_k[s2_wid][i][c];
                         end
                         ctx_rnd[s2_wid][i] <= 4'd1;
                     end
@@ -324,7 +334,7 @@ module VX_sym_aes import VX_gpu_pkg::*; #(
                         if (s2_sel[2] == 1'b0) begin
                             ctx_s[s2_wid][i][s2_sel[1:0]] <= execute_if.data.rs1_data[i];
                         end else begin
-                            ctx_k0[s2_wid][i][s2_sel[1:0]] <= execute_if.data.rs1_data[i];
+                            ctx_k[s2_wid][i][s2_sel[1:0]] <= execute_if.data.rs1_data[i];
                         end
                     end
                 end
