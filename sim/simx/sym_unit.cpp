@@ -222,6 +222,18 @@ void SymUnit::execute(instr_trace_t* trace) {
     return;
   }
 
+#ifdef VX_CFG_EXT_SYM_CHACHA_ENABLE
+  if (sym_type == SymType::CHACHA_XR) {
+    for (uint32_t t = 0; t < num_threads; ++t) {
+      if (!tmask.test(t))
+        continue;
+      uint32_t v = (uint32_t)rs1_data[t].u ^ (uint32_t)rs2_data[t].u;
+      rd_data[t].u = rol32(v, shamt);
+    }
+    return;
+  }
+#endif
+
   if (sym_type == SymType::RORI) {
     for (uint32_t t = 0; t < num_threads; ++t) {
       if (!tmask.test(t))

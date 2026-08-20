@@ -549,6 +549,11 @@ package VX_gpu_pkg;
     localparam INST_SYM_AES_BEGIN = 4'h7;
     localparam INST_SYM_AES_RNDM  = 4'h8;
     localparam INST_SYM_AES_RNDF  = 4'h9;
+    // ChaCha20's xor-then-rotate, opt-in behind VX_CFG_EXT_SYM_CHACHA_ENABLE.
+    // Executed by the rotate PE, not the AES one: it carries no S-box, no field
+    // arithmetic and no algorithm constant, only the fusion of the two
+    // operations the quarter-round always performs together.
+    localparam INST_SYM_CHACHA_XR = 4'hA;
     localparam INST_SYM_BITS      = 4;
 `endif
 
@@ -572,6 +577,10 @@ package VX_gpu_pkg;
     localparam INST_AUTH_GH_CRD   = 4'h7;
     localparam INST_AUTH_GH_INIT  = 4'h8;
     localparam INST_AUTH_GH_BLOCK = 4'h9;
+    // Poly1305 three-source multiply-accumulate on 26-bit limbs, opt-in behind
+    // VX_CFG_EXT_AUTH_POLY_ENABLE. R4-type: funct2 selects {scale5, high_part},
+    // which is four assembler aliases over one datapath.
+    localparam INST_AUTH_POLY_MAC = 4'hA;
     localparam INST_AUTH_BITS     = 4;
 `endif
 

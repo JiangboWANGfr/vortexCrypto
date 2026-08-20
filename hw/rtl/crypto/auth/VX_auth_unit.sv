@@ -33,9 +33,14 @@ module VX_auth_unit import VX_gpu_pkg::*; #(
     localparam BLOCK_SIZE   = `VX_CFG_NUM_AUTH_BLOCKS;
     localparam NUM_LANES    = `VX_CFG_NUM_AUTH_LANES;
     localparam PARTIAL_BW   = (BLOCK_SIZE != `VX_CFG_ISSUE_WIDTH) || (NUM_LANES != `VX_CFG_SIMD_WIDTH);
+`ifdef VX_CFG_EXT_AUTH_POLY_ENABLE
+    localparam PE_COUNT     = 2;
+`else
     localparam PE_COUNT     = 1;
+`endif
     localparam PE_SEL_BITS  = `CLOG2(PE_COUNT);
     localparam PE_IDX_GHASH = 0;
+    localparam PE_IDX_POLY  = 1;
 
     VX_execute_if #(
         .data_t (auth_execute_t)
@@ -66,7 +71,17 @@ module VX_auth_unit import VX_gpu_pkg::*; #(
             .data_t (auth_result_t)
         ) pe_result_if[PE_COUNT]();
 
+    `ifdef VX_CFG_EXT_AUTH_POLY_ENABLE
+        // Poly1305's multiply-accumulate is ordinary integer arithmetic and
+        // shares nothing with the carry-less field multiply next to it, so it
+        // gets its own PE rather than another mode inside the GHASH datapath.
+        wire is_poly = (per_block_execute_if[block_idx].data.op_type
+                        == INST_OP_BITS'(INST_AUTH_POLY_MAC));
+        wire [`UP(PE_SEL_BITS)-1:0] pe_select = is_poly ? PE_SEL_BITS'(PE_IDX_POLY)
+                                                        : PE_SEL_BITS'(PE_IDX_GHASH);
+    `else
         wire [`UP(PE_SEL_BITS)-1:0] pe_select = PE_IDX_GHASH;
+    `endif
 
         VX_pe_switch #(
             .PE_COUNT    (PE_COUNT),
@@ -93,6 +108,18 @@ module VX_auth_unit import VX_gpu_pkg::*; #(
             .execute_if (pe_execute_if[PE_IDX_GHASH]),
             .result_if  (pe_result_if[PE_IDX_GHASH])
         );
+
+    `ifdef VX_CFG_EXT_AUTH_POLY_ENABLE
+        VX_auth_poly #(
+            .INSTANCE_ID (`SFORMATF(("%s-poly%0d", INSTANCE_ID, block_idx))),
+            .NUM_LANES   (NUM_LANES)
+        ) auth_poly (
+            .clk        (clk),
+            .reset      (reset),
+            .execute_if (pe_execute_if[PE_IDX_POLY]),
+            .result_if  (pe_result_if[PE_IDX_POLY])
+        );
+    `endif
     end
 
     VX_lane_gather #(

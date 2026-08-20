@@ -221,6 +221,45 @@ tests:
 # change to the context indexing or to the key schedule would be silent.
 # The AAD/tail case matters more here than elsewhere: the tail path re-enters
 # aes.begin mid-message, which is where a wrong round counter would show.
+# ChaCha20's fused xor-then-rotate. Both drivers: the encoding shares the
+# custom-3 opcode arm with two unrelated features, each behind its own guard,
+# and a build with only this one enabled has already once decoded to nothing --
+# simx aborted, the RTL hung the scoreboard 100,000 cycles later. Only a case
+# built with exactly these configs would have caught it.
+- id: crypto-chacha-poly-xr
+  via: make-run
+  drivers:
+  - simx
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE
+  vars:
+    OPTS: -n64 -b4 -t37 -a20 -i5
+# Poly1305's three-source multiply-accumulate, and the complete S1 row that
+# pairs it with the fused xor-rotate. Both drivers: rs3 is read by only one
+# other instruction in the machine (WGATHER), so an operand-collector or
+# scoreboard change would break these and nothing else would notice.
+- id: crypto-chacha-poly-mac
+  via: make-run
+  drivers:
+  - simx
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE
+  vars:
+    OPTS: -n64 -b4 -t37 -a20 -i6
+- id: crypto-chacha-poly-s1
+  via: make-run
+  drivers:
+  - simx
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE
+  vars:
+    OPTS: -n64 -b4 -t37 -a20 -i7
 - id: crypto-aes-gcm-s2-aes
   via: make-run
   drivers:

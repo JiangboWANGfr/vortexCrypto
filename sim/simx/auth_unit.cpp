@@ -125,6 +125,28 @@ void AuthUnit::execute(instr_trace_t* trace) {
   const uint32_t width = (uint32_t)(sizeof(Word) * 8);
   const uint64_t mask = (width >= 64) ? ~0ull : ((1ull << width) - 1);
 
+#ifdef VX_CFG_EXT_AUTH_POLY_ENABLE
+  if (auth_type == AuthType::POLY_MAC) {
+    auto pa = std::get<IntrAuthArgs>(trace->instr_ptr->get_args());
+    const bool is_high   = (pa.sel & 0x1) != 0;
+    const bool is_scale5 = (pa.sel & 0x2) != 0;
+    auto& rs3_data = trace->src_data[2];
+    for (uint32_t t = 0; t < num_threads; ++t) {
+      if (!tmask.test(t))
+        continue;
+      uint64_t p = (uint64_t)(uint32_t)rs2_data[t].u
+                 * (uint64_t)((uint32_t)rs3_data[t].u & 0x3ffffffu);
+      if (is_scale5) {
+        p += p << 2;
+      }
+      uint32_t part = is_high ? (uint32_t)(p >> 26)
+                              : (uint32_t)(p & 0x3ffffffu);
+      rd_data[t].u = (uint32_t)rs1_data[t].u + part;
+    }
+    return;
+  }
+#endif
+
 #ifdef VX_CFG_EXT_AUTH_S2_ENABLE
   if (auth_type == AuthType::GH_CWR   || auth_type == AuthType::GH_CRD
    || auth_type == AuthType::GH_INIT  || auth_type == AuthType::GH_BLOCK) {

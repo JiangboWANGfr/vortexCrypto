@@ -69,7 +69,14 @@ module VX_sym_unit import VX_gpu_pkg::*; #(
             .data_t (sym_result_t)
         ) pe_result_if[PE_COUNT]();
 
-        wire is_rot = (per_block_execute_if[block_idx].data.op_type == INST_OP_BITS'(INST_SYM_RORI));
+        // Both rotate-family ops go to the rotate PE: RORI, and -- when built --
+        // ChaCha's fused xor-then-rotate, which is the same shifter with an XOR
+        // in front of it.
+        wire is_rot = (per_block_execute_if[block_idx].data.op_type == INST_OP_BITS'(INST_SYM_RORI))
+    `ifdef VX_CFG_EXT_SYM_CHACHA_ENABLE
+                   || (per_block_execute_if[block_idx].data.op_type == INST_OP_BITS'(INST_SYM_CHACHA_XR))
+    `endif
+                   ;
         wire [`UP(PE_SEL_BITS)-1:0] pe_select = is_rot ? PE_IDX_ROT : PE_IDX_AES;
 
         VX_pe_switch #(

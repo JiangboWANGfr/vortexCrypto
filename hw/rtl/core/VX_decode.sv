@@ -813,6 +813,21 @@ module VX_decode import
                 // No immediate: the four byte steps are enumerated inside the
                 // instruction, so sym_args_t is unchanged and its fields are
                 // assigned explicitly because the decoder's default is 'x.
+            `ifdef VX_CFG_EXT_SYM_CHACHA_ENABLE
+                if (funct3 == 3'h6) begin
+                    // chacha32.xr rd, rs1, rs2 -- rd = rol32(rs1 ^ rs2, rot),
+                    // rot in funct7[4:0]. It is the LEFT amount, because ChaCha
+                    // specifies left rotates; RORI's shamt in the same field is
+                    // a right amount.
+                    ex_type = EX_SYM;
+                    op_type = INST_OP_BITS'(INST_SYM_CHACHA_XR);
+                    op_args.sym.bs = 2'b0;
+                    op_args.sym.shamt = funct7[4:0];
+                    `USED_IREG (rd);
+                    `USED_IREG (rs1);
+                    `USED_IREG (rs2);
+                end
+            `endif
             `ifdef VX_CFG_EXT_SYM_S2_ENABLE
                 // Stateful per-lane AES engine: funct3 3 = context write,
                 // 4 = context read, 5 = begin/rndm/rndf by funct7[1:0].
@@ -877,6 +892,32 @@ module VX_decode import
         `endif
         `ifdef VX_CFG_EXT_AUTH_ENABLE
             INST_EXT3: begin
+            `ifdef VX_CFG_EXT_AUTH_POLY_ENABLE
+                // poly26.mac{l,h}{,5} rd, rs1, rs2, rs3 -- R4-type, the same
+                // shape WGATHER already uses on this machine, so rs3 needs no
+                // new operand path: the collector reads three sources and the
+                // scoreboard already tracks rs3.
+                //
+                //   p  = rs2 * (rs3 & 0x3ffffff)
+                //   p  = scale5 ? 5*p : p
+                //   rd = rs1 + (high ? p >> 26 : p & 0x3ffffff)
+                //
+                // funct2 = {scale5, high}. The two halves accumulate into
+                // separate registers and are recombined once per output limb,
+                // which is exact rather than approximate: the low accumulator
+                // sums the products mod 2^26 and the high one sums their
+                // quotients.
+                if (funct3 == 3'h5) begin
+                    ex_type = EX_AUTH;
+                    op_type = INST_OP_BITS'(INST_AUTH_POLY_MAC);
+                    op_args.sym.bs = funct2;
+                    op_args.sym.shamt = 5'b0;
+                    `USED_IREG (rd);
+                    `USED_IREG (rs1);
+                    `USED_IREG (rs2);
+                    `USED_IREG (rs3);
+                end
+            `endif
             `ifdef VX_CFG_EXT_AUTH_S2_ENABLE
                 // Stateful per-lane GHASH engine: funct3 2 = context write,
                 // 3 = context read, 4 = init/block by funct7[0]. `sel` rides

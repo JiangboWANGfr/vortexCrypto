@@ -1018,10 +1018,26 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
       std::abort();
     }
   } break;
-#if defined(VX_CFG_EXT_SYM_SG4_ENABLE) || defined(VX_CFG_EXT_SYM_S2_ENABLE)
+#if defined(VX_CFG_EXT_SYM_SG4_ENABLE) || defined(VX_CFG_EXT_SYM_S2_ENABLE) \
+ || defined(VX_CFG_EXT_SYM_CHACHA_ENABLE)
   case Opcode::EXT4: {
     // Fused subgroup AES round. EXT4 was declared and decoded by neither model,
     // so this cannot collide: funct3 0 = middle round, 1 = final round.
+#ifdef VX_CFG_EXT_SYM_CHACHA_ENABLE
+    if (funct3 == 0x6) {
+      // chacha32.xr rd, rs1, rs2 -- rd = rol32(rs1 ^ rs2, rot), rot in
+      // funct7[4:0] and a LEFT amount, unlike RORI's right one.
+      instr->set_fu_type(FUType::SYM);
+      instr->set_op_type(SymType::CHACHA_XR);
+      instr->set_dest_reg(rd, RegType::Integer);
+      instr->set_src_reg(0, rs1, RegType::Integer);
+      instr->set_src_reg(1, rs2, RegType::Integer);
+      IntrSymArgs a{};
+      a.shamt = funct7 & 0x1F;
+      instr->set_args(a);
+      break;
+    }
+#endif
 #ifdef VX_CFG_EXT_SYM_S2_ENABLE
     // Stateful per-lane AES engine: funct3 3 = context write, 4 = context read,
     // 5 = the three context operations selected by funct7[1:0].
@@ -1072,7 +1088,7 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
     }
 #endif
     if (funct3 != 0x0 && funct3 != 0x1) {
-      std::abort();
+      std::abort();  // no other funct3 on this opcode is built
     }
 #ifndef VX_CFG_EXT_SYM_SG4_ENABLE
     std::abort();  // funct3 0/1 are the SG4 rounds, which are not built
@@ -1091,6 +1107,21 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
     // Custom fused GF(2^128) reduction. EXT3 was entirely undecoded, so unlike
     // the ratified crypto encodings this cannot collide: funct3 0 = GHRED32L,
     // 1 = GHRED32H.
+#ifdef VX_CFG_EXT_AUTH_POLY_ENABLE
+    if (funct3 == 0x5) {
+      // poly26.mac{l,h}{,5} rd, rs1, rs2, rs3 -- R4-type, funct2 = {scale5, high}.
+      instr->set_fu_type(FUType::AUTH);
+      instr->set_op_type(AuthType::POLY_MAC);
+      instr->set_dest_reg(rd, RegType::Integer);
+      instr->set_src_reg(0, rs1, RegType::Integer);
+      instr->set_src_reg(1, rs2, RegType::Integer);
+      instr->set_src_reg(2, rs3, RegType::Integer);
+      IntrAuthArgs pa{};
+      pa.sel = funct2 & 0x3;
+      instr->set_args(pa);
+      break;
+    }
+#endif
 #ifdef VX_CFG_EXT_AUTH_S2_ENABLE
     // Stateful per-lane GHASH engine: funct3 2 = context write, 3 = context
     // read, 4 = the two context operations selected by funct7[0]. Same

@@ -39,22 +39,33 @@ struct impl_t {
   const char* kernel;
   const char* label;
   bool needs_sym;   // issues RORI, so requires EX_SYM
+  bool needs_xr;    // issues chacha32.xr; needs VX_CFG_EXT_SYM_CHACHA_ENABLE
+  bool needs_mac;   // issues poly26.mac*; needs VX_CFG_EXT_AUTH_POLY_ENABLE
 };
 
 const impl_t kImpls[] = {
-  { "chacha_poly_sw",   "sw", false },
+  { "chacha_poly_sw",   "sw", false, false, false },
   // Same code with the ratified Zbb/Zbkb RORI in place of slli+srli+or. It is
   // not a cryptographic instruction, so this row is a stronger software
   // baseline, not an instruction-set extension: the ChaCha20 speedup it shows
   // is what any RV32 with the B extension already has.
-  { "chacha_poly_rori", "rori", true },
+  { "chacha_poly_rori", "rori", true, false, false },
   // Bit-identical to sw; see kernel.cpp. Measures the apparatus, not the cipher.
-  { "chacha_poly_sw_perm", "sw_perm", false },
+  { "chacha_poly_sw_perm", "sw_perm", false, false, false },
   // Rejected as instruments; see kernel.cpp. Correct, bit-identical by
   // construction, and the compiler emits a different instruction count anyway,
   // so their deltas are code differences rather than floor readings.
-  { "chacha_poly_sw_perm2", "sw_perm2(rejected)", false },
-  { "chacha_poly_sw_perm3", "sw_perm3(rejected)", false },
+  { "chacha_poly_sw_perm2", "sw_perm2(rejected)", false, false, false },
+  { "chacha_poly_sw_perm3", "sw_perm3(rejected)", false, false, false },
+  // The one candidate ChaCha20 instruction: the quarter-round's xor and rotate
+  // fused. Compared against the rori row rather than sw, because rori is the
+  // honest baseline -- any RV32 with the B extension already has it.
+  { "chacha_poly_xr",   "xr", true, true, false },
+  // Poly1305's convolution as three-source MACs with ChaCha20 left alone, so
+  // the delta against sw is the authenticator by itself.
+  { "chacha_poly_mac",  "mac", false, false, true },
+  // Both halves: the complete S1 row for this AEAD.
+  { "chacha_poly_s1",   "s1", true, true, true },
 };
 
 const uint32_t kNumImpls = (uint32_t)(sizeof(kImpls) / sizeof(kImpls[0]));
@@ -381,7 +392,20 @@ int main(int argc, char** argv) {
   vx_module_h mod;
   vx_kernel_h kern;
   CHECK(vx_module_load_file(dev, g_kernel_file, &mod));
-  CHECK(vx_module_get_kernel(mod, kImpls[g_impl].kernel, &kern));
+  vx_result_t kr = vx_module_get_kernel(mod, kImpls[g_impl].kernel, &kern);
+  if (kr != VX_SUCCESS && kImpls[g_impl].needs_mac) {
+    std::printf("SKIPPED: impl '%s' needs the Poly1305 MAC; rebuild with "
+                "CONFIGS=\"-DVX_CFG_EXT_AUTH_POLY_ENABLE\".\n",
+                kImpls[g_impl].label);
+    return 1;
+  }
+  if (kr != VX_SUCCESS && kImpls[g_impl].needs_xr) {
+    std::printf("SKIPPED: impl '%s' needs the fused xor-rotate; rebuild "
+                "with CONFIGS=\"-DVX_CFG_EXT_SYM_CHACHA_ENABLE\".\n",
+                kImpls[g_impl].label);
+    return 1;
+  }
+  CHECK(kr);
 
   vx_queue_info_t qi = { sizeof(qi), nullptr, VX_QUEUE_PRIORITY_NORMAL, 0 };
   vx_queue_h queue = nullptr;

@@ -44,21 +44,45 @@ struct rot_sw {
   template <int N> static inline uint32_t rotl(uint32_t v) {
     return (uint32_t)((v << N) | (v >> (32 - N)));
   }
+  template <int N> static inline uint32_t xr(uint32_t v, uint32_t w) {
+    return rotl<N>(v ^ w);
+  }
 };
 
 struct rot_hw {
   template <int N> static inline uint32_t rotl(uint32_t v) {
     return vx_rotl32(v, N);
   }
+  // The quarter-round never rotates without xoring first, so the default is the
+  // pair written out; the policy below fuses them into one instruction.
+  template <int N> static inline uint32_t xr(uint32_t v, uint32_t w) {
+    return vx_rotl32(v ^ w, N);
+  }
 };
+
+#ifdef VX_CFG_EXT_SYM_CHACHA_ENABLE
+// The one candidate ChaCha20 instruction: xor-then-rotate as a single op. It
+// carries no S-box, no field arithmetic and no algorithm constant -- unlike the
+// AES and GHASH extensions, ChaCha's software form is already add/xor/rotate,
+// so the only thing left to fuse is the pair the quarter-round always performs
+// together. Four of the twelve instructions per quarter-round go away.
+struct rot_xr {
+  template <int N> static inline uint32_t rotl(uint32_t v) {
+    return vx_rotl32(v, N);
+  }
+  template <int N> static inline uint32_t xr(uint32_t v, uint32_t w) {
+    return vx_chacha32_xr(v, w, N);
+  }
+};
+#endif
 
 // RFC 8439 section 2.1. Four adds, four xors and four rotates.
 template <typename R>
 __attribute__((always_inline)) inline void quarter_round(uint32_t x[16], int a, int b, int c, int d) {
-  x[a] += x[b]; x[d] ^= x[a]; x[d] = R::template rotl<16>(x[d]);
-  x[c] += x[d]; x[b] ^= x[c]; x[b] = R::template rotl<12>(x[b]);
-  x[a] += x[b]; x[d] ^= x[a]; x[d] = R::template rotl<8>(x[d]);
-  x[c] += x[d]; x[b] ^= x[c]; x[b] = R::template rotl<7>(x[b]);
+  x[a] += x[b]; x[d] = R::template xr<16>(x[d], x[a]);
+  x[c] += x[d]; x[b] = R::template xr<12>(x[b], x[c]);
+  x[a] += x[b]; x[d] = R::template xr<8>(x[d], x[a]);
+  x[c] += x[d]; x[b] = R::template xr<7>(x[b], x[c]);
 }
 
 // RFC 8439 section 2.3. The permutation alone, leaving the sixteen keystream words in x[]. Split out
@@ -161,7 +185,7 @@ __attribute__((always_inline)) inline void poly1305_init(poly1305_t& st, const u
 }
 
 // h = (h + block) * r mod 2^130-5, for a full sixteen-byte block.
-template <int PERM = 0>
+template <int PERM = 0, int POLY = 0>
 __attribute__((always_inline)) inline void poly1305_block(poly1305_t& st, uint32_t t0, uint32_t t1,
                            uint32_t t2, uint32_t t3) {
   uint32_t h0 = st.h0 + (t0 & 0x3ffffff);
@@ -208,6 +232,60 @@ __attribute__((always_inline)) inline void poly1305_block(poly1305_t& st, uint32
     d4 = (uint64_t)h0 * st.r4 + (uint64_t)h1 * st.r3
        + (uint64_t)h2 * st.r2 + (uint64_t)h3 * st.r1
        + (uint64_t)h4 * st.r0;
+  }
+
+  if (POLY == 1) {
+#ifdef VX_CFG_EXT_AUTH_POLY_ENABLE
+    // The same 5x5 convolution, accumulated as separate low and high halves so
+    // that everything stays in 32-bit registers. The wrapped terms take the *5
+    // forms and read r directly, so s1..s4 are never needed -- four fewer live
+    // values in a kernel that already spills.
+    uint32_t l0 = 0, l1 = 0, l2 = 0, l3 = 0, l4 = 0;
+    uint32_t u0 = 0, u1 = 0, u2 = 0, u3 = 0, u4 = 0;
+
+    l0 = vx_poly26_macl (l0, h0, st.r0); u0 = vx_poly26_mach (u0, h0, st.r0);
+    l0 = vx_poly26_macl5(l0, h1, st.r4); u0 = vx_poly26_mach5(u0, h1, st.r4);
+    l0 = vx_poly26_macl5(l0, h2, st.r3); u0 = vx_poly26_mach5(u0, h2, st.r3);
+    l0 = vx_poly26_macl5(l0, h3, st.r2); u0 = vx_poly26_mach5(u0, h3, st.r2);
+    l0 = vx_poly26_macl5(l0, h4, st.r1); u0 = vx_poly26_mach5(u0, h4, st.r1);
+
+    l1 = vx_poly26_macl (l1, h0, st.r1); u1 = vx_poly26_mach (u1, h0, st.r1);
+    l1 = vx_poly26_macl (l1, h1, st.r0); u1 = vx_poly26_mach (u1, h1, st.r0);
+    l1 = vx_poly26_macl5(l1, h2, st.r4); u1 = vx_poly26_mach5(u1, h2, st.r4);
+    l1 = vx_poly26_macl5(l1, h3, st.r3); u1 = vx_poly26_mach5(u1, h3, st.r3);
+    l1 = vx_poly26_macl5(l1, h4, st.r2); u1 = vx_poly26_mach5(u1, h4, st.r2);
+
+    l2 = vx_poly26_macl (l2, h0, st.r2); u2 = vx_poly26_mach (u2, h0, st.r2);
+    l2 = vx_poly26_macl (l2, h1, st.r1); u2 = vx_poly26_mach (u2, h1, st.r1);
+    l2 = vx_poly26_macl (l2, h2, st.r0); u2 = vx_poly26_mach (u2, h2, st.r0);
+    l2 = vx_poly26_macl5(l2, h3, st.r4); u2 = vx_poly26_mach5(u2, h3, st.r4);
+    l2 = vx_poly26_macl5(l2, h4, st.r3); u2 = vx_poly26_mach5(u2, h4, st.r3);
+
+    l3 = vx_poly26_macl (l3, h0, st.r3); u3 = vx_poly26_mach (u3, h0, st.r3);
+    l3 = vx_poly26_macl (l3, h1, st.r2); u3 = vx_poly26_mach (u3, h1, st.r2);
+    l3 = vx_poly26_macl (l3, h2, st.r1); u3 = vx_poly26_mach (u3, h2, st.r1);
+    l3 = vx_poly26_macl (l3, h3, st.r0); u3 = vx_poly26_mach (u3, h3, st.r0);
+    l3 = vx_poly26_macl5(l3, h4, st.r4); u3 = vx_poly26_mach5(u3, h4, st.r4);
+
+    l4 = vx_poly26_macl (l4, h0, st.r4); u4 = vx_poly26_mach (u4, h0, st.r4);
+    l4 = vx_poly26_macl (l4, h1, st.r3); u4 = vx_poly26_mach (u4, h1, st.r3);
+    l4 = vx_poly26_macl (l4, h2, st.r2); u4 = vx_poly26_mach (u4, h2, st.r2);
+    l4 = vx_poly26_macl (l4, h3, st.r1); u4 = vx_poly26_mach (u4, h3, st.r1);
+    l4 = vx_poly26_macl (l4, h4, st.r0); u4 = vx_poly26_mach (u4, h4, st.r0);
+
+    // d_i = l_i + 2^26 * u_i, so the limb is l_i mod 2^26 and the carry out is
+    // (l_i >> 26) + u_i. Every intermediate stays under 2^31.
+    uint32_t cc;
+    h0 = l0 & 0x3ffffff; cc = (l0 >> 26) + u0;
+    l1 += cc; h1 = l1 & 0x3ffffff; cc = (l1 >> 26) + u1;
+    l2 += cc; h2 = l2 & 0x3ffffff; cc = (l2 >> 26) + u2;
+    l3 += cc; h3 = l3 & 0x3ffffff; cc = (l3 >> 26) + u3;
+    l4 += cc; h4 = l4 & 0x3ffffff; cc = (l4 >> 26) + u4;
+    h0 += cc * 5; cc = h0 >> 26; h0 &= 0x3ffffff;
+    h1 += cc;
+    st.h0 = h0; st.h1 = h1; st.h2 = h2; st.h3 = h3; st.h4 = h4;
+    return;
+#endif
   }
 
   uint32_t c = (uint32_t)(d0 >> 26); h0 = (uint32_t)d0 & 0x3ffffff;
@@ -265,7 +343,7 @@ __attribute__((always_inline)) inline void poly1305_finish(poly1305_t& st, uint3
 // entry points below: dropping it on this side costs 1304 retired instructions
 // at the recorded point, because the per-message argument loads stop being
 // hoisted as uniform. Measured, not assumed.
-template <typename R, int PERM>
+template <typename R, int PERM, int POLY = 0>
 __attribute__((always_inline)) inline void chacha20_xor_absorb(
     const uint32_t k[8], uint32_t n0, uint32_t n1, uint32_t n2,
     uint32_t counter, const uint32_t* pb, uint32_t* cb, poly1305_t& st) {
@@ -281,7 +359,7 @@ __attribute__((always_inline)) inline void chacha20_xor_absorb(
     cb[4 * q + 1] = c1;
     cb[4 * q + 2] = c2;
     cb[4 * q + 3] = c3;
-    poly1305_block<PERM>(st, c0, c1, c2, c3);
+    poly1305_block<PERM, POLY>(st, c0, c1, c2, c3);
   }
 }
 
@@ -289,7 +367,7 @@ __attribute__((always_inline)) inline void chacha20_xor_absorb(
 // a 32x32 multiply and the carries out of five of them still fit 64 bits.
 // RV32 has no multiply-accumulate, so each partial product is a mul/mulhu
 // pair; that is the cost the S1 work has to beat.
-template <typename R, int PERM = 0>
+template <typename R, int PERM = 0, int POLY = 0>
 inline void chacha_poly_body(kernel_arg_t* __UNIFORM__ arg) {
   const uint32_t* key = (const uint32_t*)arg->key_addr;
   const uint8_t* nonce_base = (const uint8_t*)arg->nonce_addr;
@@ -344,14 +422,14 @@ inline void chacha_poly_body(kernel_arg_t* __UNIFORM__ arg) {
       for (uint32_t i = 0; i < n; ++i) {
         padded[i] = aad[off + i];
       }
-      poly1305_block<PERM>(st, load_le32(padded), load_le32(padded + 4),
+      poly1305_block<PERM, POLY>(st, load_le32(padded), load_le32(padded + 4),
                            load_le32(padded + 8), load_le32(padded + 12));
     }
 
     const uint32_t* pt = src_base + (size_t)words * msg;
     uint32_t* ct = dst_base + (size_t)words * msg;
     for (uint32_t b = 0; b < blocks; ++b) {
-      chacha20_xor_absorb<R, PERM>(k, n0, n1, n2, b + 1, pt + 16 * b,
+      chacha20_xor_absorb<R, PERM, POLY>(k, n0, n1, n2, b + 1, pt + 16 * b,
                                    ct + 16 * b, st);
     }
 
@@ -376,7 +454,7 @@ inline void chacha_poly_body(kernel_arg_t* __UNIFORM__ arg) {
           cb[j] = c;
           padded[i] = c;
         }
-        poly1305_block<PERM>(st, load_le32(padded), load_le32(padded + 4),
+        poly1305_block<PERM, POLY>(st, load_le32(padded), load_le32(padded + 4),
                              load_le32(padded + 8), load_le32(padded + 12));
       }
     }
@@ -384,7 +462,7 @@ inline void chacha_poly_body(kernel_arg_t* __UNIFORM__ arg) {
     // The trailer: le64(AAD bytes) || le64(ciphertext bytes).
     const uint64_t aad_len = (uint64_t)aad_bytes;
     const uint64_t ct_bytes = (uint64_t)msg_bytes;
-    poly1305_block<PERM>(st, (uint32_t)aad_len, (uint32_t)(aad_len >> 32),
+    poly1305_block<PERM, POLY>(st, (uint32_t)aad_len, (uint32_t)(aad_len >> 32),
                          (uint32_t)ct_bytes, (uint32_t)(ct_bytes >> 32));
 
     uint32_t tag[4];
@@ -458,3 +536,29 @@ __kernel void chacha_poly_sw_perm3(kernel_arg_t* __UNIFORM__ arg) {
 __kernel void chacha_poly_rori(kernel_arg_t* __UNIFORM__ arg) {
   chacha_poly_body<rot_hw, 0>(arg);
 }
+
+#ifdef VX_CFG_EXT_AUTH_POLY_ENABLE
+// Poly1305's 5x5 convolution as three-source multiply-accumulates. The ChaCha20
+// half is untouched, so the difference against the sw row is the authenticator
+// and nothing else.
+__kernel void chacha_poly_mac(kernel_arg_t* __UNIFORM__ arg) {
+  chacha_poly_body<rot_sw, 0, 1>(arg);
+}
+#endif
+
+#if defined(VX_CFG_EXT_SYM_CHACHA_ENABLE) && defined(VX_CFG_EXT_AUTH_POLY_ENABLE)
+// Both halves: the fused xor-rotate for ChaCha20 and the MAC for Poly1305.
+// This is the complete S1 row for this AEAD.
+__kernel void chacha_poly_s1(kernel_arg_t* __UNIFORM__ arg) {
+  chacha_poly_body<rot_xr, 0, 1>(arg);
+}
+#endif
+
+#ifdef VX_CFG_EXT_SYM_CHACHA_ENABLE
+// The same kernel with the xor and the rotate fused. Everything else -- the
+// layout, the Poly1305 path, the message-to-lane mapping -- is identical to the
+// rori row, so the difference between them is the fusion and nothing else.
+__kernel void chacha_poly_xr(kernel_arg_t* __UNIFORM__ arg) {
+  chacha_poly_body<rot_xr, 0>(arg);
+}
+#endif

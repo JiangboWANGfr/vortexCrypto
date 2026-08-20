@@ -83,6 +83,8 @@
     `define EXT_SYM_EXT4_ARM
 `elsif VX_CFG_EXT_SYM_S2_ENABLE
     `define EXT_SYM_EXT4_ARM
+`elsif VX_CFG_EXT_SYM_CHACHA_ENABLE
+    `define EXT_SYM_EXT4_ARM
 `endif
 
 // Convenience flag: any crypto extension is enabled. Gates the shared

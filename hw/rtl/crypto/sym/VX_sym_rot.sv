@@ -64,7 +64,39 @@ module VX_sym_rot import VX_gpu_pkg::*; #(
         assign rot_result[i] = `VX_CFG_XLEN'((x >> shamt) | (x << lshamt));
     end
 
+`ifdef VX_CFG_EXT_SYM_CHACHA_ENABLE
+    // ChaCha20's quarter-round never rotates without xoring first:
+    //
+    //   d ^= a; d <<<= 16;   b ^= c; b <<<= 12;
+    //   d ^= a; d <<<=  8;   b ^= c; b <<<=  7;
+    //
+    // so the two always travel together and the pair costs two instructions
+    // where the shifter is idle for one of them. Fusing them is the whole
+    // extension: no S-box, no field arithmetic, no algorithm constant, just the
+    // XOR the shifter's input always has in front of it.
+    //
+    // shamt here is the LEFT amount, unlike RORI's right amount in the same
+    // field, because ChaCha specifies left rotates. Negating gives the other
+    // direction for free, exactly as it does above, and shamt == 0 falls out as
+    // a plain XOR without a special case.
+    wire is_xr = (execute_if.data.op_type == INST_OP_BITS'(INST_SYM_CHACHA_XR));
+
+    wire [NUM_LANES-1:0][`VX_CFG_XLEN-1:0] xr_result;
+    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_xr
+        wire [31:0] v = execute_if.data.rs1_data[i][31:0]
+                      ^ execute_if.data.rs2_data[i][31:0];
+        assign xr_result[i] = `VX_CFG_XLEN'((v << shamt) | (v >> lshamt));
+    end
+
+    wire [NUM_LANES-1:0][`VX_CFG_XLEN-1:0] unit_result;
+    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_sel
+        assign unit_result[i] = is_xr ? xr_result[i] : rot_result[i];
+    end
+`else
+    wire [NUM_LANES-1:0][`VX_CFG_XLEN-1:0] unit_result = rot_result;
     `UNUSED_VAR (execute_if.data.rs2_data)
+`endif
+
     `UNUSED_VAR (execute_if.data.rs3_data)
 
     VX_elastic_buffer #(
@@ -74,7 +106,7 @@ module VX_sym_rot import VX_gpu_pkg::*; #(
         .reset     (reset),
         .valid_in  (execute_if.valid),
         .ready_in  (execute_if.ready),
-        .data_in   ({execute_if.data.header,  rot_result}),
+        .data_in   ({execute_if.data.header,  unit_result}),
         .data_out  ({result_if.data.header,   result_if.data.data}),
         .valid_out (result_if.valid),
         .ready_out (result_if.ready)
