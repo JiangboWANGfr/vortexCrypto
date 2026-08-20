@@ -2796,3 +2796,419 @@ The lesson worth keeping: **a per-class dynamic count discriminates where a
 static instruction count cannot.** Sections 17 and 18 both spent effort on static
 `sp`-relative counts and disassembly listings; in each case the counters would
 have been faster.
+## 22. S2 for AES-GCM: a stateful engine, built, measured, and fitted
+
+S2 keeps the message-to-lane mapping of S1 -- one lane, one message, sixteen
+messages per warp at t16 -- and moves the 128-bit state out of the
+general-purpose registers into a per-lane context, so that one instruction
+advances a whole AES round or a whole GHASH block update. Because the mapping is
+unchanged, a comparison against `hw_s1` isolates instruction granularity from
+data layout, which none of the S3 rows can do.
+
+### 22.1 The instructions
+
+Nine, on six decode slots of the two free custom opcodes. No new opcode.
+
+| | funct3 | funct7[2:0] | rd | semantics |
+| --- | ---: | ---: | --- | --- |
+| `aes.cwr` | 3 | sel 0-7 | x0 | S0..S3 (0-3), K0..K3 (4-7) |
+| `aes.crd` | 4 | sel 0-3 | data | rd = S[sel] |
+| `aes.begin` | 5 | 0 | x0 | S ^= K; rnd = 1 |
+| `aes.rndm` | 5 | 1 | x0 | K = NextKey(K,rnd); S = round(S,K); rnd++ |
+| `aes.rndf` | 5 | 2 | x0 | as above without MixColumns |
+| `ghash.cwr` | 2 | sel 0-7 | x0 | Y[sel] ^= rs1 (0-3), H[sel-4] = rs1 (4-7) |
+| `ghash.crd` | 3 | sel 0-3 | data | rd = Y[sel] |
+| `ghash.init` | 4 | 0 | x0 | Y = 0 |
+| `ghash.block` | 4 | 1 | x0 | Y = Y*H mod P |
+
+The round counter starts at 1, not 0, so that the first middle round produces K1
+with Rcon[1]; starting it at zero is an off-by-one that the first draft had.
+
+Everything but the two reads is encoded `rd = x0`. `VX_decode` already derives
+writeback as `use_regs[RD] && rd != 0`, so no writeback and no scoreboard entry
+are produced -- and therefore **ordering cannot come from the scoreboard**. The
+units interlock instead. One global busy flag is enough, because the pipeline
+into a unit is in-order and anything queued behind a multi-cycle op wants the
+same hardware anyway; a per-warp interlock would be more machinery for no gain.
+
+### 22.2 The context, and the two fields that left it
+
+The context must be keyed by **(warp, lane)**, not lane alone: warps interleave
+freely and a per-lane context would be clobbered by whichever issued last.
+
+Two 128-bit fields were removed after the first build, without restricting what
+the instructions can express:
+
+- **X** is gone. `ghash.cwr` folds its limb straight into the accumulator, so
+  four writes then `ghash.block` still computes `Y <- (Y ^ X)*H`, with no X to
+  store and one array fewer in the pipeline's first stage.
+- **The stored cipher key** is gone. `aes.cwr` writes the working round key
+  directly and `aes.begin` no longer resets it from a K0. Software rewrites the
+  key before each begin: four writes per block, 0.25 instructions per block
+  amortised over sixteen lanes, and no extra loads because the key is already in
+  registers.
+
+Sharing one key per warp would have saved the same 256 bits and cost nothing in
+instructions. **It was rejected.** It restricts a warp to sixteen messages under
+one key, and batching records from different TLS sessions -- different keys in
+the same warp -- is the case that makes a GPU worth using for AEAD at all. The
+benchmark here happens to be single-key, so adopting that restriction would have
+produced good numbers for an ISA that cannot do the general job.
+
+Per (warp, lane): 772 bits down to 516; 49,408 per core down to 33,024.
+
+### 22.3 Measured
+
+rtlsim, c2w4t16, `-n128`, marginal over `b=8..64`, stack skew on:
+
+| | instrs/block | cycles/block |
+| --- | ---: | ---: |
+| `hw_s1` | 25.25 | 62.18 |
+| `hw_s2` | **4.19** | **28.21** |
+| `hw_s3g` | 11.25 | 15.08 |
+
+Totals at `-n128 -b64`: 543,229 cycles for `hw_s1` against 258,199, which is
+**2.10x** on **6.0x fewer instructions**. Both models retire identical counts and
+agree with AAD and a partial tail.
+
+It does not beat `hw_s3g`, which is 15.08 cycles per block. The pre-registered
+kill rule therefore fires. What keeps the row interesting is that `hw_s3g` does
+not close timing on the DE10-Pro, so the comparison is against something that
+cannot ship.
+
+### 22.4 Fitted: three builds, and the area estimate was wrong by 4.5x
+
+DE10-Pro, `1SG280HU1F50E1VG`, 200 MHz Vortex clock, 250 MHz PCIe avst512:
+
+| | ALMs | registers | Vortex | PCIe |
+| --- | ---: | ---: | ---: | ---: |
+| baseline | 208,513 | 377,741 | 208.29 | 263.44 |
+| SG4 | 260,938 +25.1% | 452,906 | 206.91 | **226.04** |
+| S2, single-cycle | 294,216 +41.1% | 560,788 | **130.82** | **223.71** |
+| S2, pipelined | 299,907 +43.8% | 562,705 | 205.72 | 265.67 |
+| S2, reduced context | 286,974 +37.6% | 530,318 | 207.68 | **249.94** |
+
+The estimate written before the first run was **+19,000 ALMs**. The measurement
+was **+85,703**. The estimate priced the arithmetic -- one shared 128x128
+multiplier instead of sixteen, a quarter of the S-box array -- and treated the
+context storage as an afterthought, which is exactly backwards: registers rose
+by 183,047 and that is the bulk of the increase. **Time-multiplexing saves
+arithmetic; it cannot save storage, because every (warp, lane) context has to
+exist at once.**
+
+The structural point, and the one that separates S2 from S3:
+
+> S3 keeps the 128-bit state in the register file that already exists. S2 has to
+> build a second one.
+
+`aesrm.sg4` is purely combinational and costs no flip-flop; the S2 engines cost
+one context per warp per lane whatever else is done.
+
+The context model itself is accurate. Removing 32,768 bits of context was
+predicted to remove 32,768 registers; the measurement was **-32,387**, within
+1.2%. Bits of context and flip-flops are one to one.
+
+### 22.5 The frequency failure, and what fixed it
+
+The single-cycle build ran the Vortex clock at **130.82 MHz** against a 200 MHz
+requirement. All two hundred of the worst setup paths were inside
+`VX_auth_ghash`; **none** were inside `VX_sym_aes`.
+
+That asymmetry names the cause. Both engines read the same kind of context, but
+
+- the AES engine's lanes each read their **own** entry: the lane index is a
+  genvar, so only the warp is muxed, four to one;
+- the GHASH engine walks the lanes with a **counter**, so its read is a 64:1
+  mux, and it then hangs an entire GF(2^128) multiply off the end of it.
+
+The AES round already split its work across four cycles, one output column each.
+The GHASH engine had split only the lane loop, not the arithmetic.
+
+Pipelining `ghash.block` three deep -- the read mux alone, then the multiply
+array, then the fold and the writeback -- restored **205.72 MHz**, and cost
+nothing measurable: throughput stays one lane per cycle, so the instruction goes
+from NUM_LANES to NUM_LANES+2 cycles, and rtlsim reads 74,168 cycles at
+`-n64 -b4 -t5 -a20`, byte-identical to the single-cycle version. The unit holds
+the pipe for 16 of the ~441 cycles a block-step takes.
+
+Half of `VX_auth_ghash`'s registers were retiming artefacts, not architectural
+state: 98,457 against the 49,152 its context needs, while `VX_sym_aes` carried
+56,394 against a predicted 56,832, a 3% match. Pipelining returned 29,046 of
+them. **The area and the frequency failures were two faces of one broken path.**
+
+### 22.6 The PCIe domain, and the causal story that turned out to be wrong
+
+Every build that fails, fails on the PCIe `avst512` 250 MHz domain, whose paths
+are all inside Platform Designer's `mm_interconnect` -- the BAM master's
+waitrequest-allowance adapter FIFO, `out_payload[604]` into its M20K inputs.
+Nothing in Vortex, nothing in the crypto units.
+
+250 MHz is not a choice. Gen3 x16 is 128 Gb/s and the application interface is
+512 bits wide, so 128e9/512 = 250 MHz exactly, generated by the hard IP's own
+IOPLL. Unlike the Vortex clock, which carries four profiles in the
+reconfiguration MIF, it cannot be lowered without dropping to x8 or Gen2 and
+halving bandwidth. And a negative setup slack there is a functional hazard on the
+path the host uses to load kernels and buffers, not a "runs slower".
+
+The story used for several sections was **area displacement**: the design grows,
+the fitter spreads logic, the interconnect's already-thin margin is stretched.
+Three measurements say that story is wrong.
+
+| build | area | PCIe |
+| --- | ---: | ---: |
+| SG4 | +25.1% | 226.04 |
+| S2, single-cycle | +41.1% | 223.71 |
+| S2, pipelined | **+43.8%** | **265.67** -- best of all, better than baseline |
+| S2, reduced context | +37.6% | 249.94 |
+| S2, reduced, seed 7 | +37.6% | **207.64** |
+
+The **largest** design has the **best** PCIe result. And a seed change alone, at
+0.2% area difference, moves the domain by **0.815 ns** -- from -0.001 to -0.816.
+
+So: the domain is insensitive to area and violently sensitive to placement. The
+single-cycle build's PCIe failure is better explained as the fitter spending
+itself on a -2.644 ns Vortex path and letting everything else degrade; the SG4
+build's failure, whose Vortex clock was fine, has no explanation here yet.
+
+**A seed sweep is not a fix.** With a 0.815 ns spread, seed 6's -0.001 is already
+a good draw and further draws are a lottery. The remedies left are on the FPGA
+project's side of the boundary: a pipeline stage in the Qsys interconnect, at one
+cycle of DMA latency, or a LogicLock region pinning the PCIe shell near its hard
+IP. Note that **the pipelined build closes every domain**, so a working bitstream
+for S2 exists today at 299,907 ALMs.
+
+### 22.7 What this section got wrong, and how
+
+Kept because the errors are the most transferable part.
+
+- **"+19,000 ALMs."** Measured +85,703. The estimate priced arithmetic and
+  discounted storage, having written in the same paragraph that storage might
+  dominate and that extrapolation could not settle it -- and then used the number
+  anyway.
+- **"2.80x against the shipped kernel."** That came from simx with the
+  interleaved layout. rtlsim says **2.18x**. It was used to argue for building
+  the RTL.
+- **"S2 is memory-bound, and interleaving the payload fixes it."** simx showed
+  the layout helping S2 by 22% and hurting `hw_s1` by 77%, and the sign of that
+  asymmetry was the whole argument. On rtlsim, interleaving **hurts** S2 by 4.4%.
+  The diagnosis was withdrawn. The memory-bound reading was later re-established
+  on rtlsim by a different route -- 94% scoreboard stall on 252-cycle loads -- but
+  the layout claim never reproduced.
+- **"Do not build the RTL."** Reasoned from a kill rule that compares against
+  `hw_s3g`, a design that does not close timing. Comparing against something that
+  cannot ship is not a reason to stop.
+
+
+## 23. ChaCha20-Poly1305 gets S1, S2 and S3, and the ordering is the opposite of AES-GCM's
+
+Everything before this section is AES-GCM. The second baseline had only S0, and
+a taxonomy with one algorithm in it cannot tell a property of the design from a
+property of the algorithm. This section fills the other three tiers.
+
+All numbers are rtlsim, c2w4t16, marginal over the block count, at **two
+operating points**: `b=1..4`, where the working set is 4-16 KB and fits the
+16 KB D-cache, and `b=16..32`, where it is 64-128 KB and does not. Measuring at
+one point only cannot distinguish an extension that does not help from a size at
+which nothing helps -- which is precisely how the `rori` row below was
+misread once.
+
+The baseline for every comparison is the `rori` row, not `sw`. RORI is ratified
+Zbb/Zbkb; crediting the B extension to a cryptographic ISE would be false.
+
+### 23.1 S1: two instructions, and the useful one costs more instructions
+
+```
+chacha32.xr rd, rs1, rs2, rot        rd = rol32(rs1 ^ rs2, rot)
+poly26.mac{l,h}{,5} rd, rs1, rs2, rs3
+```
+
+`chacha32.xr` goes to the **rotate** PE beside RORI, not the AES one. It carries
+no S-box, no field arithmetic and no algorithm constant -- the only extension in
+this document that does not -- because ChaCha's software form is already
+add/xor/rotate and the one thing left to fuse is the pair the quarter-round
+always performs together. `rot` is a **left** amount, unlike RORI's right amount
+in the same field, because that is how ChaCha is specified.
+
+`poly26.mac` is R4-type, the shape WGATHER already uses, so rs3 costs no new
+operand path: the collector fetches three sources and the scoreboard tracks rs3
+today. This corrects an assumption made earlier in the design discussion, that
+the machine was 2R1W and a true multiply-accumulate could not be expressed.
+funct2 selects `{scale5, high_part}` over one datapath, and the two halves
+accumulate into separate registers, recombined once per output limb -- exact, not
+approximate: the low accumulator sums the products modulo 2^26 and the high one
+sums their quotients.
+
+The `scale5` forms are not a convenience. The reduction's wrapped terms carry a
+factor of five and the usual `s_i = 5*r_i` precompute reaches 2^28.3, which a
+26-bit operand cannot hold, so without them the key needs nine registers instead
+of five.
+
+| | instrs/block | cycles, cache-resident | cycles, memory-bound |
+| --- | ---: | ---: | ---: |
+| `sw` | 162.3 | 864.4 | 788.0 |
+| `rori` | 123.0 | 801.0 | 769.7 |
+| `xr` | 102.9 **-16%** | 787.2 -1.7% | 749.3 -2.6% |
+| `mac` | 135.5 **+10%** | 601.7 **-24.9%** | 453.2 **-41.1%** |
+| `s1` | 75.5 **-39%** | 515.0 -35.7% | 454.7 **-40.9%** |
+
+**1.69x**, and the contribution splits cleanly: at the memory-bound point the
+ChaCha half contributes nothing and the Poly1305 half contributes everything; at
+the cache-resident point ChaCha is worth 14%.
+
+### 23.2 Why `chacha32.xr` buys almost nothing, and `poly26.mac` buys everything
+
+The per-class counters at `-n64 -b32` settle it, and one row is bit-identical:
+
+| | `rori` | `xr` | `mac` |
+| --- | ---: | ---: | ---: |
+| instructions | 258,908 | 216,540 -16% | 285,876 **+10%** |
+| cycles | 1,751,046 | 1,648,878 | 1,057,384 **-40%** |
+| **loads** | **215,104** | **215,104** | 141,184 **-34%** |
+| **stores** | **92,480** | **92,480** | 80,256 |
+| load latency | 233.89 | 232.67 | 153.37 |
+| scoreboard stall | 94% | **97%** | 87% |
+
+`xr` changes the instruction stream and **nothing about memory** -- its loads and
+stores are the same integers, not merely similar. Both operands of the fused
+xor-rotate were already live and the result goes back to one of them, so the live
+set is unchanged. Deleting 16% of a stream that is 94% stalled on 234-cycle loads
+deletes instructions that were executing in the shadow of a stall; the stall
+fraction rises to 97% because there is less left to fill it with.
+
+`poly26.mac` removes the four `s_i` registers and the 64-bit intermediates.
+Loads fall 34% and the load latency falls by the same 34% -- fewer spill
+accesses leave more of the D-cache for the payload.
+
+> **The instruction that helps is the one that costs more instructions.**
+
+### 23.3 S3: the layout loses, and fusing its traffic is worth 22 points
+
+A quad owns one message. ChaCha's 4x4 state puts one column in each lane, so a
+column round is entirely lane-local and a diagonal round is the same round with
+rows 1, 2 and 3 rotated across the quad.
+
+Poly1305 cannot be split by limb -- 130 bits does not divide by four, and a
+five-lane subgroup would not align to a power of two, so its cross-lane routing
+would stop being a fixed permutation and become a general network. It is split by
+**block** instead:
+
+```
+h4 = (h0 + m1) r^4 + m2 r^3 + m3 r^2 + m4 r   (mod 2^130-5)
+```
+
+and one 64-byte ChaCha block is exactly four Poly1305 blocks, which is exactly
+the quad width. Lane c takes m_{c+1} and r^{4-c}. The accumulator is kept
+**replicated** in all four lanes -- the cross-lane sum is a butterfly, so every
+lane ends with the same h and the serial parts, AAD and tail and length block,
+need no broadcast.
+
+The fused row adds three encodings, one of which is a bit on an existing
+instruction:
+
+```
+chadd.sg4 rd, rs1, rs2      rd = rs1 + rs2 from the next lane of the quad
+chacha32.xr funct7[5]       the same routing on the existing xor-rotate
+poly26.rsum.sg4 rd, rs1     rs1 summed across the quad, into every lane
+```
+
+One route direction covers the whole diagonal round. Its D operand lives in lane
+j+3 and reads A from lane j, and -3 == +1 mod 4, so **all eight reads are from
+lane +1** and the source index is a constant permutation within an aligned four --
+wires, not a crossbar.
+
+| | instrs/block | cycles, cache-resident | cycles, memory-bound |
+| --- | ---: | ---: | ---: |
+| `s1` | 75.5 | 488.6 | 461.1 |
+| `s3` probe | 111.2 **+47%** | 577.3 +18.1% | 468.5 +1.6% |
+| `s3f` fused | 90.0 **+19%** | 463.7 -5.1% | 366.7 **-20.5%** |
+
+The layout by itself loses. Fusing its cross-lane traffic is worth **twenty-two
+percentage points** and turns it into a 1.26x win -- while still retiring 19%
+more instructions than S1.
+
+Stores again: 78,208 for `s1`, 75,520 for the probe, **49,920** for the fused
+row. Each of the six explicit rotations per double-round produced a value that
+had to stay live; fused, nothing moves at all and each lane merely reads its
+neighbour.
+
+### 23.4 S2: the best row this AEAD has, at 3.9x
+
+Four instructions on one funct3 of custom-1, because a sixteen-word state needs
+four bits of selector and the crypto opcodes' three-bit field could not hold it.
+
+```
+chacha.cwr rs1, sel     sel 0..7 key, 8..10 nonce; once per message
+chacha.begin rs1        rs1 is the block counter
+chacha.dr               one double-round, eight quarter-rounds
+chacha.crd rd, sel      x[sel] + init[sel]
+```
+
+The engine keeps the key and the nonce, so `begin` rebuilds the initial state
+from a counter and **a block costs no context writes at all**; `crd` folds
+ChaCha's feed-forward into the read, so there is no final instruction and no
+shadow copy of the initial state. A double-round takes eight cycles, one
+quarter-round per cycle: the arithmetic is one quarter-round wide per lane rather
+than eight.
+
+| | instrs/block | cycles, cache-resident | cycles, memory-bound |
+| --- | ---: | ---: | ---: |
+| `s1` | 75.5 | 477.7 | 468.2 |
+| `s2` | **28.9 -62%** | **112.7 -76%** | **121.4 -74%** |
+
+Around **3.9x**, and 3.52x on the totals at `-b32`. Better than every other tier
+of this AEAD and better than AES-GCM gets from S2.
+
+### 23.5 Two rules, and they are orthogonal
+
+| | S0 | S1 | S2 | S3 |
+| --- | --- | --- | ---: | ---: |
+| AES-GCM | yes | baseline | 2.10x | **3.76x** |
+| ChaCha20-Poly1305 | yes | 1.69x | **3.9x** | 1.26x |
+
+The optimum is at a different tier for each algorithm, and neither ordering is
+arbitrary.
+
+**S2 pays in proportion to the state it evicts from the register file.** AES
+holds four words of state and four of round key, and RV32 has room; its S2
+removes instructions only, and returns 2.10x. ChaCha holds sixteen words plus
+sixteen more for the feed-forward, which is the entire register file; its S2
+removes instructions **and the largest spill source in the kernel**, and returns
+3.9x. It is the only row in this document where instruction count and cycle count
+move together, and that is why.
+
+**S3 pays when the cross-lane traffic can be folded into arithmetic.** AES's
+ShiftRows is a **read-side permutation** -- output column j takes byte r from
+column (j+r)&3 and each lane writes only its own output -- so it folds into
+`aesrm.sg4` as free wiring; GHASH's operands are spread one limb per lane, so the
+gathering folds into `ghmul.sg4`. Together, 3.76x. ChaCha's diagonal step is a
+**write-side state move**: a quarter-round produces four results in four
+different lanes, which one write port cannot express, so only the routing folds
+and the arithmetic stays where it was. 1.26x.
+
+These are rules a third algorithm can be measured against, which a list of
+speedups is not.
+
+### 23.6 What this section got wrong
+
+- **"Poly1305 barely has an S1."** Argued from a machine model that was wrong:
+  the tree is not 2R1W and WGATHER already reads rs3. `poly26.mac` turned out to
+  be the only instruction in this AEAD that matters.
+- **"ChaCha-Poly S3 should not be built."** The probe does lose. The fused row
+  wins by 20.5%.
+- **"The fused S3 instructions should not be built either."** They are worth 22
+  percentage points.
+- **"The S3 probe makes loads 6.6x worse."** It was written with `l[5]`, `u[5]`
+  and loop indices, and the compiler put them on the stack: 165.5 instructions
+  per block and 926,336 loads. Scalarised to `l0..l4` it retires 111.2 and 164,736.
+  The S1 `mac` path had been written with named scalars for exactly this reason
+  and `ghash_step_sg4` had been scalarised for it before that. **A bad result that
+  is internally consistent -- a full profile, a plausible mechanism, and the
+  opposite sign to the prediction -- is the kind most worth re-checking against
+  one's own implementation.**
+- **"6.0x for S2."** Arithmetic error: the wrong block delta. It is 3.9x. The
+  commit was amended from the raw rows rather than from the derived figure.
+- One functional bug survived every performance measurement: the ChaCha engine's
+  first RTL build indexed the key with `csel[2:0]` where it needed `csel-4`,
+  rotating the eight key words by four. Instruction count, cycle count and timing
+  were all correct; only the known-answer test failed.
+
