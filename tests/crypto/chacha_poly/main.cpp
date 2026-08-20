@@ -43,37 +43,41 @@ struct impl_t {
   bool needs_mac;   // issues poly26.mac*; needs VX_CFG_EXT_AUTH_POLY_ENABLE
   bool needs_quad;  // four lanes own one message, so num_msgs must divide by 4
   bool needs_sg4;   // needs VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE and the poly twin
+  bool needs_s2;    // needs VX_CFG_EXT_SYM_CHACHA_S2_ENABLE
 };
 
 const impl_t kImpls[] = {
-  { "chacha_poly_sw",   "sw", false, false, false, false, false },
+  { "chacha_poly_sw",   "sw", false, false, false, false, false, false },
   // Same code with the ratified Zbb/Zbkb RORI in place of slli+srli+or. It is
   // not a cryptographic instruction, so this row is a stronger software
   // baseline, not an instruction-set extension: the ChaCha20 speedup it shows
   // is what any RV32 with the B extension already has.
-  { "chacha_poly_rori", "rori", true, false, false, false, false },
+  { "chacha_poly_rori", "rori", true, false, false, false, false, false },
   // Bit-identical to sw; see kernel.cpp. Measures the apparatus, not the cipher.
-  { "chacha_poly_sw_perm", "sw_perm", false, false, false, false, false },
+  { "chacha_poly_sw_perm", "sw_perm", false, false, false, false, false, false },
   // Rejected as instruments; see kernel.cpp. Correct, bit-identical by
   // construction, and the compiler emits a different instruction count anyway,
   // so their deltas are code differences rather than floor readings.
-  { "chacha_poly_sw_perm2", "sw_perm2(rejected)", false, false, false, false, false },
-  { "chacha_poly_sw_perm3", "sw_perm3(rejected)", false, false, false, false, false },
+  { "chacha_poly_sw_perm2", "sw_perm2(rejected)", false, false, false, false, false, false },
+  { "chacha_poly_sw_perm3", "sw_perm3(rejected)", false, false, false, false, false, false },
   // The one candidate ChaCha20 instruction: the quarter-round's xor and rotate
   // fused. Compared against the rori row rather than sw, because rori is the
   // honest baseline -- any RV32 with the B extension already has it.
-  { "chacha_poly_xr",   "xr", true, true, false, false, false },
+  { "chacha_poly_xr",   "xr", true, true, false, false, false, false },
   // Poly1305's convolution as three-source MACs with ChaCha20 left alone, so
   // the delta against sw is the authenticator by itself.
-  { "chacha_poly_mac",  "mac", false, false, true, false, false },
+  { "chacha_poly_mac",  "mac", false, false, true, false, false, false },
   // Both halves: the complete S1 row for this AEAD.
-  { "chacha_poly_s1",   "s1", true, true, true, false, false },
+  { "chacha_poly_s1",   "s1", true, true, true, false, false, false },
   // S3 probe: a quad owns one message, so a warp carries four instead of
   // sixteen. Built from instructions that already exist, so it prices the
   // layout on its own -- what hw_s3 does for AES-GCM before aesrm.sg4 existed.
-  { "chacha_poly_s3",   "s3", true, true, true, true, false },
+  { "chacha_poly_s3",   "s3", true, true, true, true, false, false },
   // The same layout with its cross-lane cost folded into the arithmetic.
-  { "chacha_poly_s3f",  "s3f", true, true, true, true, true },
+  { "chacha_poly_s3f",  "s3f", true, true, true, true, true, false },
+  // S2: one lane still owns one message, but ChaCha20's whole 512-bit state
+  // moves into a per-lane context and one instruction is a double-round.
+  { "chacha_poly_s2",   "s2", false, false, true, false, false, true },
 };
 
 const uint32_t kNumImpls = (uint32_t)(sizeof(kImpls) / sizeof(kImpls[0]));
@@ -405,6 +409,12 @@ int main(int argc, char** argv) {
     std::printf("impl '%s' has four lanes per message, so the message count "
                 "must be a multiple of 4, got %u\n",
                 kImpls[g_impl].label, g_num_msgs);
+    return 1;
+  }
+  if (kr != VX_SUCCESS && kImpls[g_impl].needs_s2) {
+    std::printf("SKIPPED: impl '%s' needs the stateful ChaCha engine; rebuild "
+                "with CONFIGS=\"-DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE\".\n",
+                kImpls[g_impl].label);
     return 1;
   }
   if (kr != VX_SUCCESS && kImpls[g_impl].needs_sg4) {

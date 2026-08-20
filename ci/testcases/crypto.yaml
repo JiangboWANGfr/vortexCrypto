@@ -283,6 +283,21 @@ tests:
   configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE
   vars:
     OPTS: -n64 -b4 -t37 -a20 -i9
+# The stateful ChaCha20 engine. Both drivers: the engine carries architectural
+# state across instructions, and its first RTL build computed the right
+# instruction count with the wrong ciphertext -- a single wrong index in the
+# feed-forward read, invisible to every measurement except the known-answer
+# test.
+- id: crypto-chacha-poly-s2
+  via: make-run
+  drivers:
+  - simx
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE
+  vars:
+    OPTS: -n64 -b4 -t37 -a20 -i10
 - id: crypto-aes-gcm-s2-aes
   via: make-run
   drivers:

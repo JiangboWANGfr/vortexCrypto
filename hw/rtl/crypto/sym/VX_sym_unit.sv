@@ -35,10 +35,15 @@ module VX_sym_unit import VX_gpu_pkg::*; #(
     localparam BLOCK_SIZE  = `VX_CFG_NUM_SYM_BLOCKS;
     localparam NUM_LANES   = `VX_CFG_NUM_SYM_LANES;
     localparam PARTIAL_BW  = (BLOCK_SIZE != `VX_CFG_ISSUE_WIDTH) || (NUM_LANES != `VX_CFG_SIMD_WIDTH);
+`ifdef VX_CFG_EXT_SYM_CHACHA_S2_ENABLE
+    localparam PE_COUNT    = 3;
+`else
     localparam PE_COUNT    = 2;
+`endif
     localparam PE_SEL_BITS = `CLOG2(PE_COUNT);
     localparam PE_IDX_AES  = 0;
     localparam PE_IDX_ROT  = 1;
+    localparam PE_IDX_CHA  = 2;
 
     VX_execute_if #(
         .data_t (sym_execute_t)
@@ -80,7 +85,19 @@ module VX_sym_unit import VX_gpu_pkg::*; #(
                    || (per_block_execute_if[block_idx].data.op_type == INST_OP_BITS'(INST_SYM_CHADD_SG4))
     `endif
                    ;
+    `ifdef VX_CFG_EXT_SYM_CHACHA_S2_ENABLE
+        // The stateful ChaCha engine keeps a whole 512-bit state per lane and
+        // shares nothing with either of the others, so it gets its own PE.
+        wire is_cha = (per_block_execute_if[block_idx].data.op_type == INST_OP_BITS'(INST_SYM_CHA_CWR))
+                   || (per_block_execute_if[block_idx].data.op_type == INST_OP_BITS'(INST_SYM_CHA_CRD))
+                   || (per_block_execute_if[block_idx].data.op_type == INST_OP_BITS'(INST_SYM_CHA_BEGIN))
+                   || (per_block_execute_if[block_idx].data.op_type == INST_OP_BITS'(INST_SYM_CHA_DR));
+        wire [`UP(PE_SEL_BITS)-1:0] pe_select = is_cha ? PE_SEL_BITS'(PE_IDX_CHA)
+                                              : (is_rot ? PE_SEL_BITS'(PE_IDX_ROT)
+                                                        : PE_SEL_BITS'(PE_IDX_AES));
+    `else
         wire [`UP(PE_SEL_BITS)-1:0] pe_select = is_rot ? PE_IDX_ROT : PE_IDX_AES;
+    `endif
 
         VX_pe_switch #(
             .PE_COUNT    (PE_COUNT),
@@ -117,6 +134,18 @@ module VX_sym_unit import VX_gpu_pkg::*; #(
             .execute_if (pe_execute_if[PE_IDX_ROT]),
             .result_if  (pe_result_if[PE_IDX_ROT])
         );
+
+    `ifdef VX_CFG_EXT_SYM_CHACHA_S2_ENABLE
+        VX_sym_chacha #(
+            .INSTANCE_ID (`SFORMATF(("%s-cha%0d", INSTANCE_ID, block_idx))),
+            .NUM_LANES   (NUM_LANES)
+        ) sym_chacha (
+            .clk        (clk),
+            .reset      (reset),
+            .execute_if (pe_execute_if[PE_IDX_CHA]),
+            .result_if  (pe_result_if[PE_IDX_CHA])
+        );
+    `endif
     end
 
     VX_lane_gather #(

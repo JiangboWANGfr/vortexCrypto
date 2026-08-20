@@ -57,6 +57,23 @@ private:
     return aes_ctx_[wid * VX_CFG_NUM_THREADS + lane];
   }
 #endif
+
+#ifdef VX_CFG_EXT_SYM_CHACHA_S2_ENABLE
+  // The whole ChaCha state, plus the key and nonce that let BEGIN rebuild the
+  // initial state from a counter alone and CRD add it back on the way out.
+  struct ChaCtx {
+    uint32_t x[16] = {0};
+    uint32_t k[8] = {0};
+    uint32_t n[3] = {0};
+    uint32_t ctr = 0;
+  };
+
+  std::vector<ChaCtx> cha_ctx_;
+
+  ChaCtx& cha_of(uint32_t wid, uint32_t lane) {
+    return cha_ctx_[wid * VX_CFG_NUM_THREADS + lane];
+  }
+#endif
 };
 
 }

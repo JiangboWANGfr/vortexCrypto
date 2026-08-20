@@ -1190,6 +1190,27 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
   } break;
 #endif
   case Opcode::EXT2: {
+#ifdef VX_CFG_EXT_SYM_CHACHA_S2_ENABLE
+    if (funct3 == 0x1) {
+      // Stateful ChaCha20 engine: funct7[6:5] the class, funct7[3:0] the
+      // context word -- a sixteen-word state needs four bits, which the crypto
+      // opcodes' three-bit sel could not hold.
+      instr->set_fu_type(FUType::SYM);
+      IntrSymArgs ca{};
+      ca.shamt = funct7 & 0xf;
+      switch ((funct7 >> 5) & 0x3) {
+      case 0: instr->set_op_type(SymType::CHA_CWR);
+              instr->set_src_reg(0, rs1, RegType::Integer); break;
+      case 1: instr->set_op_type(SymType::CHA_CRD);
+              instr->set_dest_reg(rd, RegType::Integer); break;
+      case 2: instr->set_op_type(SymType::CHA_BEGIN);
+              instr->set_src_reg(0, rs1, RegType::Integer); break;
+      default: instr->set_op_type(SymType::CHA_DR); break;
+      }
+      instr->set_args(ca);
+      break;
+    }
+#endif
     switch (funct3) {
     case 0: { // WGATHER
       instr->set_op_type(WgatherType::WGATHER);

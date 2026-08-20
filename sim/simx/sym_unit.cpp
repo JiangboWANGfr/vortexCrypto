@@ -89,6 +89,9 @@ SymUnit::SymUnit(const SimContext& ctx, const char* name, Core* core)
 #ifdef VX_CFG_EXT_SYM_S2_ENABLE
   , aes_ctx_((size_t)VX_CFG_NUM_WARPS * VX_CFG_NUM_THREADS)
 #endif
+#ifdef VX_CFG_EXT_SYM_CHACHA_S2_ENABLE
+  , cha_ctx_((size_t)VX_CFG_NUM_WARPS * VX_CFG_NUM_THREADS)
+#endif
 {}
 
 uint32_t SymUnit::latency_of(const instr_trace_t* trace) const {
@@ -221,6 +224,55 @@ void SymUnit::execute(instr_trace_t* trace) {
     }
     return;
   }
+
+#ifdef VX_CFG_EXT_SYM_CHACHA_S2_ENABLE
+  if (sym_type == SymType::CHA_CWR   || sym_type == SymType::CHA_CRD
+   || sym_type == SymType::CHA_BEGIN || sym_type == SymType::CHA_DR) {
+    static const uint32_t kSigma[4] = {0x61707865, 0x3320646e,
+                                       0x79622d32, 0x6b206574};
+    const uint32_t sel = symArgs.shamt & 0xf;
+    for (uint32_t t = 0; t < num_threads; ++t) {
+      if (!tmask.test(t))
+        continue;
+      auto& c = this->cha_of(trace->wid, t);
+      switch (sym_type) {
+      case SymType::CHA_CWR:
+        if (sel < 8) { c.k[sel] = (uint32_t)rs1_data[t].u; }
+        else         { c.n[sel - 8] = (uint32_t)rs1_data[t].u; }
+        break;
+      case SymType::CHA_BEGIN:
+        c.ctr = (uint32_t)rs1_data[t].u;
+        for (int j = 0; j < 4; ++j) c.x[j] = kSigma[j];
+        for (int j = 0; j < 8; ++j) c.x[4 + j] = c.k[j];
+        c.x[12] = c.ctr;
+        for (int j = 0; j < 3; ++j) c.x[13 + j] = c.n[j];
+        break;
+      case SymType::CHA_DR: {
+        // Eight quarter-rounds: four column, then four diagonal.
+        static const int kIdx[8][4] = {
+          {0,4,8,12},{1,5,9,13},{2,6,10,14},{3,7,11,15},
+          {0,5,10,15},{1,6,11,12},{2,7,8,13},{3,4,9,14}};
+        for (int q = 0; q < 8; ++q) {
+          uint32_t& a = c.x[kIdx[q][0]]; uint32_t& b = c.x[kIdx[q][1]];
+          uint32_t& cc = c.x[kIdx[q][2]]; uint32_t& d = c.x[kIdx[q][3]];
+          a += b; d = rol32(d ^ a, 16);
+          cc += d; b = rol32(b ^ cc, 12);
+          a += b; d = rol32(d ^ a, 8);
+          cc += d; b = rol32(b ^ cc, 7);
+        }
+      } break;
+      case SymType::CHA_CRD: {
+        uint32_t init = (sel < 4) ? kSigma[sel]
+                      : (sel < 12) ? c.k[sel - 4]
+                      : (sel == 12) ? c.ctr : c.n[sel - 13];
+        rd_data[t].u = c.x[sel] + init;
+      } break;
+      default: break;
+      }
+    }
+    return;
+  }
+#endif
 
 #ifdef VX_CFG_EXT_SYM_CHACHA_ENABLE
   if (sym_type == SymType::CHACHA_XR) {

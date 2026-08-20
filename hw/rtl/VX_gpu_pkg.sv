@@ -558,6 +558,17 @@ package VX_gpu_pkg;
     // of the aligned quad. Opt-in behind VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE,
     // which also gives chacha32.xr a route bit in funct7[5].
     localparam INST_SYM_CHADD_SG4 = 4'hB;
+    // Stateful per-lane ChaCha20 engine, opt-in behind
+    // VX_CFG_EXT_SYM_CHACHA_S2_ENABLE. One lane holds a whole 512-bit state in
+    // a context keyed by (warp, lane); one instruction advances a double-round.
+    // CRD returns x[sel] + init[sel], folding the feed-forward into the read so
+    // that no separate final instruction is needed, and BEGIN takes the counter
+    // in rs1 and rebuilds the initial state from the stored key and nonce, so a
+    // block costs no context writes at all.
+    localparam INST_SYM_CHA_CWR   = 4'hC;
+    localparam INST_SYM_CHA_CRD   = 4'hD;
+    localparam INST_SYM_CHA_BEGIN = 4'hE;
+    localparam INST_SYM_CHA_DR    = 4'hF;
     localparam INST_SYM_BITS      = 4;
 `endif
 

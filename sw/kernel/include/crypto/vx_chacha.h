@@ -162,6 +162,44 @@ extern "C" {
 })
 #endif
 
+// Stateful per-lane ChaCha20 engine (section 23 of the crypto proposal). One
+// lane holds a whole 512-bit state in a context keyed by (warp, lane) and one
+// instruction advances a double-round.
+//
+//   vx_cha_cwr(v, sel)   sel 0..7 key word, 8..10 nonce word; once per message
+//   vx_cha_begin(ctr)    rebuilds the initial state from the stored key, nonce
+//                        and this counter -- a block costs no context writes
+//   vx_cha_dr()          one double-round, eight quarter-rounds
+//   vx_cha_crd(sel)      x[sel] + init[sel], so ChaCha's feed-forward is folded
+//                        into the read and there is no final instruction
+//
+// Custom-1 (0x2B) funct3 1, funct7[6:5] the class and funct7[3:0] the word --
+// a sixteen-word state needs four bits of selector, which the crypto opcodes'
+// three-bit field could not hold. `sel` must be a compile-time constant.
+//
+// Everything but the read is encoded rd = x0, so ordering comes from the unit
+// rather than the scoreboard; the volatile asm is what keeps the compiler from
+// reordering the chain.
+#ifdef VX_CFG_EXT_SYM_CHACHA_S2_ENABLE
+#define vx_cha_cwr(v, sel)                                                   \
+    __asm__ volatile (".insn r %0, 1, %1, x0, %2, x0"                        \
+                      :: "i"(0x2B), "i"((sel) & 0xf), "r"((uint32_t)(v)))
+
+#define vx_cha_begin(ctr)                                                    \
+    __asm__ volatile (".insn r %0, 1, %1, x0, %2, x0"                        \
+                      :: "i"(0x2B), "i"(0x40), "r"((uint32_t)(ctr)))
+
+#define vx_cha_dr()                                                          \
+    __asm__ volatile (".insn r %0, 1, %1, x0, x0, x0"                        \
+                      :: "i"(0x2B), "i"(0x60))
+
+#define vx_cha_crd(sel) ({                                                   \
+    uint32_t __out;                                                          \
+    __asm__ volatile (".insn r %1, 1, %2, %0, x0, x0"                        \
+                      : "=r"(__out) : "i"(0x2B), "i"(0x20 | ((sel) & 0xf))); \
+    __out; })
+#endif
+
 #ifdef __cplusplus
 }
 #endif

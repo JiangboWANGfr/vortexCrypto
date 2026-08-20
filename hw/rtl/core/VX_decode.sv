@@ -991,6 +991,37 @@ module VX_decode import
             end
         `endif
             INST_EXT2: begin
+            `ifdef VX_CFG_EXT_SYM_CHACHA_S2_ENABLE
+                // Stateful per-lane ChaCha20 engine. One funct3 carries all
+                // four operations: funct7[6:5] selects the class and
+                // funct7[3:0] the context word, which a sixteen-word state
+                // needs and the crypto opcodes' three-bit sel could not hold.
+                //
+                //   00 -> cwr rs1, sel   sel 0..7 key, 8..10 nonce
+                //   01 -> crd rd, sel    rd = x[sel] + init[sel]
+                //   10 -> begin rs1      rs1 is the block counter
+                //   11 -> dr             one double-round
+                if (funct3 == 3'h1) begin
+                    ex_type = EX_SYM;
+                    op_args.sym.bs = 2'b0;
+                    op_args.sym.shamt = {1'b0, funct7[3:0]};
+                    case (funct7[6:5])
+                        2'h0: begin
+                            op_type = INST_OP_BITS'(INST_SYM_CHA_CWR);
+                            `USED_IREG (rs1);
+                        end
+                        2'h1: begin
+                            op_type = INST_OP_BITS'(INST_SYM_CHA_CRD);
+                            `USED_IREG (rd);
+                        end
+                        2'h2: begin
+                            op_type = INST_OP_BITS'(INST_SYM_CHA_BEGIN);
+                            `USED_IREG (rs1);
+                        end
+                        default: op_type = INST_OP_BITS'(INST_SYM_CHA_DR);
+                    endcase
+                end
+            `endif
                 case (funct3)
                 3'h0: begin // WGATHER: R4-type, funct2=src_lane
                     ex_type = EX_ALU;
