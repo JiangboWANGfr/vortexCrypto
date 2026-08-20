@@ -36,6 +36,14 @@ EXT_AUTH_SG4=${VX_DE10PRO_EXT_AUTH_SG4:-0}
 # requires the other -- only its own parent unit.
 EXT_SYM_S2=${VX_DE10PRO_EXT_SYM_S2:-0}
 EXT_AUTH_S2=${VX_DE10PRO_EXT_AUTH_S2:-0}
+# ChaCha20-Poly1305's extensions, section 23. All off by default. The two SG4
+# ones require their own non-SG4 parent: chacha32.xr's route bit lives in an
+# encoding the parent defines, and poly26.rsum.sg4 shares the Poly PE.
+EXT_CHACHA=${VX_DE10PRO_EXT_CHACHA:-0}
+EXT_POLY=${VX_DE10PRO_EXT_POLY:-0}
+EXT_CHACHA_SG4=${VX_DE10PRO_EXT_CHACHA_SG4:-0}
+EXT_POLY_SG4=${VX_DE10PRO_EXT_POLY_SG4:-0}
+EXT_CHACHA_S2=${VX_DE10PRO_EXT_CHACHA_S2:-0}
 
 if [[ ! "$NUM_CORES" =~ ^[1-9][0-9]*$ \
    || ! "$NUM_WARPS" =~ ^[1-9][0-9]*$ \
@@ -65,6 +73,15 @@ if [[ "$EXT_SYM" != 0 ]]; then
     if [[ "$EXT_SYM_S2" != 0 ]]; then
         EXT_MACROS+=('VX_CFG_EXT_SYM_S2_ENABLE=1')
     fi
+    if [[ "$EXT_CHACHA" != 0 ]]; then
+        EXT_MACROS+=('VX_CFG_EXT_SYM_CHACHA_ENABLE=1')
+    fi
+    if [[ "$EXT_CHACHA_SG4" != 0 ]]; then
+        EXT_MACROS+=('VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE=1')
+    fi
+    if [[ "$EXT_CHACHA_S2" != 0 ]]; then
+        EXT_MACROS+=('VX_CFG_EXT_SYM_CHACHA_S2_ENABLE=1')
+    fi
 fi
 if [[ "$EXT_AUTH" != 0 ]]; then
     EXT_MACROS+=('VX_CFG_EXT_AUTH_ENABLE=1')
@@ -77,6 +94,20 @@ if [[ "$EXT_AUTH" != 0 ]]; then
     if [[ "$EXT_AUTH_S2" != 0 ]]; then
         EXT_MACROS+=('VX_CFG_EXT_AUTH_S2_ENABLE=1')
     fi
+    if [[ "$EXT_POLY" != 0 ]]; then
+        EXT_MACROS+=('VX_CFG_EXT_AUTH_POLY_ENABLE=1')
+    fi
+    if [[ "$EXT_POLY_SG4" != 0 ]]; then
+        EXT_MACROS+=('VX_CFG_EXT_AUTH_POLY_SG4_ENABLE=1')
+    fi
+fi
+if [[ "$EXT_CHACHA_SG4" != 0 && "$EXT_CHACHA" == 0 ]]; then
+    echo "error: VX_DE10PRO_EXT_CHACHA_SG4 requires VX_DE10PRO_EXT_CHACHA" >&2
+    exit 1
+fi
+if [[ "$EXT_POLY_SG4" != 0 && "$EXT_POLY" == 0 ]]; then
+    echo "error: VX_DE10PRO_EXT_POLY_SG4 requires VX_DE10PRO_EXT_POLY" >&2
+    exit 1
 fi
 if [[ "$EXT_AUTH_SG4" != 0 && "$EXT_SYM_SG4" == 0 ]]; then
     echo "error: VX_DE10PRO_EXT_AUTH_SG4 requires VX_DE10PRO_EXT_SYM_SG4" >&2
