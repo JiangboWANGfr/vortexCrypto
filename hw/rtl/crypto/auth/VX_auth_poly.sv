@@ -63,6 +63,33 @@ module VX_auth_poly import VX_gpu_pkg::*; #(
     wire is_high   = execute_if.data.op_args.sym.bs[0];
     wire is_scale5 = execute_if.data.op_args.sym.bs[1];
 
+`ifdef VX_CFG_EXT_AUTH_POLY_SG4_ENABLE
+    // poly26.rsum.sg4: the four partial sums of the block-parallel form folded
+    // into every lane at once. A butterfly of two shuffles and two adds per
+    // limb becomes one instruction, and because every lane receives the total,
+    // the serial parts of the AEAD afterwards need no broadcast.
+    //
+    // PRECONDITION: the quad must be converged; the source lanes' masks are not
+    // consulted, as for aesrm.sg4 and ghmul.sg4.
+    //
+    // Software must present limbs already normalised below 2^26 -- four of them
+    // then sum below 2^28 and the 32-bit result cannot wrap. That is a stated
+    // precondition rather than hardware behaviour: the accumulators the
+    // multiply leaves behind reach 2^30.4 and four of THOSE would overflow.
+    if ((NUM_LANES < 4) || ((NUM_LANES % 4) != 0)) begin : g_sg4_guard
+        VX_auth_poly_sg4_requires_NUM_LANES_multiple_of_4 __config_error();
+    end
+    wire is_rsum = (execute_if.data.op_type == INST_OP_BITS'(INST_AUTH_POLY_RSUM));
+    wire [NUM_LANES-1:0][XLEN-1:0] rsum_result;
+    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_rsum
+        localparam int Q = (i / 4) * 4;
+        assign rsum_result[i] = XLEN'(execute_if.data.rs1_data[Q+0][31:0]
+                                    + execute_if.data.rs1_data[Q+1][31:0]
+                                    + execute_if.data.rs1_data[Q+2][31:0]
+                                    + execute_if.data.rs1_data[Q+3][31:0]);
+    end
+`endif
+
     wire [NUM_LANES-1:0][XLEN-1:0] poly_result;
 
     for (genvar i = 0; i < NUM_LANES; ++i) begin : g_lanes
@@ -72,7 +99,12 @@ module VX_auth_poly import VX_gpu_pkg::*; #(
         wire [60:0] scaled = is_scale5 ? ({3'b0, prod} + {1'b0, prod, 2'b0})
                                        : {3'b0, prod};
         wire [31:0] part = is_high ? scaled[57:26] : {6'b0, scaled[25:0]};
+`ifdef VX_CFG_EXT_AUTH_POLY_SG4_ENABLE
+        assign poly_result[i] = is_rsum ? rsum_result[i]
+                              : XLEN'(execute_if.data.rs1_data[i][31:0] + part);
+`else
         assign poly_result[i] = XLEN'(execute_if.data.rs1_data[i][31:0] + part);
+`endif
     end
 
     VX_elastic_buffer #(

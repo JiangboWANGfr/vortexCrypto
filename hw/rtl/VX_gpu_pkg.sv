@@ -554,6 +554,10 @@ package VX_gpu_pkg;
     // arithmetic and no algorithm constant, only the fusion of the two
     // operations the quarter-round always performs together.
     localparam INST_SYM_CHACHA_XR = 4'hA;
+    // Subgroup add for ChaCha's diagonal round: rs2 is read from the next lane
+    // of the aligned quad. Opt-in behind VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE,
+    // which also gives chacha32.xr a route bit in funct7[5].
+    localparam INST_SYM_CHADD_SG4 = 4'hB;
     localparam INST_SYM_BITS      = 4;
 `endif
 
@@ -581,6 +585,9 @@ package VX_gpu_pkg;
     // VX_CFG_EXT_AUTH_POLY_ENABLE. R4-type: funct2 selects {scale5, high_part},
     // which is four assembler aliases over one datapath.
     localparam INST_AUTH_POLY_MAC = 4'hA;
+    // Sum one 26-bit limb across the aligned quad, for Poly1305's block-parallel
+    // reduction. Opt-in behind VX_CFG_EXT_AUTH_POLY_SG4_ENABLE.
+    localparam INST_AUTH_POLY_RSUM = 4'hB;
     localparam INST_AUTH_BITS     = 4;
 `endif
 

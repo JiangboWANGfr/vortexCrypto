@@ -260,6 +260,29 @@ tests:
   configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE
   vars:
     OPTS: -n64 -b4 -t37 -a20 -i7
+# The ChaCha20-Poly1305 S3 rows. The probe uses only instructions that already
+# exist; the fused row adds three that read across the quad, so like the SG4 AES
+# forms they are undefined on a diverged quad and both models must implement the
+# same rule. Both drivers for the fused row for that reason.
+- id: crypto-chacha-poly-s3
+  via: make-run
+  drivers:
+  - simx
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE
+  vars:
+    OPTS: -n64 -b4 -t37 -a20 -i8
+- id: crypto-chacha-poly-s3f
+  via: make-run
+  drivers:
+  - simx
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE
+  vars:
+    OPTS: -n64 -b4 -t37 -a20 -i9
 - id: crypto-aes-gcm-s2-aes
   via: make-run
   drivers:

@@ -224,11 +224,26 @@ void SymUnit::execute(instr_trace_t* trace) {
 
 #ifdef VX_CFG_EXT_SYM_CHACHA_ENABLE
   if (sym_type == SymType::CHACHA_XR) {
+    // bs[0] routes rs2 from the next lane of the aligned quad. The source
+    // lane's mask is deliberately not consulted, as for the SG4 AES forms.
+    const bool route = (symArgs.bs & 0x1) != 0;
     for (uint32_t t = 0; t < num_threads; ++t) {
       if (!tmask.test(t))
         continue;
-      uint32_t v = (uint32_t)rs1_data[t].u ^ (uint32_t)rs2_data[t].u;
+      const uint32_t src = route ? ((t & ~3u) | ((t + 1) & 3u)) : t;
+      uint32_t v = (uint32_t)rs1_data[t].u ^ (uint32_t)rs2_data[src].u;
       rd_data[t].u = rol32(v, shamt);
+    }
+    return;
+  }
+#endif
+#ifdef VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE
+  if (sym_type == SymType::CHADD_SG4) {
+    for (uint32_t t = 0; t < num_threads; ++t) {
+      if (!tmask.test(t))
+        continue;
+      const uint32_t src = (t & ~3u) | ((t + 1) & 3u);
+      rd_data[t].u = (uint32_t)rs1_data[t].u + (uint32_t)rs2_data[src].u;
     }
     return;
   }

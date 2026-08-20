@@ -537,12 +537,372 @@ __kernel void chacha_poly_rori(kernel_arg_t* __UNIFORM__ arg) {
   chacha_poly_body<rot_hw, 0>(arg);
 }
 
+#if defined(VX_CFG_EXT_SYM_CHACHA_ENABLE) && defined(VX_CFG_EXT_AUTH_POLY_ENABLE)
+// ---------------------------------------------------------------------------
+// S3 probe: a quad of four lanes owns one message. No new instructions -- the
+// point is to price the LAYOUT before any is built, exactly as section 17 did
+// for AES-GCM.
+//
+// ChaCha20's state is a 4x4 matrix and lane c holds column c, so a column round
+// is entirely lane-local and a diagonal round is the same round with rows 1, 2
+// and 3 rotated across the quad by 1, 2 and 3. Poly1305 cannot be split by limb
+// -- 130 bits does not divide by four -- so it is split by BLOCK instead:
+// expanding four updates gives
+//
+//   h4 = (h0 + m1)*r^4 + m2*r^3 + m3*r^2 + m4*r   (mod 2^130-5)
+//
+// and one 64-byte ChaCha block is exactly four Poly1305 blocks, which is
+// exactly the quad width. Lane c takes m_{c+1} and r^{4-c}.
+//
+// The accumulator is kept REPLICATED in all four lanes: the cross-lane sum is a
+// butterfly, so every lane ends with the same h, and the serial parts -- AAD,
+// the tail, the length block -- then need no broadcast and are simply computed
+// redundantly by all four.
+//
+// Expect this to retire MORE instructions than S1, not fewer: the column round
+// is no cheaper, the diagonal round adds six rotations per double-round, and
+// Poly1305 gains a cross-lane reduction. What it removes is register pressure --
+// eight live words per lane against thirty-two -- and that is the axis the
+// poly26.mac result says actually sets the cycle count.
+
+__attribute__((always_inline))
+inline uint32_t sg4_rot(uint32_t v, uint32_t desc) {
+  size_t r;
+  __asm__ volatile (".insn r %1, 7, 1, %0, %2, %3"
+                    : "=r"(r)
+                    : "i"(RISCV_CUSTOM0), "r"((size_t)v), "r"((size_t)desc));
+  return (uint32_t)r;
+}
+
+// SHFL_IDX with a per-lane source index and mask 0x3c, which is the
+// width-portable way to say "the lane at this position in my own quad".
+__attribute__((always_inline))
+inline uint32_t sg4_desc(uint32_t src_lane) {
+  return (0x3cu << 12) | (3u << 6) | (src_lane & 3u);
+}
+
+// out = a * b mod 2^130-5, both in five 26-bit limbs. Used only to raise r to
+// its second, third and fourth powers, once per message.
+__attribute__((always_inline))
+inline void poly_mulmod(const uint32_t a[5], const uint32_t b[5], uint32_t out[5]) {
+  // Named scalars, not arrays indexed by a loop counter: the latter go to the
+  // stack, and in a kernel whose cycles are set by load traffic that is the
+  // whole measurement. The S1 mac path is written the same way for the same
+  // reason.
+  const uint32_t a0 = a[0], a1 = a[1], a2 = a[2], a3 = a[3], a4 = a[4];
+  const uint32_t b0 = b[0], b1 = b[1], b2 = b[2], b3 = b[3], b4 = b[4];
+  uint32_t l0 = 0, l1 = 0, l2 = 0, l3 = 0, l4 = 0;
+  uint32_t u0 = 0, u1 = 0, u2 = 0, u3 = 0, u4 = 0;
+
+  l0 = vx_poly26_macl (l0, a0, b0); u0 = vx_poly26_mach (u0, a0, b0);
+  l0 = vx_poly26_macl5(l0, a1, b4); u0 = vx_poly26_mach5(u0, a1, b4);
+  l0 = vx_poly26_macl5(l0, a2, b3); u0 = vx_poly26_mach5(u0, a2, b3);
+  l0 = vx_poly26_macl5(l0, a3, b2); u0 = vx_poly26_mach5(u0, a3, b2);
+  l0 = vx_poly26_macl5(l0, a4, b1); u0 = vx_poly26_mach5(u0, a4, b1);
+
+  l1 = vx_poly26_macl (l1, a0, b1); u1 = vx_poly26_mach (u1, a0, b1);
+  l1 = vx_poly26_macl (l1, a1, b0); u1 = vx_poly26_mach (u1, a1, b0);
+  l1 = vx_poly26_macl5(l1, a2, b4); u1 = vx_poly26_mach5(u1, a2, b4);
+  l1 = vx_poly26_macl5(l1, a3, b3); u1 = vx_poly26_mach5(u1, a3, b3);
+  l1 = vx_poly26_macl5(l1, a4, b2); u1 = vx_poly26_mach5(u1, a4, b2);
+
+  l2 = vx_poly26_macl (l2, a0, b2); u2 = vx_poly26_mach (u2, a0, b2);
+  l2 = vx_poly26_macl (l2, a1, b1); u2 = vx_poly26_mach (u2, a1, b1);
+  l2 = vx_poly26_macl (l2, a2, b0); u2 = vx_poly26_mach (u2, a2, b0);
+  l2 = vx_poly26_macl5(l2, a3, b4); u2 = vx_poly26_mach5(u2, a3, b4);
+  l2 = vx_poly26_macl5(l2, a4, b3); u2 = vx_poly26_mach5(u2, a4, b3);
+
+  l3 = vx_poly26_macl (l3, a0, b3); u3 = vx_poly26_mach (u3, a0, b3);
+  l3 = vx_poly26_macl (l3, a1, b2); u3 = vx_poly26_mach (u3, a1, b2);
+  l3 = vx_poly26_macl (l3, a2, b1); u3 = vx_poly26_mach (u3, a2, b1);
+  l3 = vx_poly26_macl (l3, a3, b0); u3 = vx_poly26_mach (u3, a3, b0);
+  l3 = vx_poly26_macl5(l3, a4, b4); u3 = vx_poly26_mach5(u3, a4, b4);
+
+  l4 = vx_poly26_macl (l4, a0, b4); u4 = vx_poly26_mach (u4, a0, b4);
+  l4 = vx_poly26_macl (l4, a1, b3); u4 = vx_poly26_mach (u4, a1, b3);
+  l4 = vx_poly26_macl (l4, a2, b2); u4 = vx_poly26_mach (u4, a2, b2);
+  l4 = vx_poly26_macl (l4, a3, b1); u4 = vx_poly26_mach (u4, a3, b1);
+  l4 = vx_poly26_macl (l4, a4, b0); u4 = vx_poly26_mach (u4, a4, b0);
+
+  uint32_t c;
+  uint32_t o0 = l0 & 0x3ffffff; c = (l0 >> 26) + u0;
+  l1 += c; uint32_t o1 = l1 & 0x3ffffff; c = (l1 >> 26) + u1;
+  l2 += c; uint32_t o2 = l2 & 0x3ffffff; c = (l2 >> 26) + u2;
+  l3 += c; uint32_t o3 = l3 & 0x3ffffff; c = (l3 >> 26) + u3;
+  l4 += c; uint32_t o4 = l4 & 0x3ffffff; c = (l4 >> 26) + u4;
+  o0 += c * 5; c = o0 >> 26; o0 &= 0x3ffffff; o1 += c;
+  out[0] = o0; out[1] = o1; out[2] = o2; out[3] = o3; out[4] = o4;
+}
+
+// FUSED == 0 uses the instructions that already exist and pays the layout's
+// cross-lane cost explicitly; FUSED == 1 folds that cost into chadd.sg4,
+// chacha32.xr's route bit and poly26.rsum.sg4.
+template <typename R, int FUSED = 0>
+inline void chacha_poly_s3_body(kernel_arg_t* __UNIFORM__ arg) {
+  const uint32_t lane = (uint32_t)vx_thread_id() & 3u;
+  const uint32_t rot1 = sg4_desc((lane + 1) & 3);
+  const uint32_t rot2 = sg4_desc((lane + 2) & 3);
+  const uint32_t rot3 = sg4_desc((lane + 3) & 3);
+  const uint32_t inv1 = sg4_desc((lane + 3) & 3);
+  const uint32_t inv2 = sg4_desc((lane + 2) & 3);
+  const uint32_t inv3 = sg4_desc((lane + 1) & 3);
+
+  const uint32_t* key = (const uint32_t*)arg->key_addr;
+  const uint32_t num_msgs = arg->num_msgs;
+  const uint32_t blocks = arg->blocks_per_msg;
+  const uint32_t tail = arg->tail_bytes;
+  const uint32_t aad_bytes = arg->aad_bytes;
+  const uint8_t* aad = (const uint8_t*)arg->aad_addr;
+  const uint32_t msg_bytes = CHACHA_BLOCK_BYTES * blocks + tail;
+  const uint32_t words = (CHACHA_BLOCK_BYTES / 4)
+                       * (blocks + (tail != 0u ? 1u : 0u));
+  const uint8_t* nonce_base = (const uint8_t*)arg->nonce_addr;
+  const uint32_t* src_base = (const uint32_t*)arg->src_addr;
+  uint32_t* dst_base = (uint32_t*)arg->dst_addr;
+  uint32_t* tag_base = (uint32_t*)arg->tag_addr;
+
+  uint32_t k[8];
+  for (int i = 0; i < 8; ++i) {
+    k[i] = key[i];
+  }
+
+  // The state's first row is the sigma constant; lane c owns element c.
+  const uint32_t sigma[4] = {0x61707865, 0x3320646e, 0x79622d32, 0x6b206574};
+  const uint32_t a_init = sigma[lane];
+  const uint32_t b_init = k[lane];
+  const uint32_t c_init = k[4 + lane];
+
+  const uint32_t stride = (gridDim.x * blockDim.x) / 4u;
+  for (uint32_t msg = (blockIdx.x * blockDim.x + threadIdx.x) / 4u;
+       msg < num_msgs; msg += stride) {
+    const uint8_t* nonce = nonce_base + CHACHA_NONCE_BYTES * msg;
+    const uint32_t n0 = load_le32(nonce);
+    const uint32_t n1 = load_le32(nonce + 4);
+    const uint32_t n2 = load_le32(nonce + 8);
+    const uint32_t nrow[4] = {0u, n0, n1, n2};
+
+    // The Poly1305 one-time key is ChaCha block zero. Every lane computes it
+    // redundantly by the ordinary lane-local path, which is once per message
+    // and keeps the setup out of the quad-cooperative code.
+    poly1305_t st;
+    {
+      uint32_t x[16];
+      chacha20_keystream<R, 0>(k, n0, n1, n2, 0, x);
+      poly1305_init(st, x);
+    }
+
+    // r, r^2, r^3, r^4, then lane c keeps r^{4-c}. Three extra multiplies per
+    // message; at four blocks per message this dominates, at thirty-two it does
+    // not, which is why both operating points are measured.
+    uint32_t rp[5] = {st.r0, st.r1, st.r2, st.r3, st.r4};
+    uint32_t r2[5], r3[5], r4[5];
+    poly_mulmod(rp, rp, r2);
+    poly_mulmod(r2, rp, r3);
+    poly_mulmod(r3, rp, r4);
+    const uint32_t rl0 = (lane == 0) ? r4[0] : ((lane == 1) ? r3[0] : ((lane == 2) ? r2[0] : rp[0]));
+    const uint32_t rl1 = (lane == 0) ? r4[1] : ((lane == 1) ? r3[1] : ((lane == 2) ? r2[1] : rp[1]));
+    const uint32_t rl2 = (lane == 0) ? r4[2] : ((lane == 1) ? r3[2] : ((lane == 2) ? r2[2] : rp[2]));
+    const uint32_t rl3 = (lane == 0) ? r4[3] : ((lane == 1) ? r3[3] : ((lane == 2) ? r2[3] : rp[3]));
+    const uint32_t rl4 = (lane == 0) ? r4[4] : ((lane == 1) ? r3[4] : ((lane == 2) ? r2[4] : rp[4]));
+
+    for (uint32_t off = 0; off < aad_bytes; off += POLY1305_BLOCK_BYTES) {
+      const uint32_t n = (aad_bytes - off < POLY1305_BLOCK_BYTES)
+                       ? (aad_bytes - off) : POLY1305_BLOCK_BYTES;
+      uint8_t padded[POLY1305_BLOCK_BYTES] = {0};
+      for (uint32_t i = 0; i < n; ++i) {
+        padded[i] = aad[off + i];
+      }
+      poly1305_block<0, 1>(st, load_le32(padded), load_le32(padded + 4),
+                           load_le32(padded + 8), load_le32(padded + 12));
+    }
+
+    const uint32_t* pt = src_base + (size_t)words * msg;
+    uint32_t* ct = dst_base + (size_t)words * msg;
+
+    for (uint32_t blk = 0; blk < blocks; ++blk) {
+      uint32_t a = a_init, b = b_init, c = c_init;
+      uint32_t d = (lane == 0) ? (blk + 1u) : nrow[lane];
+      const uint32_t a0 = a, b0 = b, c0 = c, d0 = d;
+
+      for (int i = 0; i < CHACHA_ROUNDS / 2; ++i) {
+        // Column round: every lane owns a whole column, so nothing moves.
+        a += b; d = R::template xr<16>(d, a);
+        c += d; b = R::template xr<12>(b, c);
+        a += b; d = R::template xr<8>(d, a);
+        c += d; b = R::template xr<7>(b, c);
+        if (FUSED == 1) {
+#if defined(VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE)
+          // Nothing moves: each lane keeps its own a, b, c, d and simply reads
+          // the neighbour, so the six rotations vanish rather than being made
+          // cheaper.
+          a = vx_chadd_sg4(a, b); d = vx_chacha32_xr_sg4(d, a, 16);
+          c = vx_chadd_sg4(c, d); b = vx_chacha32_xr_sg4(b, c, 12);
+          a = vx_chadd_sg4(a, b); d = vx_chacha32_xr_sg4(d, a, 8);
+          c = vx_chadd_sg4(c, d); b = vx_chacha32_xr_sg4(b, c, 7);
+#endif
+        } else {
+          // Diagonal round: rows 1, 2 and 3 rotate by 1, 2 and 3 across the
+          // quad, which turns the diagonals into columns.
+          b = sg4_rot(b, rot1); c = sg4_rot(c, rot2); d = sg4_rot(d, rot3);
+          a += b; d = R::template xr<16>(d, a);
+          c += d; b = R::template xr<12>(b, c);
+          a += b; d = R::template xr<8>(d, a);
+          c += d; b = R::template xr<7>(b, c);
+          b = sg4_rot(b, inv1); c = sg4_rot(c, inv2); d = sg4_rot(d, inv3);
+        }
+      }
+
+      a += a0; b += b0; c += c0; d += d0;
+
+      // The rounds leave lane c holding COLUMN c; the payload wants lane c to
+      // hold ROW c, which is its own sixteen contiguous bytes. The transpose is
+      // its own inverse, so one call does it.
+      uint32_t w0, w1, w2, w3;
+      vx_transpose4(a, b, c, d, w0, w1, w2, w3);
+
+      const uint32_t* pb = pt + 16 * blk + 4 * lane;
+      uint32_t* cb = ct + 16 * blk + 4 * lane;
+      const uint32_t m0 = pb[0] ^ w0, m1 = pb[1] ^ w1;
+      const uint32_t m2 = pb[2] ^ w2, m3 = pb[3] ^ w3;
+      cb[0] = m0; cb[1] = m1; cb[2] = m2; cb[3] = m3;
+
+      // Lane c holds Poly1305 block c of this group and multiplies by r^{4-c};
+      // only lane 0 folds in the running accumulator.
+      uint32_t p0 = m0 & 0x3ffffff;
+      uint32_t p1 = ((m0 >> 26) | (m1 << 6)) & 0x3ffffff;
+      uint32_t p2 = ((m1 >> 20) | (m2 << 12)) & 0x3ffffff;
+      uint32_t p3 = ((m2 >> 14) | (m3 << 18)) & 0x3ffffff;
+      uint32_t p4 = (m3 >> 8) | (1u << 24);
+      if (lane == 0) {
+        p0 += st.h0; p1 += st.h1; p2 += st.h2; p3 += st.h3; p4 += st.h4;
+      }
+
+      uint32_t l0 = 0, l1 = 0, l2 = 0, l3 = 0, l4 = 0;
+      uint32_t u0 = 0, u1 = 0, u2 = 0, u3 = 0, u4 = 0;
+
+      l0 = vx_poly26_macl (l0, p0, rl0); u0 = vx_poly26_mach (u0, p0, rl0);
+      l0 = vx_poly26_macl5(l0, p1, rl4); u0 = vx_poly26_mach5(u0, p1, rl4);
+      l0 = vx_poly26_macl5(l0, p2, rl3); u0 = vx_poly26_mach5(u0, p2, rl3);
+      l0 = vx_poly26_macl5(l0, p3, rl2); u0 = vx_poly26_mach5(u0, p3, rl2);
+      l0 = vx_poly26_macl5(l0, p4, rl1); u0 = vx_poly26_mach5(u0, p4, rl1);
+
+      l1 = vx_poly26_macl (l1, p0, rl1); u1 = vx_poly26_mach (u1, p0, rl1);
+      l1 = vx_poly26_macl (l1, p1, rl0); u1 = vx_poly26_mach (u1, p1, rl0);
+      l1 = vx_poly26_macl5(l1, p2, rl4); u1 = vx_poly26_mach5(u1, p2, rl4);
+      l1 = vx_poly26_macl5(l1, p3, rl3); u1 = vx_poly26_mach5(u1, p3, rl3);
+      l1 = vx_poly26_macl5(l1, p4, rl2); u1 = vx_poly26_mach5(u1, p4, rl2);
+
+      l2 = vx_poly26_macl (l2, p0, rl2); u2 = vx_poly26_mach (u2, p0, rl2);
+      l2 = vx_poly26_macl (l2, p1, rl1); u2 = vx_poly26_mach (u2, p1, rl1);
+      l2 = vx_poly26_macl (l2, p2, rl0); u2 = vx_poly26_mach (u2, p2, rl0);
+      l2 = vx_poly26_macl5(l2, p3, rl4); u2 = vx_poly26_mach5(u2, p3, rl4);
+      l2 = vx_poly26_macl5(l2, p4, rl3); u2 = vx_poly26_mach5(u2, p4, rl3);
+
+      l3 = vx_poly26_macl (l3, p0, rl3); u3 = vx_poly26_mach (u3, p0, rl3);
+      l3 = vx_poly26_macl (l3, p1, rl2); u3 = vx_poly26_mach (u3, p1, rl2);
+      l3 = vx_poly26_macl (l3, p2, rl1); u3 = vx_poly26_mach (u3, p2, rl1);
+      l3 = vx_poly26_macl (l3, p3, rl0); u3 = vx_poly26_mach (u3, p3, rl0);
+      l3 = vx_poly26_macl5(l3, p4, rl4); u3 = vx_poly26_mach5(u3, p4, rl4);
+
+      l4 = vx_poly26_macl (l4, p0, rl4); u4 = vx_poly26_mach (u4, p0, rl4);
+      l4 = vx_poly26_macl (l4, p1, rl3); u4 = vx_poly26_mach (u4, p1, rl3);
+      l4 = vx_poly26_macl (l4, p2, rl2); u4 = vx_poly26_mach (u4, p2, rl2);
+      l4 = vx_poly26_macl (l4, p3, rl1); u4 = vx_poly26_mach (u4, p3, rl1);
+      l4 = vx_poly26_macl (l4, p4, rl0); u4 = vx_poly26_mach (u4, p4, rl0);
+
+      // Normalise this lane's own product BEFORE the cross-lane sum: the high
+      // accumulator reaches 2^30.4 and four of those would overflow, while four
+      // normalised limbs stay under 2^28.
+      uint32_t cc;
+      uint32_t t0 = l0 & 0x3ffffff; cc = (l0 >> 26) + u0;
+      l1 += cc; uint32_t t1 = l1 & 0x3ffffff; cc = (l1 >> 26) + u1;
+      l2 += cc; uint32_t t2 = l2 & 0x3ffffff; cc = (l2 >> 26) + u2;
+      l3 += cc; uint32_t t3 = l3 & 0x3ffffff; cc = (l3 >> 26) + u3;
+      l4 += cc; uint32_t t4 = l4 & 0x3ffffff; cc = (l4 >> 26) + u4;
+      t0 += cc * 5; cc = t0 >> 26; t0 &= 0x3ffffff; t1 += cc;
+
+      // Fold the quad's four partial sums into every lane, so the serial parts
+      // below need no broadcast.
+      if (FUSED == 1) {
+#if defined(VX_CFG_EXT_AUTH_POLY_SG4_ENABLE)
+        t0 = vx_poly26_rsum_sg4(t0); t1 = vx_poly26_rsum_sg4(t1);
+        t2 = vx_poly26_rsum_sg4(t2); t3 = vx_poly26_rsum_sg4(t3);
+        t4 = vx_poly26_rsum_sg4(t4);
+#endif
+      } else {
+        t0 += sg4_rot(t0, rot2); t0 += sg4_rot(t0, rot1);
+        t1 += sg4_rot(t1, rot2); t1 += sg4_rot(t1, rot1);
+        t2 += sg4_rot(t2, rot2); t2 += sg4_rot(t2, rot1);
+        t3 += sg4_rot(t3, rot2); t3 += sg4_rot(t3, rot1);
+        t4 += sg4_rot(t4, rot2); t4 += sg4_rot(t4, rot1);
+      }
+
+      cc = t0 >> 26; t0 &= 0x3ffffff;
+      t1 += cc; cc = t1 >> 26; t1 &= 0x3ffffff;
+      t2 += cc; cc = t2 >> 26; t2 &= 0x3ffffff;
+      t3 += cc; cc = t3 >> 26; t3 &= 0x3ffffff;
+      t4 += cc; cc = t4 >> 26; t4 &= 0x3ffffff;
+      t0 += cc * 5; cc = t0 >> 26; t0 &= 0x3ffffff; t1 += cc;
+      st.h0 = t0; st.h1 = t1; st.h2 = t2; st.h3 = t3; st.h4 = t4;
+    }
+
+    // Everything from here is serial and every lane holds the same state, so it
+    // runs redundantly rather than being routed to one lane.
+    if (tail != 0) {
+      uint32_t x[16];
+      chacha20_keystream<R, 0>(k, n0, n1, n2, blocks + 1, x);
+      uint8_t padded[CHACHA_BLOCK_BYTES] = {0};
+      const uint8_t* pb = (const uint8_t*)(pt + 16 * blocks);
+      uint8_t* cb = (uint8_t*)(ct + 16 * blocks);
+      for (uint32_t i = 0; i < tail; ++i) {
+        const uint8_t ks = (uint8_t)(x[i >> 2] >> (8 * (i & 3)));
+        const uint8_t cv = (uint8_t)(pb[i] ^ ks);
+        cb[i] = cv;
+        padded[i] = cv;
+      }
+      for (uint32_t off = 0; off < tail; off += POLY1305_BLOCK_BYTES) {
+        poly1305_block<0, 1>(st, load_le32(padded + off),
+                             load_le32(padded + off + 4),
+                             load_le32(padded + off + 8),
+                             load_le32(padded + off + 12));
+      }
+    }
+
+    poly1305_block<0, 1>(st, (uint32_t)aad_bytes, 0u, (uint32_t)msg_bytes, 0u);
+
+    uint32_t tag[4];
+    poly1305_finish(st, tag);
+    uint32_t* tp = tag_base + 4 * msg;
+    if (lane == 0) {
+      tp[0] = tag[0]; tp[1] = tag[1]; tp[2] = tag[2]; tp[3] = tag[3];
+    }
+  }
+}
+#endif
+
 #ifdef VX_CFG_EXT_AUTH_POLY_ENABLE
 // Poly1305's 5x5 convolution as three-source multiply-accumulates. The ChaCha20
 // half is untouched, so the difference against the sw row is the authenticator
 // and nothing else.
 __kernel void chacha_poly_mac(kernel_arg_t* __UNIFORM__ arg) {
   chacha_poly_body<rot_sw, 0, 1>(arg);
+}
+#endif
+
+#if defined(VX_CFG_EXT_SYM_CHACHA_ENABLE) && defined(VX_CFG_EXT_AUTH_POLY_ENABLE)
+// S3 probe: four lanes own one message, so a warp carries four messages instead
+// of sixteen. No new instructions -- it prices the layout before any is built.
+__kernel void chacha_poly_s3(kernel_arg_t* __UNIFORM__ arg) {
+  chacha_poly_s3_body<rot_xr, 0>(arg);
+}
+#endif
+
+#if defined(VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE) && defined(VX_CFG_EXT_AUTH_POLY_SG4_ENABLE)
+// S3-Fused: the same layout with the cross-lane communication folded into the
+// arithmetic. Everything else is identical to the probe, so the difference
+// between the two rows is the three fused instructions and nothing else.
+__kernel void chacha_poly_s3f(kernel_arg_t* __UNIFORM__ arg) {
+  chacha_poly_s3_body<rot_xr, 1>(arg);
 }
 #endif
 

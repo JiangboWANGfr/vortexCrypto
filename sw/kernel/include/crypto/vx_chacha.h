@@ -118,6 +118,50 @@ extern "C" {
 #define vx_poly26_mach5(acc, a, b) __vx_poly26_mac(acc, a, b, 3)
 #endif
 
+// S3-Fused: the fixed cross-lane communication the subgroup layout introduces,
+// folded into the operations that were already there.
+//
+// ChaCha's diagonal round reads ALL EIGHT of its operands from the next lane of
+// the quad -- the D of diagonal j lives in lane j+3 and reads A from lane j,
+// and -3 == +1 mod 4 -- so one route direction covers the whole round and the
+// six explicit rotations per double-round disappear.
+//
+//   vx_chadd_sg4(a, b)          -> a + b[lane+1]
+//   vx_chacha32_xr_sg4(a, b, n) -> rol32(a ^ b[lane+1], n)
+//   vx_poly26_rsum_sg4(v)       -> v[0]+v[1]+v[2]+v[3] of the quad, in every lane
+//
+// All three require a CONVERGED quad: the source lanes' masks are not
+// consulted, matching aesrm.sg4 and ghmul.sg4 rather than SHFL. rsum's inputs
+// must already be below 2^26 so that four of them cannot wrap 32 bits.
+#ifdef VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE
+#define vx_chadd_sg4(a, b) ({                                                \
+    uint32_t __out;                                                          \
+    __asm__ (".insn r %1, 7, 0, %0, %2, %3"                                  \
+             : "=r"(__out)                                                   \
+             : "i"(0x7B), "r"((uint32_t)(a)), "r"((uint32_t)(b)));           \
+    __out;                                                                   \
+})
+
+#define vx_chacha32_xr_sg4(a, b, n) ({                                       \
+    uint32_t __out;                                                          \
+    __asm__ (".insn r %1, 6, %2, %0, %3, %4"                                 \
+             : "=r"(__out)                                                   \
+             : "i"(0x7B), "i"(0x20 | ((n) & 31)),                            \
+               "r"((uint32_t)(a)), "r"((uint32_t)(b)));                      \
+    __out;                                                                   \
+})
+#endif
+
+#ifdef VX_CFG_EXT_AUTH_POLY_SG4_ENABLE
+#define vx_poly26_rsum_sg4(v) ({                                             \
+    uint32_t __out;                                                          \
+    __asm__ (".insn r %1, 6, 0, %0, %2, x0"                                  \
+             : "=r"(__out)                                                   \
+             : "i"(0x5B), "r"((uint32_t)(v)));                               \
+    __out;                                                                   \
+})
+#endif
+
 #ifdef __cplusplus
 }
 #endif

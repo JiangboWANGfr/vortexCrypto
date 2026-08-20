@@ -76,7 +76,12 @@ module VX_auth_unit import VX_gpu_pkg::*; #(
         // shares nothing with the carry-less field multiply next to it, so it
         // gets its own PE rather than another mode inside the GHASH datapath.
         wire is_poly = (per_block_execute_if[block_idx].data.op_type
-                        == INST_OP_BITS'(INST_AUTH_POLY_MAC));
+                        == INST_OP_BITS'(INST_AUTH_POLY_MAC))
+    `ifdef VX_CFG_EXT_AUTH_POLY_SG4_ENABLE
+                    || (per_block_execute_if[block_idx].data.op_type
+                        == INST_OP_BITS'(INST_AUTH_POLY_RSUM))
+    `endif
+                       ;
         wire [`UP(PE_SEL_BITS)-1:0] pe_select = is_poly ? PE_SEL_BITS'(PE_IDX_POLY)
                                                         : PE_SEL_BITS'(PE_IDX_GHASH);
     `else

@@ -1023,6 +1023,18 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
   case Opcode::EXT4: {
     // Fused subgroup AES round. EXT4 was declared and decoded by neither model,
     // so this cannot collide: funct3 0 = middle round, 1 = final round.
+#ifdef VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE
+    if (funct3 == 0x7) {
+      // chadd.sg4 rd, rs1, rs2 -- rs2 from the next lane of the quad.
+      instr->set_fu_type(FUType::SYM);
+      instr->set_op_type(SymType::CHADD_SG4);
+      instr->set_dest_reg(rd, RegType::Integer);
+      instr->set_src_reg(0, rs1, RegType::Integer);
+      instr->set_src_reg(1, rs2, RegType::Integer);
+      instr->set_args(IntrSymArgs{});
+      break;
+    }
+#endif
 #ifdef VX_CFG_EXT_SYM_CHACHA_ENABLE
     if (funct3 == 0x6) {
       // chacha32.xr rd, rs1, rs2 -- rd = rol32(rs1 ^ rs2, rot), rot in
@@ -1034,6 +1046,7 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
       instr->set_src_reg(1, rs2, RegType::Integer);
       IntrSymArgs a{};
       a.shamt = funct7 & 0x1F;
+      a.bs = (funct7 >> 5) & 0x1;   // route: rs2 from the next lane of the quad
       instr->set_args(a);
       break;
     }
@@ -1107,6 +1120,17 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
     // Custom fused GF(2^128) reduction. EXT3 was entirely undecoded, so unlike
     // the ratified crypto encodings this cannot collide: funct3 0 = GHRED32L,
     // 1 = GHRED32H.
+#ifdef VX_CFG_EXT_AUTH_POLY_SG4_ENABLE
+    if (funct3 == 0x6) {
+      // poly26.rsum.sg4 rd, rs1 -- rd = sum of rs1 across the quad.
+      instr->set_fu_type(FUType::AUTH);
+      instr->set_op_type(AuthType::POLY_RSUM);
+      instr->set_dest_reg(rd, RegType::Integer);
+      instr->set_src_reg(0, rs1, RegType::Integer);
+      instr->set_args(IntrAuthArgs{});
+      break;
+    }
+#endif
 #ifdef VX_CFG_EXT_AUTH_POLY_ENABLE
     if (funct3 == 0x5) {
       // poly26.mac{l,h}{,5} rd, rs1, rs2, rs3 -- R4-type, funct2 = {scale5, high}.

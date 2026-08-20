@@ -81,16 +81,43 @@ module VX_sym_rot import VX_gpu_pkg::*; #(
     // a plain XOR without a special case.
     wire is_xr = (execute_if.data.op_type == INST_OP_BITS'(INST_SYM_CHACHA_XR));
 
+    // funct7[5] routes rs2 from the next lane of the aligned quad. ChaCha's
+    // diagonal round reads ALL EIGHT of its operands from lane +1 -- the D
+    // owner is lane j+3 and reads A from lane j, and -3 == +1 mod 4 -- so one
+    // direction covers the whole round and the source index is a constant
+    // permutation within a four-block, which synthesises to wires.
+    //
+    // PRECONDITION, as for aesrm.sg4: the quad must be converged. The source
+    // lane's mask is not consulted, deliberately, so that the two models cannot
+    // disagree the way SHFL does.
+`ifdef VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE
+    if ((NUM_LANES < 4) || ((NUM_LANES % 4) != 0)) begin : g_sg4_guard
+        VX_sym_rot_sg4_requires_NUM_LANES_multiple_of_4 __config_error();
+    end
+    wire route = execute_if.data.op_args.sym.bs[0];
+    wire is_chadd = (execute_if.data.op_type == INST_OP_BITS'(INST_SYM_CHADD_SG4));
+`else
+    wire route = 1'b0;
+    wire is_chadd = 1'b0;
+    `UNUSED_VAR (execute_if.data.op_args.sym.bs)
+`endif
+
     wire [NUM_LANES-1:0][`VX_CFG_XLEN-1:0] xr_result;
+    wire [NUM_LANES-1:0][`VX_CFG_XLEN-1:0] add_result;
     for (genvar i = 0; i < NUM_LANES; ++i) begin : g_xr
-        wire [31:0] v = execute_if.data.rs1_data[i][31:0]
-                      ^ execute_if.data.rs2_data[i][31:0];
-        assign xr_result[i] = `VX_CFG_XLEN'((v << shamt) | (v >> lshamt));
+        localparam int NEXT = ((i / 4) * 4) + ((i + 1) % 4);
+        wire [31:0] rs2_local = execute_if.data.rs2_data[i][31:0];
+        wire [31:0] rs2_next  = execute_if.data.rs2_data[(NUM_LANES >= 4) ? NEXT : i][31:0];
+        wire [31:0] rs2_sel   = route ? rs2_next : rs2_local;
+        wire [31:0] v = execute_if.data.rs1_data[i][31:0] ^ rs2_sel;
+        assign xr_result[i]  = `VX_CFG_XLEN'((v << shamt) | (v >> lshamt));
+        assign add_result[i] = `VX_CFG_XLEN'(execute_if.data.rs1_data[i][31:0] + rs2_next);
     end
 
     wire [NUM_LANES-1:0][`VX_CFG_XLEN-1:0] unit_result;
     for (genvar i = 0; i < NUM_LANES; ++i) begin : g_sel
-        assign unit_result[i] = is_xr ? xr_result[i] : rot_result[i];
+        assign unit_result[i] = is_chadd ? add_result[i]
+                              : (is_xr ? xr_result[i] : rot_result[i]);
     end
 `else
     wire [NUM_LANES-1:0][`VX_CFG_XLEN-1:0] unit_result = rot_result;

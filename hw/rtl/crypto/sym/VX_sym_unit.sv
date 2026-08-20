@@ -76,6 +76,9 @@ module VX_sym_unit import VX_gpu_pkg::*; #(
     `ifdef VX_CFG_EXT_SYM_CHACHA_ENABLE
                    || (per_block_execute_if[block_idx].data.op_type == INST_OP_BITS'(INST_SYM_CHACHA_XR))
     `endif
+    `ifdef VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE
+                   || (per_block_execute_if[block_idx].data.op_type == INST_OP_BITS'(INST_SYM_CHADD_SG4))
+    `endif
                    ;
         wire [`UP(PE_SEL_BITS)-1:0] pe_select = is_rot ? PE_IDX_ROT : PE_IDX_AES;
 

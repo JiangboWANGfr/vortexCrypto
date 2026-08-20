@@ -813,6 +813,21 @@ module VX_decode import
                 // No immediate: the four byte steps are enumerated inside the
                 // instruction, so sym_args_t is unchanged and its fields are
                 // assigned explicitly because the decoder's default is 'x.
+            `ifdef VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE
+                // chadd.sg4 rd, rs1, rs2 -- rd = rs1 + (rs2 from the next lane
+                // of the aligned quad). ChaCha's diagonal round reads every one
+                // of its eight operands from lane +1, so a single route
+                // direction is enough and the wiring is a fixed permutation.
+                if (funct3 == 3'h7) begin
+                    ex_type = EX_SYM;
+                    op_type = INST_OP_BITS'(INST_SYM_CHADD_SG4);
+                    op_args.sym.bs = 2'b0;
+                    op_args.sym.shamt = 5'b0;
+                    `USED_IREG (rd);
+                    `USED_IREG (rs1);
+                    `USED_IREG (rs2);
+                end
+            `endif
             `ifdef VX_CFG_EXT_SYM_CHACHA_ENABLE
                 if (funct3 == 3'h6) begin
                     // chacha32.xr rd, rs1, rs2 -- rd = rol32(rs1 ^ rs2, rot),
@@ -823,6 +838,10 @@ module VX_decode import
                     op_type = INST_OP_BITS'(INST_SYM_CHACHA_XR);
                     op_args.sym.bs = 2'b0;
                     op_args.sym.shamt = funct7[4:0];
+                    // funct7[5] routes rs2 from the next lane of the quad; it is
+                    // decoded unconditionally so the field means one thing, and
+                    // the datapath ignores it unless the SG4 form is built.
+                    op_args.sym.bs = {1'b0, funct7[5]};
                     `USED_IREG (rd);
                     `USED_IREG (rs1);
                     `USED_IREG (rs2);
@@ -892,6 +911,20 @@ module VX_decode import
         `endif
         `ifdef VX_CFG_EXT_AUTH_ENABLE
             INST_EXT3: begin
+            `ifdef VX_CFG_EXT_AUTH_POLY_SG4_ENABLE
+                // poly26.rsum.sg4 rd, rs1 -- rd = sum of rs1 across the aligned
+                // quad. Poly1305's block-parallel form leaves one partial sum
+                // per lane; this folds the four into every lane at once, so the
+                // serial parts afterwards need no broadcast.
+                if (funct3 == 3'h6) begin
+                    ex_type = EX_AUTH;
+                    op_type = INST_OP_BITS'(INST_AUTH_POLY_RSUM);
+                    op_args.sym.bs = 2'b0;
+                    op_args.sym.shamt = 5'b0;
+                    `USED_IREG (rd);
+                    `USED_IREG (rs1);
+                end
+            `endif
             `ifdef VX_CFG_EXT_AUTH_POLY_ENABLE
                 // poly26.mac{l,h}{,5} rd, rs1, rs2, rs3 -- R4-type, the same
                 // shape WGATHER already uses on this machine, so rs3 needs no

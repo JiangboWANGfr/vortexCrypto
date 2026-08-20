@@ -254,7 +254,10 @@ enum class SymType {
   AES_RNDF,
   // ChaCha20's fused xor-then-rotate, opt-in behind
   // VX_CFG_EXT_SYM_CHACHA_ENABLE. Executed by the rotate PE.
-  CHACHA_XR
+  CHACHA_XR,
+  // Subgroup add for ChaCha's diagonal round; rs2 comes from the next lane of
+  // the quad. Opt-in behind VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE.
+  CHADD_SG4
 };
 
 struct IntrSymArgs {
@@ -286,7 +289,10 @@ enum class AuthType {
   GH_BLOCK,
   // Poly1305 three-source multiply-accumulate on 26-bit limbs, opt-in behind
   // VX_CFG_EXT_AUTH_POLY_ENABLE. funct2 = {scale5, high_part}.
-  POLY_MAC
+  POLY_MAC,
+  // Sum one limb across the aligned quad, opt-in behind
+  // VX_CFG_EXT_AUTH_POLY_SG4_ENABLE.
+  POLY_RSUM
 };
 
 struct IntrAuthArgs {
