@@ -3015,6 +3015,18 @@ misread once.
 The baseline for every comparison is the `rori` row, not `sw`. RORI is ratified
 Zbb/Zbkb; crediting the B extension to a cryptographic ISE would be false.
 
+**A noise floor applies across the tables below, and it is about 4%.** The `s1`
+row appears in three of them, measured in three different builds, and its cycles
+per block read 515.0, 488.6 and 477.7 at the cache-resident point while its
+instructions per block read 75.5 in all three, to the digit. Instruction count is
+architectural and reproduces exactly; cycle count carries build-to-build
+variation from instruction layout -- the mechanism recorded in sections 18 and
+21.6, where moving a kernel by 7,968 bytes moved `hw_s3g` by 0.18%. Numbers
+should be compared **within** a table, where every row comes from one build.
+`chacha32.xr`'s -1.7% and -2.6% are inside that floor and should be read as "no
+measurable cycle effect", which is also what its bit-identical load and store
+counts say.
+
 ### 23.1 S1: two instructions, and the useful one costs more instructions
 
 ```
@@ -3120,7 +3132,7 @@ wires, not a crossbar.
 | --- | ---: | ---: | ---: |
 | `s1` | 75.5 | 488.6 | 461.1 |
 | `s3` probe | 111.2 **+47%** | 577.3 +18.1% | 468.5 +1.6% |
-| `s3f` fused | 90.0 **+19%** | 463.7 -5.1% | 366.7 **-20.5%** |
+| `s3f` fused | 90.5 **+20%** | 477.9 -3.0% | 367.5 **-21.9%** |
 
 The layout by itself loses. Fusing its cross-lane traffic is worth **twenty-two
 percentage points** and turns it into a 1.26x win -- while still retiring 19%
@@ -3213,7 +3225,94 @@ and the arithmetic stays where it was. 1.26x.
 These are rules a third algorithm can be measured against, which a list of
 speedups is not.
 
-### 23.6 What this section got wrong
+### 23.6 Fitted, and the same mistake twice
+
+The stateful ChaCha20 engine was built flat first: one quarter-round per cycle,
+eight cycles per double-round. The Vortex clock fell to **-2.752 ns**, worse than
+the GHASH engine's first attempt, with **all sixty** of the worst paths inside
+`VX_sym_chacha` and none anywhere else.
+
+The prediction written before that run was that it would pass, on the grounds
+that this engine has no 64:1 lane mux with a whole field multiply hanging off it.
+Two things were missed. The state word indices come from the step counter rather
+than a genvar, so each lane does four **16:1** reads and four decoded writes; and
+a quarter-round is **eight strictly dependent steps** -- add, xor-rotate, add,
+xor-rotate, twice -- where an AES round is one S-box and an XOR tree deep. The
+lane loop had been split and the arithmetic left whole, which is precisely what
+the GHASH engine had done.
+
+Splitting the quarter-round two deep restored **205.63 MHz**. Throughput stays
+one quarter-round per cycle, so a double-round costs ten cycles rather than
+eight, and rtlsim reads 188,196 cycles against the flat version's 189,168 -- the
+two extra cycles are not merely cheap, they are below the noise.
+
+The pipeline needed a bubble the schedule did not obviously want. Quarter-rounds
+0-3 touch disjoint columns and 4-7 disjoint diagonals, but the last column round
+**writes x[15] and the first diagonal round reads it**, so issuing them back to
+back would read the stale word. A static check of the eight index sets found it
+before the build; it would otherwise have been the third bug this month whose
+instruction count, cycle count and timing were all correct and whose only symptom
+was a wrong ciphertext.
+
+Eight fitter runs now exist, and sorted by area they settle the PCIe question:
+
+| ALMs | PCIe avst512 slack |
+| ---: | ---: |
+| 208,513 baseline | **+0.204** |
+| 260,938 SG4 | -0.424 |
+| 281,666 ChaCha S2, flat | -0.130 |
+| 286,974 AES S2, reduced | -0.001 |
+| 287,512 the same, seed 7 | -0.816 |
+| 289,353 ChaCha S2, pipelined | -0.374 |
+| 294,216 AES S2, single-cycle | -0.470 |
+| **299,907 AES S2, pipelined** | **+0.236** |
+
+There is no relationship. The **largest** design is the only one that closes, and
+two builds 0.2% apart in area differ by 0.815 ns. The domain is a placement
+lottery, and every statement in earlier sections attributing its failure to area
+growth is withdrawn. It is fixable only on the FPGA project's side -- a pipeline
+stage in the Qsys interconnect, or a LogicLock region for the PCIe shell.
+
+The context model, by contrast, held on a second algorithm. ChaCha's context is
+114,688 bits across two cores and the flat build's register increase was
+**+117,386**, within 2.4%. Taken with the AES measurement -- 32,768 bits removed,
+32,387 registers removed, within 1.2% -- **the flip-flop cost of an S2 design can
+be computed from its context definition before any RTL is written.** The ALM
+figure cannot: 310,000 was predicted and 281,666 measured, 9% out.
+
+### 23.7 S3, pushed as far as it goes
+
+Three attempts at the fused S3 row after the first measurement:
+
+| change | effect |
+| --- | --- |
+| select r^k progressively instead of computing all four and choosing | helps |
+| drop the six rotate descriptors, dead once the routing is fused | helps |
+| outline the once-per-message AAD absorb behind `noinline` | **+13.9%, reverted** |
+
+The first two cut static stack accesses from 213 to 176, below `s1`'s 189, and
+simx by 10.1%. **rtlsim moved from 1.26x to 1.28x and no further**: dynamic loads
+went *up*, 159,616 to 163,968, while stores fell 49,920 to 46,080. Static spill
+sites again failed to predict dynamic load traffic, as they did in sections 17
+and 21.6.
+
+The third is worth keeping as a result. Outlining trades a long live range for an
+**ABI spill at the call boundary**: the block loop must save and restore its
+whole live set around a call that runs once per message. On a machine whose
+cycles are set by load traffic, moving code out of a hot loop is not the same as
+moving data out of it.
+
+At the instruction level, `poly26.rsum.sg4` could take the incoming carry as a
+third operand and fold the per-limb carry add into the reduction. It saves five
+instructions per block-quad, 1.25 per block against an implementation that costs
+90 -- under 1.4% -- for a three-source encoding and a wider PE. It was not built.
+
+The real limit is neither implementation nor encoding. Block-parallel Poly1305
+requires each lane to hold five limbs of its own r^{4-c}, and that is inherent to
+the decomposition. The only way to remove those registers is to put them in a
+context, and that is S2, which already returns 3.9x.
+
+### 23.8 What this section got wrong
 
 - **"Poly1305 barely has an S1."** Argued from a machine model that was wrong:
   the tree is not 2R1W and WGATHER already reads rs3. `poly26.mac` turned out to
