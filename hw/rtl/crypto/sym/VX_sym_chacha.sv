@@ -64,12 +64,34 @@ module VX_sym_chacha import VX_gpu_pkg::*; #(
     wire is_begin = (execute_if.data.op_type == INST_OP_BITS'(INST_SYM_CHA_BEGIN));
     wire is_dr    = (execute_if.data.op_type == INST_OP_BITS'(INST_SYM_CHA_DR));
 
-    // Eight quarter-rounds, one per cycle: four column then four diagonal.
-    reg [2:0] qr_step;
-    wire last_step = (qr_step == 3'd7);
+    // Eight quarter-rounds per double-round, and each quarter-round is itself
+    // pipelined TWO deep. The first build did a whole quarter-round in one
+    // cycle and the Vortex clock fell to 130.82 MHz, with all sixty of the
+    // worst paths inside this module.
+    //
+    // A quarter-round is eight strictly dependent steps:
+    //
+    //   a += b;  d = rol(d^a,16);  c += d;  b = rol(b^c,12);
+    //   a += b;  d = rol(d^a, 8);  c += d;  b = rol(b^c, 7);
+    //
+    // On top of four 16:1 reads of the state, because the operand indices come
+    // from the step counter rather than a genvar. Splitting the lane loop was
+    // not enough -- the same mistake the GHASH engine made, where the lanes were
+    // walked but the multiply was left whole.
+    //
+    // Two stages of four steps each: throughput stays one quarter-round per
+    // cycle, so a double-round costs 8 + 1 cycles instead of 8.
+    // Ten steps, not eight: the pipe must drain at the column-to-diagonal seam
+    // as well as at the end. Quarter-rounds 0..3 touch disjoint columns and
+    // 4..7 disjoint diagonals, but the last column round writes x[15] and the
+    // first diagonal round reads it, so issuing them back to back would read
+    // the stale word. Steps 4 and 9 issue nothing.
+    reg [3:0] qr_step;
+    wire issue = (qr_step < 4'd4) || (qr_step > 4'd4 && qr_step < 4'd9);
+    wire last_step = (qr_step == 4'd9);
+    wire [2:0] qr_sel = (qr_step < 4'd4) ? qr_step[2:0]
+                                         : (3'(qr_step - 4'd1) | 3'd4);
 
-    // Which four state words this cycle's quarter-round touches. Columns first,
-    // then diagonals; both are compile-time tables, not muxes on data.
     function automatic logic [3:0] qr_idx (input logic [2:0] st, input logic [1:0] which);
         logic [1:0] j;
         j = st[1:0];
@@ -90,13 +112,15 @@ module VX_sym_chacha import VX_gpu_pkg::*; #(
         end
     endfunction
 
-    wire [3:0] ia = qr_idx(qr_step, 2'd0);
-    wire [3:0] ib = qr_idx(qr_step, 2'd1);
-    wire [3:0] ic = qr_idx(qr_step, 2'd2);
-    wire [3:0] id = qr_idx(qr_step, 2'd3);
+    wire [2:0] st0 = qr_sel;
+    wire [3:0] ia = qr_idx(st0, 2'd0);
+    wire [3:0] ib = qr_idx(st0, 2'd1);
+    wire [3:0] ic = qr_idx(st0, 2'd2);
+    wire [3:0] id = qr_idx(st0, 2'd3);
 
-    wire [NUM_LANES-1:0][31:0] qa, qb, qc, qd;
-    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_qr
+    // S0: the four state reads and the first half of the quarter-round.
+    wire [NUM_LANES-1:0][31:0] h_a, h_b, h_c, h_d;
+    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_qr0
         wire [31:0] a0 = ctx_x[cwid][i][ia];
         wire [31:0] b0 = ctx_x[cwid][i][ib];
         wire [31:0] c0 = ctx_x[cwid][i][ic];
@@ -105,10 +129,23 @@ module VX_sym_chacha import VX_gpu_pkg::*; #(
         wire [31:0] d1 = rol32(d0 ^ a1, 5'd16);
         wire [31:0] c1 = c0 + d1;
         wire [31:0] b1 = rol32(b0 ^ c1, 5'd12);
-        wire [31:0] a2 = a1 + b1;
-        wire [31:0] d2 = rol32(d1 ^ a2, 5'd8);
-        wire [31:0] c2 = c1 + d2;
-        wire [31:0] b2 = rol32(b1 ^ c2, 5'd7);
+        assign h_a[i] = a1; assign h_b[i] = b1;
+        assign h_c[i] = c1; assign h_d[i] = d1;
+    end
+
+    reg                        s1_valid;
+    reg [3:0]                  s1_ia, s1_ib, s1_ic, s1_id;
+    reg [NW_WIDTH-1:0]         s1_wid;
+    reg [NUM_LANES-1:0]        s1_tmask;
+    reg [NUM_LANES-1:0][31:0]  s1_a, s1_b, s1_c, s1_d;
+
+    // S1: the second half, from the latch.
+    wire [NUM_LANES-1:0][31:0] qa, qb, qc, qd;
+    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_qr1
+        wire [31:0] a2 = s1_a[i] + s1_b[i];
+        wire [31:0] d2 = rol32(s1_d[i] ^ a2, 5'd8);
+        wire [31:0] c2 = s1_c[i] + d2;
+        wire [31:0] b2 = rol32(s1_b[i] ^ c2, 5'd7);
         assign qa[i] = a2; assign qb[i] = b2;
         assign qc[i] = c2; assign qd[i] = d2;
     end
@@ -139,16 +176,31 @@ module VX_sym_chacha import VX_gpu_pkg::*; #(
 
     always @(posedge clk) begin
         if (reset) begin
-            qr_step <= 3'd0;
+            qr_step <= 4'd0;
+            s1_valid <= 1'b0;
         end else if (fire) begin
             if (is_dr) begin
-                qr_step <= last_step ? 3'd0 : (qr_step + 3'd1);
-                for (int i = 0; i < NUM_LANES; ++i) begin
-                    if (execute_if.data.header.tmask[i]) begin
-                        ctx_x[cwid][i][ia] <= qa[i];
-                        ctx_x[cwid][i][ib] <= qb[i];
-                        ctx_x[cwid][i][ic] <= qc[i];
-                        ctx_x[cwid][i][id] <= qd[i];
+                qr_step <= last_step ? 4'd0 : (qr_step + 4'd1);
+                // S0 -> S1
+                s1_valid <= issue;
+                s1_ia <= ia; s1_ib <= ib; s1_ic <= ic; s1_id <= id;
+                s1_wid <= cwid;
+                s1_tmask <= execute_if.data.header.tmask;
+                s1_a <= h_a; s1_b <= h_b; s1_c <= h_c; s1_d <= h_d;
+                // S1 -> context. The four words a quarter-round touches are
+                // distinct, and consecutive quarter-rounds of a column round
+                // touch disjoint columns, so the one-cycle gap between reading
+                // and writing cannot alias inside a round. The diagonal round
+                // follows the column round through the same pipe, and the extra
+                // drain step separates them.
+                if (s1_valid) begin
+                    for (int i = 0; i < NUM_LANES; ++i) begin
+                        if (s1_tmask[i]) begin
+                            ctx_x[s1_wid][i][s1_ia] <= qa[i];
+                            ctx_x[s1_wid][i][s1_ib] <= qb[i];
+                            ctx_x[s1_wid][i][s1_ic] <= qc[i];
+                            ctx_x[s1_wid][i][s1_id] <= qd[i];
+                        end
                     end
                 end
             end else if (is_begin) begin

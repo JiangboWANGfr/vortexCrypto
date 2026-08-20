@@ -3130,9 +3130,14 @@ wires, not a crossbar.
 
 | | instrs/block | cycles, cache-resident | cycles, memory-bound |
 | --- | ---: | ---: | ---: |
-| `s1` | 75.5 | 488.6 | 461.1 |
-| `s3` probe | 111.2 **+47%** | 577.3 +18.1% | 468.5 +1.6% |
+| `s1` | 75.5 | 492.5 | 470.5 |
+| `s3` probe | 110.0 **+46%** | 586.8 +19.2% | 485.1 +3.1% |
 | `s3f` fused | 90.5 **+20%** | 477.9 -3.0% | 367.5 **-21.9%** |
+
+All three rows come from one build, measured after the optimisations of 23.7.
+Earlier drafts of this table mixed a `s3f` row from one build with `s1` and `s3`
+rows from another, which is exactly the error the noise-floor note above warns
+about.
 
 The layout by itself loses. Fusing its cross-lane traffic is worth **twenty-two
 percentage points** and turns it into a 1.26x win -- while still retiring 19%

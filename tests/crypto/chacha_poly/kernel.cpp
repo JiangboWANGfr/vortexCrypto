@@ -637,15 +637,19 @@ inline void poly_mulmod(const uint32_t a[5], const uint32_t b[5], uint32_t out[5
 // FUSED == 0 uses the instructions that already exist and pays the layout's
 // cross-lane cost explicitly; FUSED == 1 folds that cost into chadd.sg4,
 // chacha32.xr's route bit and poly26.rsum.sg4.
+
 template <typename R, int FUSED = 0>
 inline void chacha_poly_s3_body(kernel_arg_t* __UNIFORM__ arg) {
   const uint32_t lane = (uint32_t)vx_thread_id() & 3u;
-  const uint32_t rot1 = sg4_desc((lane + 1) & 3);
-  const uint32_t rot2 = sg4_desc((lane + 2) & 3);
-  const uint32_t rot3 = sg4_desc((lane + 3) & 3);
-  const uint32_t inv1 = sg4_desc((lane + 3) & 3);
-  const uint32_t inv2 = sg4_desc((lane + 2) & 3);
-  const uint32_t inv3 = sg4_desc((lane + 1) & 3);
+  // Only the probe needs these: with the fused forms nothing moves between
+  // lanes, so all six are dead and must not be computed before the loop where
+  // they would sit in registers for the whole message.
+  const uint32_t rot1 = (FUSED == 1) ? 0u : sg4_desc((lane + 1) & 3);
+  const uint32_t rot2 = (FUSED == 1) ? 0u : sg4_desc((lane + 2) & 3);
+  const uint32_t rot3 = (FUSED == 1) ? 0u : sg4_desc((lane + 3) & 3);
+  const uint32_t inv1 = (FUSED == 1) ? 0u : sg4_desc((lane + 3) & 3);
+  const uint32_t inv2 = (FUSED == 1) ? 0u : sg4_desc((lane + 2) & 3);
+  const uint32_t inv3 = (FUSED == 1) ? 0u : sg4_desc((lane + 1) & 3);
 
   const uint32_t* key = (const uint32_t*)arg->key_addr;
   const uint32_t num_msgs = arg->num_msgs;
@@ -694,16 +698,21 @@ inline void chacha_poly_s3_body(kernel_arg_t* __UNIFORM__ arg) {
     // r, r^2, r^3, r^4, then lane c keeps r^{4-c}. Three extra multiplies per
     // message; at four blocks per message this dominates, at thirty-two it does
     // not, which is why both operating points are measured.
+    // r, r^2, r^3, r^4, of which each lane keeps exactly one. Selected
+    // PROGRESSIVELY rather than by computing all four and choosing at the end:
+    // the latter holds twenty values live at once for the sake of five, and in
+    // a kernel whose cycles are set by load traffic that is twenty registers
+    // worth of spill. This keeps the running power, the next one and the
+    // selection live -- fifteen -- and nothing else survives the setup.
     uint32_t rp[5] = {st.r0, st.r1, st.r2, st.r3, st.r4};
-    uint32_t r2[5], r3[5], r4[5];
-    poly_mulmod(rp, rp, r2);
-    poly_mulmod(r2, rp, r3);
-    poly_mulmod(r3, rp, r4);
-    const uint32_t rl0 = (lane == 0) ? r4[0] : ((lane == 1) ? r3[0] : ((lane == 2) ? r2[0] : rp[0]));
-    const uint32_t rl1 = (lane == 0) ? r4[1] : ((lane == 1) ? r3[1] : ((lane == 2) ? r2[1] : rp[1]));
-    const uint32_t rl2 = (lane == 0) ? r4[2] : ((lane == 1) ? r3[2] : ((lane == 2) ? r2[2] : rp[2]));
-    const uint32_t rl3 = (lane == 0) ? r4[3] : ((lane == 1) ? r3[3] : ((lane == 2) ? r2[3] : rp[3]));
-    const uint32_t rl4 = (lane == 0) ? r4[4] : ((lane == 1) ? r3[4] : ((lane == 2) ? r2[4] : rp[4]));
+    uint32_t rt[5];
+    uint32_t rl0 = rp[0], rl1 = rp[1], rl2 = rp[2], rl3 = rp[3], rl4 = rp[4];
+    poly_mulmod(rp, rp, rt);                       // r^2
+    if (lane <= 2) { rl0 = rt[0]; rl1 = rt[1]; rl2 = rt[2]; rl3 = rt[3]; rl4 = rt[4]; }
+    poly_mulmod(rt, rp, rt);                       // r^3
+    if (lane <= 1) { rl0 = rt[0]; rl1 = rt[1]; rl2 = rt[2]; rl3 = rt[3]; rl4 = rt[4]; }
+    poly_mulmod(rt, rp, rt);                       // r^4
+    if (lane == 0) { rl0 = rt[0]; rl1 = rt[1]; rl2 = rt[2]; rl3 = rt[3]; rl4 = rt[4]; }
 
     for (uint32_t off = 0; off < aad_bytes; off += POLY1305_BLOCK_BYTES) {
       const uint32_t n = (aad_bytes - off < POLY1305_BLOCK_BYTES)

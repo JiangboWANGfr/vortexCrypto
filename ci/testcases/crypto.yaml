@@ -155,6 +155,45 @@ tests:
   via: blackbox
   app: crypto/chacha_poly
   args: -n64 -b1 -i0
+# Gates for the extension rows. Without these the only protected numbers are the
+# two software baselines, and every result this document reports for S1, S2 and
+# S3 could regress silently. Each runs at its own app's CI shape, so these catch
+# drift rather than reproduce the recorded measurements.
+- id: perf_gate-chacha-poly-s1
+  check: perf_gate
+  tier: full
+  via: blackbox
+  app: crypto/chacha_poly
+  args: -n64 -b4 -i7
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE
+- id: perf_gate-chacha-poly-s2
+  check: perf_gate
+  tier: full
+  via: blackbox
+  app: crypto/chacha_poly
+  args: -n64 -b4 -i10
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE
+- id: perf_gate-chacha-poly-s3f
+  check: perf_gate
+  tier: full
+  via: blackbox
+  app: crypto/chacha_poly
+  args: -n64 -b4 -i9
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE
+- id: perf_gate-aes-gcm-s2
+  check: perf_gate
+  tier: full
+  via: blackbox
+  app: crypto/aes_gcm
+  args: -n64 -b4 -i10
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE
+- id: perf_gate-aes-gcm-s3g
+  check: perf_gate
+  tier: full
+  via: blackbox
+  app: crypto/aes_gcm
+  args: -n64 -b4 -a20 -i8
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE
 # The S3 probe (section 17). It fired its own kill rules and is kept as evidence
 # rather than as a candidate, but it is a kernel in the tree and a kernel in the
 # tree with no coverage rots: it is the only thing here that issues a cross-lane
