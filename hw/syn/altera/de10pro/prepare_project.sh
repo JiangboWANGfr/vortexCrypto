@@ -30,6 +30,12 @@ EXT_AUTH=${VX_DE10PRO_EXT_AUTH:-1}
 # unit, and the AUTH one additionally rides the SYM opcode arm in VX_decode.sv.
 EXT_SYM_SG4=${VX_DE10PRO_EXT_SYM_SG4:-0}
 EXT_AUTH_SG4=${VX_DE10PRO_EXT_AUTH_SG4:-0}
+# Stateful per-lane engines, section 22 of the crypto proposal. Off by default
+# for the same reason the subgroup forms are. Unlike those two these are
+# independent of each other: they decode on different opcodes, so neither
+# requires the other -- only its own parent unit.
+EXT_SYM_S2=${VX_DE10PRO_EXT_SYM_S2:-0}
+EXT_AUTH_S2=${VX_DE10PRO_EXT_AUTH_S2:-0}
 
 if [[ ! "$NUM_CORES" =~ ^[1-9][0-9]*$ \
    || ! "$NUM_WARPS" =~ ^[1-9][0-9]*$ \
@@ -56,6 +62,9 @@ if [[ "$EXT_SYM" != 0 ]]; then
     if [[ "$EXT_SYM_SG4" != 0 ]]; then
         EXT_MACROS+=('VX_CFG_EXT_SYM_SG4_ENABLE=1')
     fi
+    if [[ "$EXT_SYM_S2" != 0 ]]; then
+        EXT_MACROS+=('VX_CFG_EXT_SYM_S2_ENABLE=1')
+    fi
 fi
 if [[ "$EXT_AUTH" != 0 ]]; then
     EXT_MACROS+=('VX_CFG_EXT_AUTH_ENABLE=1')
@@ -64,6 +73,9 @@ if [[ "$EXT_AUTH" != 0 ]]; then
     # macro its encoding is never reached and the datapath would be dead logic.
     if [[ "$EXT_AUTH_SG4" != 0 && "$EXT_SYM_SG4" != 0 ]]; then
         EXT_MACROS+=('VX_CFG_EXT_AUTH_SG4_ENABLE=1')
+    fi
+    if [[ "$EXT_AUTH_S2" != 0 ]]; then
+        EXT_MACROS+=('VX_CFG_EXT_AUTH_S2_ENABLE=1')
     fi
 fi
 if [[ "$EXT_AUTH_SG4" != 0 && "$EXT_SYM_SG4" == 0 ]]; then
