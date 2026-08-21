@@ -1,16 +1,25 @@
-# Methodology probe: can ONE all-on build replace the three narrow ChaCha
-# builds of measurements.yaml?
+# Why one build per algorithm is safe: the measurement behind that decision.
 #
-# Answer, from running it: the code is identical -- every instruction count
-# matches the narrow builds to the digit -- and per-run cycles differ by at most
-# 2.7%. But the two-point cache-resident fits of that identical code diverge by
-# up to 13.9% (s2), because the fit amplifies endpoint error by 8.1x there.
-# That is the measurement behind section 23's split noise floor: 3% at the
-# memory-bound point, 9% at the cache-resident one.
+# ChaCha was brought up in three narrow builds -- S1 alone, S1+S2, S1+SG4 --
+# and for a while the paper's tables came from all three, with an S1 row
+# repeated in each as an anchor against build-to-build drift. This probe runs
+# every implementation in a single all-on build to ask whether that was
+# necessary.
 #
-# Keep the three narrow builds. Not because the builds disagree -- they do not --
-# but because this probe is what shows the cache-resident figure needs the wider
-# floor, and it has to stay reproducible.
+# It was not. The all-on build compiles byte-identical code: every instruction
+# count matches the narrow builds to the digit. Per-run cycles differ by at most
+# 2.7%, and all three tier speedups reproduce inside the noise floor -- S1
+# 1.64x against 1.69x, S2 3.87x against 3.9x, S3 1.28x against 1.26x.
+#
+# The one large divergence, up to 13.9% on a cache-resident fit, is a
+# *cross-build* comparison of that identical code, amplified 8.1x by the fit.
+# That is an argument for not comparing across builds, which is exactly what a
+# single build removes. measurements.yaml therefore uses one build per
+# algorithm, the tier chosen with -i, and carries no anchor rows.
+#
+# Area and Fmax are the opposite case and still come from isolated builds: what
+# a design costs is what *it* costs, not what every experimental design costs
+# when compiled together.
 #
 #   tests/crypto/bench.py --yaml tests/crypto/probe_build_merge.yaml \
 #                         --runs build32/crypto_runs/probe

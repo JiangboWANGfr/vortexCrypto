@@ -29,6 +29,7 @@ reproduce a recorded row from its own `extensions` and `opts` columns:
 -DVX_CFG_EXT_AUTH_ENABLE \
 -DVX_CFG_EXT_AUTH_POLY_ENABLE \
 -DVX_CFG_EXT_SYM_CHACHA_ENABLE \
+    
 -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE"
 
 and use `--case` for a quick, named, repeatable run of a case as CI defines it.
@@ -255,7 +256,7 @@ def resolve_configs(case_configs, shape):
 
 def main():
     p = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+        description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument("--case", help="one case name from the catalog")
     p.add_argument("--yaml", help="run every case in this testcases file")
     p.add_argument("--app", help="app directory name (without --case/--yaml)")
@@ -272,9 +273,9 @@ def main():
     # case's. Both apps take the same five.
     p.add_argument("-n", metavar="MSGS", help="messages")
     p.add_argument("-b", metavar="BLOCKS",
-                   help="blocks per message -- a block is 16 bytes for aes_gcm "
-                        "and 64 for chacha_poly, so compare the two through "
-                        "bytes, never through blocks")
+                   help="blocks per message -- a block is 16 bytes for "
+                        "aes_gcm and 64 for chacha_poly,\nso compare the two "
+                        "through bytes, never through blocks")
     p.add_argument("-t", metavar="BYTES",
                    help="tail bytes: the partial block after the last whole one")
     p.add_argument("-a", metavar="BYTES", help="AAD bytes")
