@@ -10,9 +10,10 @@ from those logs while they still existed, which is not a process that works once
 they are gone.
 
 Those logs have since been moved out of `/tmp`. All 649 files, 78 MB, are now in
-`build32/crypto_runs/archive-2026-08/`, verified identical by checksum, and the
-`log` column below is a path relative to that directory -- every one of the 271
-rows resolves to a real file.
+`build32/crypto_runs/archive-2026-08/`, verified identical by checksum. The `log`
+column is a path relative to `build32/crypto_runs/`, one base for every row: the
+original ones sit under `archive-2026-08/`, later batches under their own
+directory. All 377 rows resolve to a file that exists.
 
 ## Columns
 
@@ -26,7 +27,7 @@ rows resolves to a real file.
 | `cycles`, `instrs` | what the run retired |
 | `opts` | the command line |
 | `extensions` | which `VX_CFG_EXT_*` macros the build carried |
-| `log` | path under `build32/crypto_runs/archive-2026-08/` to the run it came from |
+| `log` | path under `build32/crypto_runs/` to the run it came from |
 
 A block is **16 bytes** for `aes_gcm` and **64 bytes** for `chacha_poly`. Any
 comparison across the two must go through `bytes`, not `blocks`; the `cycles/B`
@@ -53,9 +54,14 @@ noise in the measurement.
 | | |
 | --- | --- |
 | `crypto_measurements.csv` | 271 rows, in the repository, the durable record |
-| `build32/crypto_runs/archive-2026-08/` | the logs those rows were extracted from |
-| `build32/crypto_runs/logs/` | logs from runs made since, one file per run |
-| `build32/crypto_runs/records.csv` | rows from those runs, same 15 columns |
+| `build32/crypto_runs/archive-2026-08/` | the logs the first 271 rows came from |
+| `build32/crypto_runs/<batch>/logs/` | logs from later batches, one file per run |
+| `build32/crypto_runs/<batch>/records.csv` | that batch's rows, same 15 columns |
+
+Give each batch its own `--runs` directory. A CI-configuration sweep and a
+measurement sweep must not share a `records.csv`: they are the two things whose
+mixture is the 43% error above. The CI sweep run here is in
+`records-ci-config.csv` and is deliberately **not** merged into this file.
 
 `build32/` is gitignored, so the logs are on disk but not in version control and
 not backed up. `rm -rf build32` destroys them; the CSV in the repository is what
