@@ -43,6 +43,24 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b1 -i0
+- id: m-chacha-s1-sw-b2
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b2 -i0
+- id: m-chacha-s1-sw-b3
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b3 -i0
 - id: m-chacha-s1-sw-b4
   via: make-run
   drivers:
@@ -79,6 +97,24 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b1 -i1
+- id: m-chacha-s1-rori-b2
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b2 -i1
+- id: m-chacha-s1-rori-b3
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b3 -i1
 - id: m-chacha-s1-rori-b4
   via: make-run
   drivers:
@@ -115,6 +151,24 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b1 -i5
+- id: m-chacha-s1-xr-b2
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b2 -i5
+- id: m-chacha-s1-xr-b3
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b3 -i5
 - id: m-chacha-s1-xr-b4
   via: make-run
   drivers:
@@ -151,6 +205,24 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b1 -i6
+- id: m-chacha-s1-mac-b2
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b2 -i6
+- id: m-chacha-s1-mac-b3
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b3 -i6
 - id: m-chacha-s1-mac-b4
   via: make-run
   drivers:
@@ -187,6 +259,24 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b1 -i7
+- id: m-chacha-s1-s1-b2
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b2 -i7
+- id: m-chacha-s1-s1-b3
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b3 -i7
 - id: m-chacha-s1-s1-b4
   via: make-run
   drivers:
@@ -223,6 +313,24 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b1 -i8
+- id: m-chacha-s1-s3-b2
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b2 -i8
+- id: m-chacha-s1-s3-b3
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b3 -i8
 - id: m-chacha-s1-s3-b4
   via: make-run
   drivers:
@@ -259,6 +367,24 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b1 -i7
+- id: m-chacha-s2-s1-b2
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b2 -i7
+- id: m-chacha-s2-s1-b3
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b3 -i7
 - id: m-chacha-s2-s1-b4
   via: make-run
   drivers:
@@ -295,6 +421,24 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b1 -i10
+- id: m-chacha-s2-s2-b2
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b2 -i10
+- id: m-chacha-s2-s2-b3
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b3 -i10
 - id: m-chacha-s2-s2-b4
   via: make-run
   drivers:
@@ -331,6 +475,24 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b1 -i7
+- id: m-chacha-s3-s1-b2
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b2 -i7
+- id: m-chacha-s3-s1-b3
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b3 -i7
 - id: m-chacha-s3-s1-b4
   via: make-run
   drivers:
@@ -367,6 +529,24 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b1 -i8
+- id: m-chacha-s3-s3-b2
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b2 -i8
+- id: m-chacha-s3-s3-b3
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b3 -i8
 - id: m-chacha-s3-s3-b4
   via: make-run
   drivers:
@@ -403,6 +583,24 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b1 -i9
+- id: m-chacha-s3-s3f-b2
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b2 -i9
+- id: m-chacha-s3-s3f-b3
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b3 -i9
 - id: m-chacha-s3-s3f-b4
   via: make-run
   drivers:

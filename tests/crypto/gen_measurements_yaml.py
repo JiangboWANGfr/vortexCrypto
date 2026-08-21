@@ -16,14 +16,21 @@ IMPL.update({("aes_gcm", l): i for i, l in enumerate(
 def macros(short):
     return " ".join("-DVX_CFG_EXT_%s_ENABLE" % m for m in short.split())
 
+# b=1,2,3,4 is the cache-resident regime (4-16 KB) and b=16,32 the memory-bound
+# one (64-128 KB). Four points in the first because a two-point fit there
+# multiplies its endpoints' error by up to 8x -- see section 23's noise-floor
+# note -- and b=4 is already the 16 KB D-cache boundary, so the span cannot be
+# widened instead.
+CHACHA_POINTS = [(64,1),(64,2),(64,3),(64,4),(64,16),(64,32)]
+
 # (build label, extensions as the CSV spells them, impls, (msgs, blocks) points)
 BUILDS = [
   ("chacha-s1", "AUTH AUTH_POLY SYM_CHACHA SYM",
-   ["sw", "rori", "xr", "mac", "s1", "s3"], [(64,1),(64,4),(64,16),(64,32)]),
+   ["sw", "rori", "xr", "mac", "s1", "s3"], CHACHA_POINTS),
   ("chacha-s2", "AUTH AUTH_POLY SYM_CHACHA SYM_CHACHA_S2 SYM",
-   ["s1", "s2"], [(64,1),(64,4),(64,16),(64,32)]),
+   ["s1", "s2"], CHACHA_POINTS),
   ("chacha-s3", "AUTH AUTH_POLY AUTH_POLY_SG4 SYM_CHACHA SYM_CHACHA_SG4 SYM",
-   ["s1", "s3", "s3f"], [(64,1),(64,4),(64,16),(64,32)]),
+   ["s1", "s3", "s3f"], CHACHA_POINTS),
   ("aes", "AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4",
    ["sw_ttable", "hw_s1", "hw_s2", "hw_s3g", "hw_s2_ilv"], [(128,8),(128,64)]),
 ]
