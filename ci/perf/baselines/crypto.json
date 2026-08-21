@@ -1,4 +1,24 @@
 {
+  "crypto:perf_gate-aes-gcm-s2:rtlsim": {
+    "32": {
+      "cycles": 22469,
+      "instrs": 7392
+    },
+    "app": "crypto/aes_gcm",
+    "args": "-n64 -b4 -i10",
+    "config_hash": "4d4bd8e5b76eade6",
+    "configs": "-DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE"
+  },
+  "crypto:perf_gate-aes-gcm-s3g:rtlsim": {
+    "32": {
+      "cycles": 70609,
+      "instrs": 25151
+    },
+    "app": "crypto/aes_gcm",
+    "args": "-n64 -b4 -a20 -i8",
+    "config_hash": "1a6f3e6ada5444f4",
+    "configs": "-DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE"
+  },
   "crypto:perf_gate-aes-gcm-sw:rtlsim": {
     "32": {
       "cycles": 910621,
@@ -8,6 +28,36 @@
     "args": "-n64 -b4 -i0",
     "config_hash": "dd7079396eb9046a",
     "configs": ""
+  },
+  "crypto:perf_gate-chacha-poly-s1:rtlsim": {
+    "32": {
+      "cycles": 229889,
+      "instrs": 93176
+    },
+    "app": "crypto/chacha_poly",
+    "args": "-n64 -b4 -i7",
+    "config_hash": "291a6bf868d7ca00",
+    "configs": "-DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE"
+  },
+  "crypto:perf_gate-chacha-poly-s2:rtlsim": {
+    "32": {
+      "cycles": 89477,
+      "instrs": 34664
+    },
+    "app": "crypto/chacha_poly",
+    "args": "-n64 -b4 -i10",
+    "config_hash": "f1ba98deee78299c",
+    "configs": "-DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE"
+  },
+  "crypto:perf_gate-chacha-poly-s3f:rtlsim": {
+    "32": {
+      "cycles": 450018,
+      "instrs": 173720
+    },
+    "app": "crypto/chacha_poly",
+    "args": "-n64 -b4 -i9",
+    "config_hash": "c47b77c64acada76",
+    "configs": "-DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE"
   },
   "crypto:perf_gate-chacha-poly-sw:rtlsim": {
     "32": {
