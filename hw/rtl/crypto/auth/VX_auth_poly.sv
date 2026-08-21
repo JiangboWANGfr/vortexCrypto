@@ -107,28 +107,6 @@ module VX_auth_poly import VX_gpu_pkg::*; #(
 `endif
 `endif
 
-    wire [NUM_LANES-1:0][XLEN-1:0] poly_result;
-
-    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_lanes
-        wire [25:0] rlimb = execute_if.data.rs3_data[i][25:0];
-        wire [57:0] prod  = execute_if.data.rs2_data[i][31:0] * rlimb;
-        // 5*p is p + 4*p, two shifted adds rather than a second multiplier.
-        wire [60:0] scaled = is_scale5 ? ({3'b0, prod} + {1'b0, prod, 2'b0})
-                                       : {3'b0, prod};
-        wire [31:0] part = is_high ? scaled[57:26] : {6'b0, scaled[25:0]};
-        wire [XLEN-1:0] mac_result = XLEN'(execute_if.data.rs1_data[i][31:0] + part);
-`ifdef VX_CFG_EXT_AUTH_POLY_SG4_ENABLE
-        wire [XLEN-1:0] sel_rsum = is_rsum ? rsum_result[i] : mac_result;
-`else
-        wire [XLEN-1:0] sel_rsum = mac_result;
-`endif
-`ifdef VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE
-        assign poly_result[i] = is_step16 ? step16_result[i] : sel_rsum;
-`else
-        assign poly_result[i] = sel_rsum;
-`endif
-    end
-
 `ifdef VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE
     // poly4.step.sg16 rd, rs1(h), rs2(r), rs3(m)
     //
@@ -162,9 +140,14 @@ module VX_auth_poly import VX_gpu_pkg::*; #(
     // step 0     absorb h + m for this block
     // step 1..5  one output limb each, carry running forward
     // step 6     fold the carry out of d4 back into limb 0 and renormalise
+    // step 7     settle. The result buffer samples p_h combinationally, and
+    //            step 6's write lands on the same clock edge that would have
+    //            retired the instruction -- without this the buffer captures
+    //            the accumulator one update early, which it did: every limb of
+    //            every trial came back wrong and unmasked.
     localparam SW = 5;
     reg [SW-1:0] p_step;
-    wire p_last_in_block = (p_step == SW'(6));
+    wire p_last_in_block = (p_step == SW'(7));
     reg [1:0] p_blk;
     wire p_last = p_last_in_block && (p_blk == 2'd3);
 
@@ -187,8 +170,12 @@ module VX_auth_poly import VX_gpu_pkg::*; #(
     for (genvar g = 0; g < NSG; ++g) begin : g_d
         wire [57:0] terms [5];
         for (genvar j = 0; j < 5; ++j) begin : g_t
+            // j == 0 never wraps -- a[0] always multiplies r[i] -- so this
+            // comparison is constant there and Verilator is right to say so.
+            /* verilator lint_off UNSIGNED */
             wire [2:0] k    = (p_i >= 3'(j)) ? (p_i - 3'(j)) : (p_i + 3'd5 - 3'(j));
             wire       wrap = (p_i < 3'(j));
+            /* verilator lint_on UNSIGNED */
             wire [31:0] rk  = p_r[g][k];
             wire [57:0] prd = 58'(p_a[g][j] * rk);
             assign terms[j] = wrap ? (prd + {prd[55:0], 2'b0}) : prd;  // x5 == x1 + x4
@@ -219,19 +206,21 @@ module VX_auth_poly import VX_gpu_pkg::*; #(
                                                 execute_if.data.rs1_data[g*16+1][31:0] & MASK,
                                                 execute_if.data.rs1_data[g*16+0][31:0] & MASK}
                                             : p_h[g];
-                        automatic logic [31:0] t0 = execute_if.data.rs3_data[g*16 + {p_blk, 2'd0}][31:0];
-                        automatic logic [31:0] t1 = execute_if.data.rs3_data[g*16 + {p_blk, 2'd1}][31:0];
-                        automatic logic [31:0] t2 = execute_if.data.rs3_data[g*16 + {p_blk, 2'd2}][31:0];
-                        automatic logic [31:0] t3 = execute_if.data.rs3_data[g*16 + {p_blk, 2'd3}][31:0];
+                        automatic logic [31:0] t0 = execute_if.data.rs3_data[g*16 + 32'({p_blk, 2'd0})][31:0];
+                        automatic logic [31:0] t1 = execute_if.data.rs3_data[g*16 + 32'({p_blk, 2'd1})][31:0];
+                        automatic logic [31:0] t2 = execute_if.data.rs3_data[g*16 + 32'({p_blk, 2'd2})][31:0];
+                        automatic logic [31:0] t3 = execute_if.data.rs3_data[g*16 + 32'({p_blk, 2'd3})][31:0];
                         p_a[g][0] <= hh[0] + (t0 & MASK);
                         p_a[g][1] <= hh[1] + (((t0 >> 26) | (t1 << 6)) & MASK);
                         p_a[g][2] <= hh[2] + (((t1 >> 20) | (t2 << 12)) & MASK);
                         p_a[g][3] <= hh[3] + (((t2 >> 14) | (t3 << 18)) & MASK);
                         p_a[g][4] <= hh[4] + ((t3 >> 8) | 32'h01000000);
                         p_c[g] <= '0;
+                    end else if (p_step == SW'(7)) begin
+                        // settle
                     end else if (p_step <= SW'(5)) begin
-                        p_h[g][p_i] <= p_d[g][25:0];
-                        p_c[g]      <= 32'(p_d[g] >> LIMB);
+                        p_h[g][p_i] <= 32'(p_d[g][25:0]);
+                        p_c[g]      <= 32'(p_d[g][57:LIMB]);
                     end else begin
                         // h0 += 5*c, then one more carry into h1.
                         automatic logic [31:0] n0 = p_h[g][0] + (p_c[g] + {p_c[g][29:0], 2'b0});
@@ -260,6 +249,29 @@ module VX_auth_poly import VX_gpu_pkg::*; #(
     end
 `endif
 `endif
+
+
+    wire [NUM_LANES-1:0][XLEN-1:0] poly_result;
+
+    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_lanes
+        wire [25:0] rlimb = execute_if.data.rs3_data[i][25:0];
+        wire [57:0] prod  = execute_if.data.rs2_data[i][31:0] * rlimb;
+        // 5*p is p + 4*p, two shifted adds rather than a second multiplier.
+        wire [60:0] scaled = is_scale5 ? ({3'b0, prod} + {1'b0, prod, 2'b0})
+                                       : {3'b0, prod};
+        wire [31:0] part = is_high ? scaled[57:26] : {6'b0, scaled[25:0]};
+        wire [XLEN-1:0] mac_result = XLEN'(execute_if.data.rs1_data[i][31:0] + part);
+`ifdef VX_CFG_EXT_AUTH_POLY_SG4_ENABLE
+        wire [XLEN-1:0] sel_rsum = is_rsum ? rsum_result[i] : mac_result;
+`else
+        wire [XLEN-1:0] sel_rsum = mac_result;
+`endif
+`ifdef VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE
+        assign poly_result[i] = is_step16 ? step16_result[i] : sel_rsum;
+`else
+        assign poly_result[i] = sel_rsum;
+`endif
+    end
 
     // The sixteen-lane macro-op occupies the unit for twenty-eight cycles and
     // must not retire until the last one; everything else is a single cycle.

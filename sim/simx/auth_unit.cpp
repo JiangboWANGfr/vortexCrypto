@@ -129,7 +129,6 @@ void AuthUnit::execute(instr_trace_t* trace) {
   uint32_t num_threads = VX_CFG_NUM_THREADS;
   auto& rs1_data = trace->src_data[0];
   auto& rs2_data = trace->src_data[1];
-  auto& rs3_data = trace->src_data[2];
 
   trace->dst_data.assign(num_threads, reg_data_t{});
   auto& rd_data = trace->dst_data;
@@ -161,6 +160,7 @@ void AuthUnit::execute(instr_trace_t* trace) {
       }
       if (!first) continue;
 
+      auto& rs3_data = trace->src_data[2];
       uint32_t h[5], r[5], m[16];
       for (uint32_t c = 0; c < 5; ++c) {
         h[c] = (uint32_t)rs1_data[q + c].u & 0x3ffffffu;
@@ -235,6 +235,7 @@ void AuthUnit::execute(instr_trace_t* trace) {
 
 #ifdef VX_CFG_EXT_AUTH_POLY_ENABLE
   if (auth_type == AuthType::POLY_MAC) {
+    auto& rs3_data = trace->src_data[2];
     auto pa = std::get<IntrAuthArgs>(trace->instr_ptr->get_args());
     const bool is_high   = (pa.sel & 0x1) != 0;
     const bool is_scale5 = (pa.sel & 0x2) != 0;

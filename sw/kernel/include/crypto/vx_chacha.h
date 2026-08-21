@@ -162,6 +162,34 @@ extern "C" {
 })
 #endif
 
+// poly4.step.sg16: one aligned sixteen-lane subgroup absorbs a whole 64-byte
+// ChaCha block -- four Poly1305 blocks -- in a single instruction.
+//
+//   vx_poly4_step_sg16(h, r, m)
+//
+//     lane 0..4  h  -> h0..h4, the accumulator's five 26-bit limbs
+//     lane 0..4  r  -> r0..r4, the key's
+//     lane 0..15 m  -> one message word each, sixteen words = 64 bytes
+//     lane 0..4  rd -> the new accumulator; lanes 5..15 receive zero
+//
+// The r^2, r^3 and r^4 that the software block-parallel form needs stay inside
+// the unit. That schedule is not part of Poly1305's state, only of one way of
+// computing it, and measured on the s3f_norp diagnostic it costs twenty loads
+// per block and 36% of the kernel's cycles.
+//
+// PRECONDITION: all sixteen lanes converged. The subgroup's mask must be
+// 0xffff, and both models assert it.
+#ifdef VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE
+#define vx_poly4_step_sg16(h, r, m) ({                                       \
+    uint32_t __out;                                                          \
+    __asm__ (".insn r4 %1, 7, 0, %0, %2, %3, %4"                             \
+             : "=r"(__out)                                                   \
+             : "i"(0x5B), "r"((uint32_t)(h)), "r"((uint32_t)(r)),            \
+               "r"((uint32_t)(m)));                                          \
+    __out;                                                                   \
+})
+#endif
+
 // Stateful per-lane ChaCha20 engine (section 23 of the crypto proposal). One
 // lane holds a whole 512-bit state in a context keyed by (warp, lane) and one
 // instruction advances a double-round.

@@ -77,6 +77,10 @@ module VX_auth_unit import VX_gpu_pkg::*; #(
         // gets its own PE rather than another mode inside the GHASH datapath.
         wire is_poly = (per_block_execute_if[block_idx].data.op_type
                         == INST_OP_BITS'(INST_AUTH_POLY_MAC))
+    `ifdef VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE
+                    || (per_block_execute_if[block_idx].data.op_type
+                        == INST_OP_BITS'(INST_AUTH_POLY_STEP16))
+    `endif
     `ifdef VX_CFG_EXT_AUTH_POLY_SG4_ENABLE
                     || (per_block_execute_if[block_idx].data.op_type
                         == INST_OP_BITS'(INST_AUTH_POLY_RSUM))

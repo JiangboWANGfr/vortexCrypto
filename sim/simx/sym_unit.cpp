@@ -100,6 +100,7 @@ SymUnit::SymUnit(const SimContext& ctx, const char* name, Core* core)
 // architectural rule is that a quad's thread mask is uniform -- all four lanes
 // or none; this checks it, and the readers below treat a masked neighbour as
 // zero so that a violation is at least deterministic.
+#if defined(VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE) || defined(VX_CFG_EXT_SYM_CHACHA_ENABLE)
 static void check_quad_uniform(const ThreadMask& tmask, uint32_t num_threads,
                                const char* op) {
   for (uint32_t q = 0; q + 3 < num_threads; q += 4) {
@@ -118,6 +119,7 @@ static inline uint32_t quad_src(const ThreadMask& tmask,
                                 const std::vector<reg_data_t>& d, uint32_t t) {
   return tmask.test(t) ? (uint32_t)d[t].u : 0u;
 }
+#endif
 
 uint32_t SymUnit::latency_of(const instr_trace_t* trace) const {
   if (std::get_if<SymType>(&trace->op_type)) {

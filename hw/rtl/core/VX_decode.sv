@@ -932,8 +932,10 @@ module VX_decode import
                 // instruction's reason to exist: measured on s3f_norp, holding
                 // it in registers costs twenty loads per block and 36% of the
                 // kernel's cycles, and it is not part of the algorithm's state.
-                // funct7 carries nothing and is reserved.
-                if (funct3 == 3'h7 && funct7 == 7'h0) begin
+                // R4-type: bits 31:27 are rs3 and 26:25 are funct2, so there
+                // is no funct7 to reserve here -- funct2 is the only free field
+                // and it must be zero.
+                if (funct3 == 3'h7 && funct2 == 2'h0) begin
                     ex_type = EX_AUTH;
                     op_type = INST_OP_BITS'(INST_AUTH_POLY_STEP16);
                     op_args.sym.bs = 2'b0;
