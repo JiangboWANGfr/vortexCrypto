@@ -270,3 +270,109 @@ chacha_poly,xr,rtlsim,2,4,16,64,16,1024,65536,863714,111132,-n64 -b16 -i5,AUTH S
 chacha_poly,xr,rtlsim,2,4,16,64,32,2048,131072,1648878,216540,-n64 -b32 -i5,AUTH AUTH_POLY SYM_CHACHA SYM,pf_5.log
 chacha_poly,xr,rtlsim,2,4,16,64,32,2048,131072,1642561,216540,-n64 -b32 -i5,AUTH SYM_CHACHA SYM,xm_5_32.log
 chacha_poly,xr,simx,2,4,16,64,4,256,20480,428690,43820,-n64 -b4 -t37 -a20 -i5,AUTH SYM_CHACHA SYM,xr2.log
+chacha_poly,s1,rtlsim,2,4,16,64,1,64,4096,99385,9368,-b1 -i7 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_SG4,measure/logs/chacha_poly-rtlsim-_b1_i7_n64-20260821-131248.log
+chacha_poly,s1,rtlsim,2,4,16,64,16,1024,65536,513086,81848,-b16 -i7 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_SG4,measure/logs/chacha_poly-rtlsim-_b16_i7_n64-20260821-131314.log
+chacha_poly,s1,rtlsim,2,4,16,64,32,2048,131072,994892,159160,-b32 -i7 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_SG4,measure/logs/chacha_poly-rtlsim-_b32_i7_n64-20260821-131324.log
+chacha_poly,s1,rtlsim,2,4,16,64,4,256,16384,193944,23864,-b4 -i7 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_SG4,measure/logs/chacha_poly-rtlsim-_b4_i7_n64-20260821-131345.log
+chacha_poly,s3,rtlsim,2,4,16,64,1,64,4096,272804,28976,-b1 -i8 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_SG4,measure/logs/chacha_poly-rtlsim-_b1_i8_n64-20260821-131349.log
+chacha_poly,s3,rtlsim,2,4,16,64,16,1024,65536,837214,134576,-b16 -i8 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_SG4,measure/logs/chacha_poly-rtlsim-_b16_i8_n64-20260821-131355.log
+chacha_poly,s3,rtlsim,2,4,16,64,32,2048,131072,1333928,247216,-b32 -i8 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_SG4,measure/logs/chacha_poly-rtlsim-_b32_i8_n64-20260821-131413.log
+chacha_poly,s3,rtlsim,2,4,16,64,4,256,16384,385478,50096,-b4 -i8 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_SG4,measure/logs/chacha_poly-rtlsim-_b4_i8_n64-20260821-131442.log
+chacha_poly,s3f,rtlsim,2,4,16,64,1,64,4096,226574,27328,-b1 -i9 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_SG4,measure/logs/chacha_poly-rtlsim-_b1_i9_n64-20260821-131450.log
+chacha_poly,s3f,rtlsim,2,4,16,64,16,1024,65536,679268,114208,-b16 -i9 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_SG4,measure/logs/chacha_poly-rtlsim-_b16_i9_n64-20260821-131456.log
+chacha_poly,s3f,rtlsim,2,4,16,64,32,2048,131072,1055634,206880,-b32 -i9 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_SG4,measure/logs/chacha_poly-rtlsim-_b32_i9_n64-20260821-131510.log
+chacha_poly,s3f,rtlsim,2,4,16,64,4,256,16384,318337,44704,-b4 -i9 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_SG4,measure/logs/chacha_poly-rtlsim-_b4_i9_n64-20260821-131534.log
+chacha_poly,s1,rtlsim,2,4,16,64,1,64,4096,97328,9368,-b1 -i7 -n64,AUTH AUTH_POLY SYM SYM_CHACHA SYM_CHACHA_S2,measure/logs/chacha_poly-rtlsim-_b1_i7_n64-20260821-131541.log
+chacha_poly,s1,rtlsim,2,4,16,64,16,1024,65536,515881,81848,-b16 -i7 -n64,AUTH AUTH_POLY SYM SYM_CHACHA SYM_CHACHA_S2,measure/logs/chacha_poly-rtlsim-_b16_i7_n64-20260821-131638.log
+chacha_poly,s1,rtlsim,2,4,16,64,32,2048,131072,981517,159160,-b32 -i7 -n64,AUTH AUTH_POLY SYM SYM_CHACHA SYM_CHACHA_S2,measure/logs/chacha_poly-rtlsim-_b32_i7_n64-20260821-131649.log
+chacha_poly,s1,rtlsim,2,4,16,64,4,256,16384,196482,23864,-b4 -i7 -n64,AUTH AUTH_POLY SYM SYM_CHACHA SYM_CHACHA_S2,measure/logs/chacha_poly-rtlsim-_b4_i7_n64-20260821-131709.log
+chacha_poly,s2,rtlsim,2,4,16,64,1,64,4096,69340,3872,-b1 -i10 -n64,AUTH AUTH_POLY SYM SYM_CHACHA SYM_CHACHA_S2,measure/logs/chacha_poly-rtlsim-_b1_i10_n64-20260821-131714.log
+chacha_poly,s2,rtlsim,2,4,16,64,16,1024,65536,156801,31592,-b16 -i10 -n64,AUTH AUTH_POLY SYM SYM_CHACHA SYM_CHACHA_S2,measure/logs/chacha_poly-rtlsim-_b16_i10_n64-20260821-131715.log
+chacha_poly,s2,rtlsim,2,4,16,64,32,2048,131072,282022,61160,-b32 -i10 -n64,AUTH AUTH_POLY SYM SYM_CHACHA SYM_CHACHA_S2,measure/logs/chacha_poly-rtlsim-_b32_i10_n64-20260821-131719.log
+chacha_poly,s2,rtlsim,2,4,16,64,4,256,16384,88968,9416,-b4 -i10 -n64,AUTH AUTH_POLY SYM SYM_CHACHA SYM_CHACHA_S2,measure/logs/chacha_poly-rtlsim-_b4_i10_n64-20260821-131725.log
+chacha_poly,mac,rtlsim,2,4,16,64,1,64,4096,119817,17044,-b1 -i6 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b1_i6_n64-20260821-131727.log
+chacha_poly,mac,rtlsim,2,4,16,64,16,1024,65536,593314,147124,-b16 -i6 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b16_i6_n64-20260821-131806.log
+chacha_poly,mac,rtlsim,2,4,16,64,32,2048,131072,1057384,285876,-b32 -i6 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b32_i6_n64-20260821-131818.log
+chacha_poly,mac,rtlsim,2,4,16,64,4,256,16384,235342,43060,-b4 -i6 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b4_i6_n64-20260821-131840.log
+chacha_poly,rori,rtlsim,2,4,16,64,1,64,4096,185286,14876,-b1 -i1 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b1_i1_n64-20260821-131845.log
+chacha_poly,rori,rtlsim,2,4,16,64,16,1024,65536,962885,132956,-b16 -i1 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b16_i1_n64-20260821-131849.log
+chacha_poly,rori,rtlsim,2,4,16,64,32,2048,131072,1751046,258908,-b32 -i1 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b32_i1_n64-20260821-131909.log
+chacha_poly,rori,rtlsim,2,4,16,64,4,256,16384,339074,38492,-b4 -i1 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b4_i1_n64-20260821-131945.log
+chacha_poly,s1,rtlsim,2,4,16,64,1,64,4096,97328,9368,-b1 -i7 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b1_i7_n64-20260821-131952.log
+chacha_poly,s1,rtlsim,2,4,16,64,16,1024,65536,515881,81848,-b16 -i7 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b16_i7_n64-20260821-131955.log
+chacha_poly,s1,rtlsim,2,4,16,64,32,2048,131072,981517,159160,-b32 -i7 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b32_i7_n64-20260821-132005.log
+chacha_poly,s1,rtlsim,2,4,16,64,4,256,16384,196482,23864,-b4 -i7 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b4_i7_n64-20260821-132026.log
+chacha_poly,s3,rtlsim,2,4,16,64,1,64,4096,264969,28976,-b1 -i8 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b1_i8_n64-20260821-132030.log
+chacha_poly,s3,rtlsim,2,4,16,64,16,1024,65536,831213,134576,-b16 -i8 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b16_i8_n64-20260821-132036.log
+chacha_poly,s3,rtlsim,2,4,16,64,32,2048,131072,1330621,247216,-b32 -i8 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b32_i8_n64-20260821-132054.log
+chacha_poly,s3,rtlsim,2,4,16,64,4,256,16384,377755,50096,-b4 -i8 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b4_i8_n64-20260821-132123.log
+chacha_poly,sw,rtlsim,2,4,16,64,1,64,4096,194935,19964,-b1 -i0 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b1_i0_n64-20260821-132131.log
+chacha_poly,sw,rtlsim,2,4,16,64,16,1024,65536,890570,175784,-b16 -i0 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b16_i0_n64-20260821-132135.log
+chacha_poly,sw,rtlsim,2,4,16,64,32,2048,131072,1697477,341992,-b32 -i0 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b32_i0_n64-20260821-132154.log
+chacha_poly,sw,rtlsim,2,4,16,64,4,256,16384,360904,51128,-b4 -i0 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b4_i0_n64-20260821-132228.log
+chacha_poly,xr,rtlsim,2,4,16,64,1,64,4096,177088,12312,-b1 -i5 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b1_i5_n64-20260821-132236.log
+chacha_poly,xr,rtlsim,2,4,16,64,16,1024,65536,882340,111132,-b16 -i5 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b16_i5_n64-20260821-132240.log
+chacha_poly,xr,rtlsim,2,4,16,64,32,2048,131072,1663216,216540,-b32 -i5 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b32_i5_n64-20260821-132258.log
+chacha_poly,xr,rtlsim,2,4,16,64,4,256,16384,327812,32076,-b4 -i5 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b4_i5_n64-20260821-132332.log
+aes_gcm,hw_s1,rtlsim,2,4,16,128,64,8192,131072,580088,212170,-b64 -i1 -n128,AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4,measure/logs/aes_gcm-rtlsim-_b64_i1_n128-20260821-132339.log
+aes_gcm,hw_s1,rtlsim,2,4,16,128,8,1024,16384,149432,31178,-b8 -i1 -n128,AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4,measure/logs/aes_gcm-rtlsim-_b8_i1_n128-20260821-132442.log
+aes_gcm,hw_s2,rtlsim,2,4,16,128,64,8192,131072,281220,37008,-b64 -i10 -n128,AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4,measure/logs/aes_gcm-rtlsim-_b64_i10_n128-20260821-132448.log
+aes_gcm,hw_s2,rtlsim,2,4,16,128,8,1024,16384,79211,6992,-b8 -i10 -n128,AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4,measure/logs/aes_gcm-rtlsim-_b8_i10_n128-20260821-132459.log
+aes_gcm,hw_s2_ilv,rtlsim,2,4,16,128,64,8192,131072,330565,37136,-b64 -i11 -n128,AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4,measure/logs/aes_gcm-rtlsim-_b64_i11_n128-20260821-132502.log
+aes_gcm,hw_s2_ilv,rtlsim,2,4,16,128,8,1024,16384,101611,7120,-b8 -i11 -n128,AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4,measure/logs/aes_gcm-rtlsim-_b8_i11_n128-20260821-132514.log
+aes_gcm,hw_s3g,rtlsim,2,4,16,128,64,8192,131072,177561,96642,-b64 -i8 -n128,AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4,measure/logs/aes_gcm-rtlsim-_b64_i8_n128-20260821-132518.log
+aes_gcm,hw_s3g,rtlsim,2,4,16,128,8,1024,16384,70902,16002,-b8 -i8 -n128,AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4,measure/logs/aes_gcm-rtlsim-_b8_i8_n128-20260821-132525.log
+aes_gcm,sw_ttable,rtlsim,2,4,16,128,64,8192,131072,9396016,2474230,-b64 -i0 -n128,AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4,measure/logs/aes_gcm-rtlsim-_b64_i0_n128-20260821-132528.log
+aes_gcm,sw_ttable,rtlsim,2,4,16,128,8,1024,16384,1417601,344886,-b8 -i0 -n128,AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4,measure/logs/aes_gcm-rtlsim-_b8_i0_n128-20260821-133001.log
+chacha_poly,s3,rtlsim,2,4,16,64,2,128,8192,309932,36016,-b2 -i8 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_SG4,measure/logs/chacha_poly-rtlsim-_b2_i8_n64-20260821-140017.log
+chacha_poly,s3,rtlsim,2,4,16,64,3,192,12288,346510,43056,-b3 -i8 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_SG4,measure/logs/chacha_poly-rtlsim-_b3_i8_n64-20260821-140048.log
+chacha_poly,s3f,rtlsim,2,4,16,64,2,128,8192,256400,33120,-b2 -i9 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_SG4,measure/logs/chacha_poly-rtlsim-_b2_i9_n64-20260821-140055.log
+chacha_poly,s3f,rtlsim,2,4,16,64,3,192,12288,284963,38912,-b3 -i9 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_SG4,measure/logs/chacha_poly-rtlsim-_b3_i9_n64-20260821-140101.log
+chacha_poly,s2,rtlsim,2,4,16,64,2,128,8192,75331,5720,-b2 -i10 -n64,AUTH AUTH_POLY SYM SYM_CHACHA SYM_CHACHA_S2,measure/logs/chacha_poly-rtlsim-_b2_i10_n64-20260821-140107.log
+chacha_poly,s2,rtlsim,2,4,16,64,3,192,12288,78374,7568,-b3 -i10 -n64,AUTH AUTH_POLY SYM SYM_CHACHA SYM_CHACHA_S2,measure/logs/chacha_poly-rtlsim-_b3_i10_n64-20260821-140122.log
+chacha_poly,mac,rtlsim,2,4,16,64,2,128,8192,162715,25716,-b2 -i6 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b2_i6_n64-20260821-140124.log
+chacha_poly,mac,rtlsim,2,4,16,64,3,192,12288,202770,34388,-b3 -i6 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b3_i6_n64-20260821-140140.log
+chacha_poly,rori,rtlsim,2,4,16,64,2,128,8192,236481,22748,-b2 -i1 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b2_i1_n64-20260821-140145.log
+chacha_poly,rori,rtlsim,2,4,16,64,3,192,12288,284293,30620,-b3 -i1 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b3_i1_n64-20260821-140150.log
+chacha_poly,s1,rtlsim,2,4,16,64,2,128,8192,129657,14200,-b2 -i7 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b2_i7_n64-20260821-140156.log
+chacha_poly,s1,rtlsim,2,4,16,64,3,192,12288,158070,19032,-b3 -i7 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b3_i7_n64-20260821-140159.log
+chacha_poly,sw,rtlsim,2,4,16,64,2,128,8192,248567,30352,-b2 -i0 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b2_i0_n64-20260821-140202.log
+chacha_poly,sw,rtlsim,2,4,16,64,3,192,12288,298162,40740,-b3 -i0 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b3_i0_n64-20260821-140207.log
+chacha_poly,xr,rtlsim,2,4,16,64,2,128,8192,227006,18900,-b2 -i5 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b2_i5_n64-20260821-140214.log
+chacha_poly,xr,rtlsim,2,4,16,64,3,192,12288,271438,25488,-b3 -i5 -n64,AUTH AUTH_POLY SYM SYM_CHACHA,measure/logs/chacha_poly-rtlsim-_b3_i5_n64-20260821-140218.log
+chacha_poly,s1,rtlsim,2,4,16,64,2,128,8192,133142,14200,-b2 -i7 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_SG4,measure/logs/chacha_poly-rtlsim-_b2_i7_n64-20260821-140416.log
+chacha_poly,s1,rtlsim,2,4,16,64,3,192,12288,158120,19032,-b3 -i7 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_SG4,measure/logs/chacha_poly-rtlsim-_b3_i7_n64-20260821-140432.log
+chacha_poly,s1,rtlsim,2,4,16,64,2,128,8192,129657,14200,-b2 -i7 -n64,AUTH AUTH_POLY SYM SYM_CHACHA SYM_CHACHA_S2,measure/logs/chacha_poly-rtlsim-_b2_i7_n64-20260821-140436.log
+chacha_poly,s1,rtlsim,2,4,16,64,3,192,12288,158070,19032,-b3 -i7 -n64,AUTH AUTH_POLY SYM SYM_CHACHA SYM_CHACHA_S2,measure/logs/chacha_poly-rtlsim-_b3_i7_n64-20260821-140452.log
+chacha_poly,mac,rtlsim,2,4,16,64,1,64,4096,119817,17044,-b1 -i6 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b1_i6_n64-20260821-133934.log
+chacha_poly,mac,rtlsim,2,4,16,64,16,1024,65536,593314,147124,-b16 -i6 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b16_i6_n64-20260821-134037.log
+chacha_poly,mac,rtlsim,2,4,16,64,32,2048,131072,1057384,285876,-b32 -i6 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b32_i6_n64-20260821-134050.log
+chacha_poly,mac,rtlsim,2,4,16,64,4,256,16384,235342,43060,-b4 -i6 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b4_i6_n64-20260821-134112.log
+chacha_poly,rori,rtlsim,2,4,16,64,1,64,4096,185286,14876,-b1 -i1 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b1_i1_n64-20260821-134117.log
+chacha_poly,rori,rtlsim,2,4,16,64,16,1024,65536,962885,132956,-b16 -i1 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b16_i1_n64-20260821-134121.log
+chacha_poly,rori,rtlsim,2,4,16,64,32,2048,131072,1751046,258908,-b32 -i1 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b32_i1_n64-20260821-134141.log
+chacha_poly,rori,rtlsim,2,4,16,64,4,256,16384,339074,38492,-b4 -i1 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b4_i1_n64-20260821-134217.log
+chacha_poly,s1,rtlsim,2,4,16,64,1,64,4096,99385,9368,-b1 -i7 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b1_i7_n64-20260821-134225.log
+chacha_poly,s1,rtlsim,2,4,16,64,16,1024,65536,513086,81848,-b16 -i7 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b16_i7_n64-20260821-134227.log
+chacha_poly,s1,rtlsim,2,4,16,64,32,2048,131072,994892,159160,-b32 -i7 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b32_i7_n64-20260821-134238.log
+chacha_poly,s1,rtlsim,2,4,16,64,4,256,16384,193944,23864,-b4 -i7 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b4_i7_n64-20260821-134259.log
+chacha_poly,s2,rtlsim,2,4,16,64,1,64,4096,69654,3872,-b1 -i10 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b1_i10_n64-20260821-134303.log
+chacha_poly,s2,rtlsim,2,4,16,64,16,1024,65536,156929,31592,-b16 -i10 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b16_i10_n64-20260821-134305.log
+chacha_poly,s2,rtlsim,2,4,16,64,32,2048,131072,281545,61160,-b32 -i10 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b32_i10_n64-20260821-134308.log
+chacha_poly,s2,rtlsim,2,4,16,64,4,256,16384,86550,9416,-b4 -i10 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b4_i10_n64-20260821-134314.log
+chacha_poly,s3,rtlsim,2,4,16,64,1,64,4096,264967,28976,-b1 -i8 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b1_i8_n64-20260821-134316.log
+chacha_poly,s3,rtlsim,2,4,16,64,16,1024,65536,831211,134576,-b16 -i8 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b16_i8_n64-20260821-134322.log
+chacha_poly,s3,rtlsim,2,4,16,64,32,2048,131072,1330619,247216,-b32 -i8 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b32_i8_n64-20260821-134340.log
+chacha_poly,s3,rtlsim,2,4,16,64,4,256,16384,377753,50096,-b4 -i8 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b4_i8_n64-20260821-134409.log
+chacha_poly,s3f,rtlsim,2,4,16,64,1,64,4096,228151,27328,-b1 -i9 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b1_i9_n64-20260821-134418.log
+chacha_poly,s3f,rtlsim,2,4,16,64,16,1024,65536,681552,114208,-b16 -i9 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b16_i9_n64-20260821-134423.log
+chacha_poly,s3f,rtlsim,2,4,16,64,32,2048,131072,1058934,206880,-b32 -i9 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b32_i9_n64-20260821-134438.log
+chacha_poly,s3f,rtlsim,2,4,16,64,4,256,16384,317641,44704,-b4 -i9 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b4_i9_n64-20260821-134501.log
+chacha_poly,sw,rtlsim,2,4,16,64,1,64,4096,194935,19964,-b1 -i0 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b1_i0_n64-20260821-134508.log
+chacha_poly,sw,rtlsim,2,4,16,64,16,1024,65536,890570,175784,-b16 -i0 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b16_i0_n64-20260821-134513.log
+chacha_poly,sw,rtlsim,2,4,16,64,32,2048,131072,1697477,341992,-b32 -i0 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b32_i0_n64-20260821-134532.log
+chacha_poly,sw,rtlsim,2,4,16,64,4,256,16384,360904,51128,-b4 -i0 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b4_i0_n64-20260821-134606.log
+chacha_poly,xr,rtlsim,2,4,16,64,1,64,4096,178774,12312,-b1 -i5 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b1_i5_n64-20260821-134614.log
+chacha_poly,xr,rtlsim,2,4,16,64,16,1024,65536,868275,111132,-b16 -i5 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b16_i5_n64-20260821-134618.log
+chacha_poly,xr,rtlsim,2,4,16,64,32,2048,131072,1650627,216540,-b32 -i5 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b32_i5_n64-20260821-134636.log
+chacha_poly,xr,rtlsim,2,4,16,64,4,256,16384,328003,32076,-b4 -i5 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b4_i5_n64-20260821-134711.log

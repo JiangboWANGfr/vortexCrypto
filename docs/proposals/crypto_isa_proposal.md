@@ -3015,17 +3015,38 @@ misread once.
 The baseline for every comparison is the `rori` row, not `sw`. RORI is ratified
 Zbb/Zbkb; crediting the B extension to a cryptographic ISE would be false.
 
-**A noise floor applies across the tables below, and it is about 4%.** The `s1`
-row appears in three of them, measured in three different builds, and its cycles
-per block read 515.0, 488.6 and 477.7 at the cache-resident point while its
-instructions per block read 75.5 in all three, to the digit. Instruction count is
-architectural and reproduces exactly; cycle count carries build-to-build
-variation from instruction layout -- the mechanism recorded in sections 18 and
-21.6, where moving a kernel by 7,968 bytes moved `hw_s3g` by 0.18%. Numbers
-should be compared **within** a table, where every row comes from one build.
-`chacha32.xr`'s -1.7% and -2.6% are inside that floor and should be read as "no
-measurable cycle effect", which is also what its bit-identical load and store
-counts say.
+**A noise floor applies across the tables below, and it is not one number: it is
+about 3% at the memory-bound point and about 9% at the cache-resident one.** The
+`s1` row appears in three of these tables, measured in three different builds,
+and its cycles per block read 515.0, 492.5 and 477.7 at the cache-resident point
+-- a 7.8% spread -- while its instructions per block read 75.5 in all three, to
+the digit. Instruction count is architectural and reproduces exactly; cycle count
+carries build-to-build variation from instruction layout, the mechanism recorded
+in sections 18 and 21.6.
+
+The two points differ because a marginal fit amplifies whatever error its
+endpoints carry. For a fit over `[lo, hi]` the slope's relative error is roughly
+the endpoints' own, multiplied by `(c_lo + c_hi) / (c_hi - c_lo)`: the closer the
+two cycle counts, the larger the factor. Measured here:
+
+| | `mac` | `rori` | `s1` | `sw` | `xr` | `s3` | `s3f` | `s2` |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| cache-resident `1..4` | 3.1x | 3.4x | 3.1x | 3.3x | 3.3x | 5.8x | 5.9x | **8.1x** |
+| memory-bound `16..32` | 3.6x | 3.4x | 3.1x | 3.2x | 3.3x | 4.4x | 4.6x | 3.5x |
+
+The factor is worst for the *fastest* kernels, which is where the headline claims
+live: a small marginal sits on the same per-message setup cost as a large one, so
+it is a smaller fraction of both endpoints. Re-running these builds bears the
+prediction out. Of ten rows re-measured with identical instruction counts, eight
+reproduce their cycles exactly; the two that move are `s1` at +8.1% and `s2` at
+-9.3% -- both at the cache-resident point, both amplified from endpoint moves
+under 2%. At the memory-bound point the largest move is 2.9%.
+
+Numbers should therefore be compared **within** a table, where every row comes
+from one build, and a cache-resident difference under about 9% should not be read
+as a difference at all. `chacha32.xr`'s -1.7% and -2.6% are inside the floor at
+both points and should be read as "no measurable cycle effect", which is also
+what its bit-identical load and store counts say.
 
 ### 23.1 S1: two instructions, and the useful one costs more instructions
 
@@ -3065,7 +3086,10 @@ of five.
 
 **1.69x**, and the contribution splits cleanly: at the memory-bound point the
 ChaCha half contributes nothing and the Poly1305 half contributes everything; at
-the cache-resident point ChaCha is worth 14%.
+the cache-resident point ChaCha is worth 14%. That last figure has only about a
+1.6x margin over the cache-resident floor, so read it as "some, but not much",
+not as a measured 14%. The memory-bound split, where both halves sit far outside
+their floor, is the one to quote.
 
 ### 23.2 Why `chacha32.xr` buys almost nothing, and `poly26.mac` buys everything
 
@@ -3141,7 +3165,11 @@ about.
 
 The layout by itself loses. Fusing its cross-lane traffic is worth **twenty-two
 percentage points** and turns it into a 1.26x win -- while still retiring 19%
-more instructions than S1.
+more instructions than S1. The twenty-two points are the gap between the probe
+and the fused row, an 18.6% reduction that clears the cache-resident floor
+comfortably; `s3f`'s own -3.0% against `s1` does not, and should be read as no
+measurable difference at that point. The -21.9% at the memory-bound point is
+where this row earns its result.
 
 Stores again: 78,208 for `s1`, 75,520 for the probe, **49,920** for the fused
 row. Each of the six explicit rotations per double-round produced a value that
