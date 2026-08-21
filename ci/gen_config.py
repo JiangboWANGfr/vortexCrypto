@@ -1481,6 +1481,45 @@ def emit_cflags(cfg: Dict[str, Any], layout: Layout, enums: Dict[str, EnumSpec],
 # Main
 # -----------------------------
 
+# Crypto extension dependencies. These lived only in the DE10-Pro project
+# script, so `CONFIGS="-DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE"` without its parent
+# built cleanly through every other path and produced a machine where chadd.sg4
+# decodes and chacha32.xr does not -- silently, because a kernel using both
+# reaches an encoding that decodes to nothing. gen_config is on every build
+# path there is, so the rule belongs here and the FPGA script inherits it.
+#
+# Each entry is (feature, one of its required parents).
+CRYPTO_DEPS = [
+  ("EXT_SYM_SG4",        "EXT_SYM"),
+  ("EXT_SYM_S2",         "EXT_SYM"),
+  ("EXT_SYM_CHACHA",     "EXT_SYM"),
+  ("EXT_SYM_CHACHA_SG4", "EXT_SYM_CHACHA"),
+  ("EXT_SYM_CHACHA_S2",  "EXT_SYM"),
+  ("EXT_AUTH_SG4",       "EXT_AUTH"),
+  ("EXT_AUTH_SG4",       "EXT_SYM_SG4"),
+  ("EXT_AUTH_S2",        "EXT_AUTH"),
+  ("EXT_AUTH_POLY",      "EXT_AUTH"),
+  ("EXT_AUTH_POLY_SG4",  "EXT_AUTH_POLY"),
+]
+
+
+def validate_crypto_deps(flags: str) -> None:
+  """Refuse a configuration whose crypto features are missing a parent.
+
+  The crypto sub-features are not declared in VX_config.toml -- they are raw
+  -D flags that pass through -- so this reads the flags rather than the
+  resolved config, which is where they actually are.
+  """
+  present = set(re.findall(r"-D(VX_CFG_EXT_[A-Z0-9_]+?)_ENABLE(?:=1)?\b", flags))
+  off = set(re.findall(r"-D(VX_CFG_EXT_[A-Z0-9_]+?)_ENABLED?=0\b", flags))
+  def on(name: str) -> bool:
+    return ("VX_CFG_" + name) in present and ("VX_CFG_" + name) not in off
+  bad = ["VX_CFG_{}_ENABLE requires VX_CFG_{}_ENABLE".format(f, p)
+         for f, p in CRYPTO_DEPS if on(f) and not on(p)]
+  if bad:
+    raise SystemExit("gen_config: invalid crypto configuration:\n  " + "\n  ".join(bad))
+
+
 def main(argv: List[str]) -> int:
   ap = argparse.ArgumentParser()
   ap.add_argument("--config", "-c", required=True, help="path to VX_config.toml")
@@ -1533,6 +1572,7 @@ def main(argv: List[str]) -> int:
     for k in enums.keys():
       if k not in cfg:
         cfg[k] = r.resolve(k)
+    validate_crypto_deps(args.cflags + ' ' + ' '.join(unknown))
 
     if args.format == "cflags":
       out = emit_cflags(cfg, layout, enums, hex_meta)
