@@ -376,3 +376,11 @@ chacha_poly,xr,rtlsim,2,4,16,64,1,64,4096,178774,12312,-b1 -i5 -n64,AUTH AUTH_PO
 chacha_poly,xr,rtlsim,2,4,16,64,16,1024,65536,868275,111132,-b16 -i5 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b16_i5_n64-20260821-134618.log
 chacha_poly,xr,rtlsim,2,4,16,64,32,2048,131072,1650627,216540,-b32 -i5 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b32_i5_n64-20260821-134636.log
 chacha_poly,xr,rtlsim,2,4,16,64,4,256,16384,328003,32076,-b4 -i5 -n64,AUTH AUTH_POLY AUTH_POLY_SG4 SYM SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4,probe/logs/chacha_poly-rtlsim-_b4_i5_n64-20260821-134711.log
+aes_gcm,hw_s1,rtlsim,2,4,16,128,2,256,4096,102775,11786,-b2 -i1 -n128,AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4,paper/logs/aes_gcm-rtlsim-_b2_i1_n128-20260821-151915.log
+aes_gcm,hw_s1,rtlsim,2,4,16,128,32,4096,65536,326994,108746,-b32 -i1 -n128,AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4,paper/logs/aes_gcm-rtlsim-_b32_i1_n128-20260821-151932.log
+aes_gcm,hw_s2,rtlsim,2,4,16,128,2,256,4096,67265,3776,-b2 -i10 -n128,AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4,paper/logs/aes_gcm-rtlsim-_b2_i10_n128-20260821-152012.log
+aes_gcm,hw_s2,rtlsim,2,4,16,128,32,4096,65536,167648,19856,-b32 -i10 -n128,AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4,paper/logs/aes_gcm-rtlsim-_b32_i10_n128-20260821-152014.log
+aes_gcm,hw_s3g,rtlsim,2,4,16,128,2,256,4096,62433,7362,-b2 -i8 -n128,AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4,paper/logs/aes_gcm-rtlsim-_b2_i8_n128-20260821-152035.log
+aes_gcm,hw_s3g,rtlsim,2,4,16,128,32,4096,65536,116519,50562,-b32 -i8 -n128,AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4,paper/logs/aes_gcm-rtlsim-_b32_i8_n128-20260821-152037.log
+aes_gcm,sw_ttable,rtlsim,2,4,16,128,2,256,4096,564590,116742,-b2 -i0 -n128,AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4,paper/logs/aes_gcm-rtlsim-_b2_i0_n128-20260821-152051.log
+aes_gcm,sw_ttable,rtlsim,2,4,16,128,32,4096,65536,4751809,1257462,-b32 -i0 -n128,AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4,paper/logs/aes_gcm-rtlsim-_b32_i0_n128-20260821-152108.log
