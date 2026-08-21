@@ -2859,22 +2859,37 @@ Per (warp, lane): 772 bits down to 516; 49,408 per core down to 33,024.
 
 ### 22.3 Measured
 
-rtlsim, c2w4t16, `-n128`, marginal over `b=8..64`, stack skew on:
+rtlsim, c2w4t16, `-n128`, at the same two operating points the ChaCha section
+uses: `b=2..8` is 4-16 KiB and fits the 16 KiB D-cache, `b=32..64` is
+64-128 KiB and does not.
 
-| | instrs/block | cycles/block |
-| --- | ---: | ---: |
-| `hw_s1` | 25.25 | 62.18 |
-| `hw_s2` | **4.19** | **28.21** |
-| `hw_s3g` | 11.25 | 15.08 |
+| | instrs/block | cycles/block, cache-resident | cycles/block, memory-bound |
+| --- | ---: | ---: | ---: |
+| `hw_s1` | 25.25 | 60.75 | 61.79 |
+| `hw_s2` | **4.19** | **15.55** | **27.73** |
+| `hw_s3g` | 11.25 | 11.03 | 14.90 |
 
-Totals at `-n128 -b64`: 543,229 cycles for `hw_s1` against 258,199, which is
-**2.10x** on **6.0x fewer instructions**. Both models retire identical counts and
-agree with AAD and a partial tail.
+Against `hw_s1`, S2 is **2.23x** at the memory-bound point and **3.91x** at the
+cache-resident one, on **6.0x fewer instructions**. Both models retire identical
+counts and agree with AAD and a partial tail.
 
-It does not beat `hw_s3g`, which is 15.08 cycles per block. The pre-registered
-kill rule therefore fires. What keeps the row interesting is that `hw_s3g` does
-not close timing on the DE10-Pro, so the comparison is against something that
-cannot ship.
+Earlier drafts of this table had one column, fitted over `b=8..64`, and reported
+2.10x. That span runs from 16 KiB to 128 KiB -- across the cache boundary, not
+within either side of it -- so it averaged the two regimes into one slope and
+hid the difference between them. The instruction counts are unchanged from that
+draft, to the digit, and the memory-bound column reproduces its cycles within
+1.7%; what is new is the left-hand column, which had never been measured.
+
+The difference is the point. `hw_s1` barely notices the working set at all --
+60.75 against 61.79, a 1.7% spread -- while `hw_s2` nearly doubles when the data
+fits. Once the stateful engine has taken the register pressure away, what is
+left is memory, and the row becomes sensitive to a size the software row is
+indifferent to.
+
+It still does not beat `hw_s3g`, at either point: 5.51x and 4.15x against S1.
+The pre-registered kill rule therefore fires. What keeps the row interesting is
+that `hw_s3g` does not close timing on the DE10-Pro, so the comparison is
+against something that cannot ship.
 
 ### 22.4 Fitted: three builds, and the area estimate was wrong by 4.5x
 
@@ -3006,28 +3021,37 @@ a taxonomy with one algorithm in it cannot tell a property of the design from a
 property of the algorithm. This section fills the other three tiers.
 
 All numbers are rtlsim, c2w4t16, marginal over the block count, at **two
-operating points**: `b=1..4`, where the working set is 4-16 KB and fits the
-16 KB D-cache, and `b=16..32`, where it is 64-128 KB and does not. Measuring at
+operating points**: `b=1..4`, where the working set is 4-16 KiB and fits the
+16 KiB D-cache, and `b=16..32`, where it is 64-128 KiB and does not. Measuring at
 one point only cannot distinguish an extension that does not help from a size at
 which nothing helps -- which is precisely how the `rori` row below was
-misread once.
+misread once. Section 22.3 now uses the same two points, at `b=2..8` and
+`b=32..64`, a ChaCha block being 64 bytes against AES-GCM's 16; the grid is in
+payload bytes so that the two algorithms answer the same question.
+
+**Every row here comes from one build per algorithm**, with the tier selected by
+the application's `-i` flag. ChaCha was brought up in three narrower builds --
+S1 alone, S1 plus S2, S1 plus the subgroup pair -- and for several drafts these
+tables came from all three, each carrying its own `s1` row as an anchor against
+build-to-build drift. That is no longer necessary and no longer done: the all-on
+build runs every implementation, compiles byte-identical code, and reproduces
+every tier inside the noise floor. One build removes the cross-build comparison
+rather than correcting for it. Area and Fmax are the opposite case and are still
+synthesised per feature, because what a design costs is what it costs alone.
 
 The baseline for every comparison is the `rori` row, not `sw`. RORI is ratified
 Zbb/Zbkb; crediting the B extension to a cryptographic ISE would be false.
 
 **A noise floor applies across the tables below, and it is not one number: it is
-about 3% at the memory-bound point and about 9% at the cache-resident one.** The
-`s1` row appears in three of these tables, measured in three different builds,
-and its cycles per block read 515.0, 492.5 and 477.7 at the cache-resident point
--- a 7.8% spread -- while its instructions per block read 75.5 in all three, to
-the digit. Instruction count is architectural and reproduces exactly; cycle count
-carries build-to-build variation from instruction layout, the mechanism recorded
-in sections 18 and 21.6.
+about 3% at the memory-bound point and about 9% at the cache-resident one.**
 
-The two points differ because a marginal fit amplifies whatever error its
-endpoints carry. For a fit over `[lo, hi]` the slope's relative error is roughly
-the endpoints' own, multiplied by `(c_lo + c_hi) / (c_hi - c_lo)`: the closer the
-two cycle counts, the larger the factor. Measured here:
+Instruction count is architectural and reproduces exactly. Cycle count does not:
+it carries variation from where the compiler happened to place a kernel, the
+mechanism recorded in sections 18 and 21.6. The floor differs between the two
+operating points because a marginal fit amplifies whatever error its endpoints
+carry. For a fit over `[lo, hi]` the slope's relative error is roughly the
+endpoints' own, multiplied by `(c_lo + c_hi) / (c_hi - c_lo)`: the closer the two
+cycle counts, the larger the factor. Measured here:
 
 | | `mac` | `rori` | `s1` | `sw` | `xr` | `s3` | `s3f` | `s2` |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -3036,17 +3060,19 @@ two cycle counts, the larger the factor. Measured here:
 
 The factor is worst for the *fastest* kernels, which is where the headline claims
 live: a small marginal sits on the same per-message setup cost as a large one, so
-it is a smaller fraction of both endpoints. Re-running these builds bears the
-prediction out. Of ten rows re-measured with identical instruction counts, eight
-reproduce their cycles exactly; the two that move are `s1` at +8.1% and `s2` at
--9.3% -- both at the cache-resident point, both amplified from endpoint moves
-under 2%. At the memory-bound point the largest move is 2.9%.
+it is a smaller fraction of both endpoints.
 
-Numbers should therefore be compared **within** a table, where every row comes
-from one build, and a cache-resident difference under about 9% should not be read
-as a difference at all. `chacha32.xr`'s -1.7% and -2.6% are inside the floor at
-both points and should be read as "no measurable cycle effect", which is also
-what its bit-identical load and store counts say.
+The measurement behind those numbers is `tests/crypto/probe_build_merge.yaml`,
+which runs every implementation in the all-on build and compares it against the
+three narrower ones. The code is identical -- every instruction count matches to
+the digit -- and per-run cycles differ by at most 2.7%. Yet the cache-resident
+fits of that identical code diverge by up to 13.9%, on `s2`, whose amplification
+factor is 8.1x. At the memory-bound point the largest divergence is 2.9%.
+
+Two consequences. A cache-resident difference under about 9% is not a difference,
+and `chacha32.xr`'s 1% below is exactly that. And a fit's two points must come
+from one build -- which, now that each algorithm has only one, they do by
+construction.
 
 ### 23.1 S1: two instructions, and the useful one costs more instructions
 
@@ -3080,16 +3106,15 @@ of five.
 | --- | ---: | ---: | ---: |
 | `sw` | 162.3 | 864.4 | 788.0 |
 | `rori` | 123.0 | 801.0 | 769.7 |
-| `xr` | 102.9 **-16%** | 787.2 -1.7% | 749.3 -2.6% |
+| `xr` | 102.9 **-16%** | 777.2 -3.0% | 764.0 -0.7% |
 | `mac` | 135.5 **+10%** | 601.7 **-24.9%** | 453.2 **-41.1%** |
-| `s1` | 75.5 **-39%** | 515.0 -35.7% | 454.7 **-40.9%** |
+| `s1` | 75.5 **-39%** | 492.5 **-38.5%** | 470.5 **-38.9%** |
 
-**1.69x**, and the contribution splits cleanly: at the memory-bound point the
-ChaCha half contributes nothing and the Poly1305 half contributes everything; at
-the cache-resident point ChaCha is worth 14%. That last figure has only about a
-1.6x margin over the cache-resident floor, so read it as "some, but not much",
-not as a measured 14%. The memory-bound split, where both halves sit far outside
-their floor, is the one to quote.
+**1.64x**, and the contribution splits cleanly: at both points the ChaCha half
+contributes nothing and the Poly1305 half contributes everything. `poly26.mac`
+alone is 1.70x at the memory-bound point, marginally *better* than the pair, so
+adding `chacha32.xr` to it buys nothing measurable -- the 3.7% between them is
+inside the floor at either point.
 
 ### 23.2 Why `chacha32.xr` buys almost nothing, and `poly26.mac` buys everything
 
@@ -3155,28 +3180,29 @@ wires, not a crossbar.
 | | instrs/block | cycles, cache-resident | cycles, memory-bound |
 | --- | ---: | ---: | ---: |
 | `s1` | 75.5 | 492.5 | 470.5 |
-| `s3` probe | 110.0 **+46%** | 586.8 +19.2% | 485.1 +3.1% |
-| `s3f` fused | 90.5 **+20%** | 477.9 -3.0% | 367.5 **-21.9%** |
+| `s3` probe | 110.0 **+46%** | 587.4 +19.3% | 487.7 +3.7% |
+| `s3f` fused | 90.5 **+20%** | 466.1 -5.4% | 368.5 **-21.7%** |
 
 All three rows come from one build, measured after the optimisations of 23.7.
 Earlier drafts of this table mixed a `s3f` row from one build with `s1` and `s3`
 rows from another, which is exactly the error the noise-floor note above warns
-about.
+about; with a single build per algorithm that class of error is now structurally
+impossible rather than merely avoided.
 
-The layout by itself loses. Fusing its cross-lane traffic is worth **twenty-two
-percentage points** and turns it into a 1.26x win -- while still retiring 19%
-more instructions than S1. The twenty-two points are the gap between the probe
-and the fused row, an 18.6% reduction that clears the cache-resident floor
-comfortably; `s3f`'s own -3.0% against `s1` does not, and should be read as no
-measurable difference at that point. The -21.9% at the memory-bound point is
-where this row earns its result.
+The layout by itself loses. Fusing its cross-lane traffic is worth **twenty-five
+percentage points** and turns it into a 1.28x win -- while still retiring 20%
+more instructions than S1. The twenty-five points are the gap between the probe
+and the fused row at the memory-bound point, a 24.4% reduction; `s3f`'s own
+-5.4% against `s1` at the cache-resident point is inside the floor there and
+should be read as no measurable difference. The -21.7% at the memory-bound point
+is where this row earns its result.
 
 Stores again: 78,208 for `s1`, 75,520 for the probe, **49,920** for the fused
 row. Each of the six explicit rotations per double-round produced a value that
 had to stay live; fused, nothing moves at all and each lane merely reads its
 neighbour.
 
-### 23.4 S2: the best row this AEAD has, at 3.9x
+### 23.4 S2: the best row this AEAD has, at 3.87x
 
 Four instructions on one funct3 of custom-1, because a sixteen-word state needs
 four bits of selector and the crypto opcodes' three-bit field could not hold it.
@@ -3197,18 +3223,29 @@ than eight.
 
 | | instrs/block | cycles, cache-resident | cycles, memory-bound |
 | --- | ---: | ---: | ---: |
-| `s1` | 75.5 | 477.7 | 468.2 |
-| `s2` | **28.9 -62%** | **112.7 -76%** | **121.4 -74%** |
+| `s1` | 75.5 | 492.5 | 470.5 |
+| `s2` | **28.9 -62%** | **88.0 -82%** | **121.7 -74%** |
 
-Around **3.9x**, and 3.52x on the totals at `-b32`. Better than every other tier
-of this AEAD and better than AES-GCM gets from S2.
+**3.87x** at the memory-bound point, and **5.60x** at the cache-resident one --
+this row, like AES-GCM's S2, is the one that starts caring about working-set
+size, because the stateful engine has moved the bottleneck to memory. Better than
+every other tier of this AEAD, and better than AES-GCM gets from S2 (2.23x and
+3.91x).
 
 ### 23.5 Two rules, and they are orthogonal
 
+Every row below is one build per algorithm, the tier selected with `-i`, at the
+same four payload sizes. Against each algorithm's own S1, at the memory-bound
+point:
+
 | | S0 | S1 | S2 | S3 |
 | --- | --- | --- | ---: | ---: |
-| AES-GCM | yes | baseline | 2.10x | **3.76x** |
-| ChaCha20-Poly1305 | yes | 1.69x | **3.9x** | 1.26x |
+| AES-GCM | yes | baseline | 2.23x | **4.15x** |
+| ChaCha20-Poly1305 | yes | 1.64x | **3.87x** | 1.28x |
+
+At the cache-resident point the S2 rows pull further ahead -- 3.91x for AES-GCM,
+5.60x for ChaCha20-Poly1305 -- because that is the tier at which the bottleneck
+becomes memory. The S0 and S1 rows barely move between the two points.
 
 The optimum is at a different tier for each algorithm, and neither ordering is
 arbitrary.
@@ -3220,40 +3257,48 @@ memory-bound point:
 
 | | cycles/byte |
 | --- | ---: |
+| AES-GCM, `sw_ttable` | 70.86 |
 | ChaCha20-Poly1305, `sw` | 12.31 |
 | ChaCha20-Poly1305, `rori` | 12.03 |
-| ChaCha20-Poly1305, S1 | 7.32 |
-| ChaCha20-Poly1305, S3 fused | 5.73 |
-| AES-GCM, S1 (`hw_s1`) | 3.89 |
+| ChaCha20-Poly1305, S1 | 7.35 |
+| ChaCha20-Poly1305, S3 fused | 5.76 |
+| AES-GCM, S1 (`hw_s1`) | 3.86 |
 | **ChaCha20-Poly1305, S2** | **1.90** |
-| **AES-GCM, S3 (`hw_s3g`)** | **0.94** |
+| AES-GCM, S2 (`hw_s2`) | 1.73 |
+| **AES-GCM, S3 (`hw_s3g`)** | **0.93** |
 
-So the best AES-GCM row is **2.01x faster per byte** than the best
-ChaCha20-Poly1305 row, which the per-block figures hide entirely -- 3.76x and
-3.9x sit next to each other and read as a tie.
+So the best AES-GCM row is **2.04x faster per byte** than the best
+ChaCha20-Poly1305 row, which the per-block figures hide entirely -- 4.15x and
+3.87x sit next to each other and read as a tie.
 
-The second observation is worth as much as the first. ChaCha20-Poly1305's pure
-software row is **3.2x slower per byte than AES-GCM's S1**. ChaCha20 is fast on
-general-purpose CPUs precisely because they have wide SIMD and lack AES
-hardware; on a SIMT machine that already carries an AES datapath, the advantage
-inverts.
+The second observation is worth as much as the first, and it has to be stated in
+both directions or it misleads. Software against software, ChaCha20-Poly1305 is
+**5.8x faster per byte than AES-GCM** -- 12.31 against 70.86 -- which is the
+result anyone would expect: ChaCha20 was designed to be fast without hardware
+help. Software against *hardware*, ChaCha20-Poly1305's software row is **3.2x
+slower per byte than AES-GCM's S1**, and that is the comparison that matters
+here, because the S1 datapath is a handful of ALMs a SIMT machine may well
+already carry. ChaCha20 is fast on general-purpose CPUs precisely because they
+have wide SIMD and lack AES hardware; once the AES datapath exists, the
+advantage inverts. An earlier draft quoted only the second figure and read it as
+ChaCha20 being slow, which it is not.
 
 **S2 pays in proportion to the state it evicts from the register file.** AES
 holds four words of state and four of round key, and RV32 has room; its S2
-removes instructions only, and returns 2.10x. ChaCha holds sixteen words plus
+removes instructions only, and returns 2.23x. ChaCha holds sixteen words plus
 sixteen more for the feed-forward, which is the entire register file; its S2
 removes instructions **and the largest spill source in the kernel**, and returns
-3.9x. It is the only row in this document where instruction count and cycle count
+3.87x. It is the only row in this document where instruction count and cycle count
 move together, and that is why.
 
 **S3 pays when the cross-lane traffic can be folded into arithmetic.** AES's
 ShiftRows is a **read-side permutation** -- output column j takes byte r from
 column (j+r)&3 and each lane writes only its own output -- so it folds into
 `aesrm.sg4` as free wiring; GHASH's operands are spread one limb per lane, so the
-gathering folds into `ghmul.sg4`. Together, 3.76x. ChaCha's diagonal step is a
+gathering folds into `ghmul.sg4`. Together, 4.15x. ChaCha's diagonal step is a
 **write-side state move**: a quarter-round produces four results in four
 different lanes, which one write port cannot express, so only the routing folds
-and the arithmetic stays where it was. 1.26x.
+and the arithmetic stays where it was. 1.28x.
 
 These are rules a third algorithm can be measured against, which a list of
 speedups is not.
@@ -3343,7 +3388,7 @@ instructions per block-quad, 1.25 per block against an implementation that costs
 The real limit is neither implementation nor encoding. Block-parallel Poly1305
 requires each lane to hold five limbs of its own r^{4-c}, and that is inherent to
 the decomposition. The only way to remove those registers is to put them in a
-context, and that is S2, which already returns 3.9x.
+context, and that is S2, which already returns 3.87x.
 
 ### 23.8 What this section got wrong
 
@@ -3362,7 +3407,7 @@ context, and that is S2, which already returns 3.9x.
   is internally consistent -- a full profile, a plausible mechanism, and the
   opposite sign to the prediction -- is the kind most worth re-checking against
   one's own implementation.**
-- **"6.0x for S2."** Arithmetic error: the wrong block delta. It is 3.9x. The
+- **"6.0x for S2."** Arithmetic error: the wrong block delta. It is 3.87x. The
   commit was amended from the raw rows rather than from the derived figure.
 - One functional bug survived every performance measurement: the ChaCha engine's
   first RTL build indexed the key with `csel[2:0]` where it needed `csel-4`,
