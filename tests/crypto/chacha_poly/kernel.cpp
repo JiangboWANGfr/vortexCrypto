@@ -638,7 +638,7 @@ inline void poly_mulmod(const uint32_t a[5], const uint32_t b[5], uint32_t out[5
 // cross-lane cost explicitly; FUSED == 1 folds that cost into chadd.sg4,
 // chacha32.xr's route bit and poly26.rsum.sg4.
 
-template <typename R, int FUSED = 0>
+template <typename R, int FUSED = 0, int NO_RPOW = 0>
 inline void chacha_poly_s3_body(kernel_arg_t* __UNIFORM__ arg) {
   const uint32_t lane = (uint32_t)vx_thread_id() & 3u;
   // Only the probe needs these: with the fused forms nothing moves between
@@ -704,15 +704,28 @@ inline void chacha_poly_s3_body(kernel_arg_t* __UNIFORM__ arg) {
     // a kernel whose cycles are set by load traffic that is twenty registers
     // worth of spill. This keeps the running power, the next one and the
     // selection live -- fifteen -- and nothing else survives the setup.
-    uint32_t rp[5] = {st.r0, st.r1, st.r2, st.r3, st.r4};
-    uint32_t rt[5];
-    uint32_t rl0 = rp[0], rl1 = rp[1], rl2 = rp[2], rl3 = rp[3], rl4 = rp[4];
-    poly_mulmod(rp, rp, rt);                       // r^2
-    if (lane <= 2) { rl0 = rt[0]; rl1 = rt[1]; rl2 = rt[2]; rl3 = rt[3]; rl4 = rt[4]; }
-    poly_mulmod(rt, rp, rt);                       // r^3
-    if (lane <= 1) { rl0 = rt[0]; rl1 = rt[1]; rl2 = rt[2]; rl3 = rt[3]; rl4 = rt[4]; }
-    poly_mulmod(rt, rp, rt);                       // r^4
-    if (lane == 0) { rl0 = rt[0]; rl1 = rt[1]; rl2 = rt[2]; rl3 = rt[3]; rl4 = rt[4]; }
+    uint32_t rl0, rl1, rl2, rl3, rl4;
+    if (NO_RPOW) {
+      // DIAGNOSTIC ONLY -- the tag this produces is wrong, deliberately.
+      //
+      // The block-parallel Poly1305 form needs r^{4-c} in lane c; giving every
+      // lane r^1 does not authenticate anything. What it does is remove the
+      // r-power schedule from the live set, which is the only thing this
+      // variant is for: measuring what those fifteen values cost in load
+      // traffic. The application still prints its PERF line on a wrong answer,
+      // so the counters are readable. See section 23 for what this measured.
+      rl0 = st.r0; rl1 = st.r1; rl2 = st.r2; rl3 = st.r3; rl4 = st.r4;
+    } else {
+      uint32_t rp[5] = {st.r0, st.r1, st.r2, st.r3, st.r4};
+      uint32_t rt[5];
+      rl0 = rp[0]; rl1 = rp[1]; rl2 = rp[2]; rl3 = rp[3]; rl4 = rp[4];
+      poly_mulmod(rp, rp, rt);                       // r^2
+      if (lane <= 2) { rl0 = rt[0]; rl1 = rt[1]; rl2 = rt[2]; rl3 = rt[3]; rl4 = rt[4]; }
+      poly_mulmod(rt, rp, rt);                       // r^3
+      if (lane <= 1) { rl0 = rt[0]; rl1 = rt[1]; rl2 = rt[2]; rl3 = rt[3]; rl4 = rt[4]; }
+      poly_mulmod(rt, rp, rt);                       // r^4
+      if (lane == 0) { rl0 = rt[0]; rl1 = rt[1]; rl2 = rt[2]; rl3 = rt[3]; rl4 = rt[4]; }
+    }
 
     for (uint32_t off = 0; off < aad_bytes; off += POLY1305_BLOCK_BYTES) {
       const uint32_t n = (aad_bytes - off < POLY1305_BLOCK_BYTES)
@@ -1041,6 +1054,15 @@ __kernel void chacha_poly_s3(kernel_arg_t* __UNIFORM__ arg) {
 // between the two rows is the three fused instructions and nothing else.
 __kernel void chacha_poly_s3f(kernel_arg_t* __UNIFORM__ arg) {
   chacha_poly_s3_body<rot_xr, 1>(arg);
+}
+
+
+// DIAGNOSTIC: chacha_poly_s3f with the r-power schedule removed. Produces a
+// wrong tag on purpose; exists only to measure what those fifteen live values
+// cost in load traffic, which is what decides whether poly4.step.sg16 is worth
+// building. Not in the paper's matrix, not in ci/testcases/crypto.yaml.
+__kernel void chacha_poly_s3f_norp(kernel_arg_t* __UNIFORM__ arg) {
+  chacha_poly_s3_body<rot_xr, 1, 1>(arg);
 }
 #endif
 

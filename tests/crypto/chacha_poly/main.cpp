@@ -78,6 +78,11 @@ const impl_t kImpls[] = {
   // S2: one lane still owns one message, but ChaCha20's whole 512-bit state
   // moves into a per-lane context and one instruction is a double-round.
   { "chacha_poly_s2",   "s2", false, false, true, false, false, true },
+  // DIAGNOSTIC, index 11: s3f without the r-power schedule. The tag it
+  // produces is wrong on purpose -- see kernel.cpp. It exists to price those
+  // fifteen live values in load traffic, and the PERF line prints on a wrong
+  // answer, which is the whole reason it can be measured at all.
+  { "chacha_poly_s3f_norp", "s3f_norp", true, true, true, true, true, false },
 };
 
 const uint32_t kNumImpls = (uint32_t)(sizeof(kImpls) / sizeof(kImpls[0]));
