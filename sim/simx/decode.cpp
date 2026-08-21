@@ -1024,7 +1024,10 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
     // Fused subgroup AES round. EXT4 was declared and decoded by neither model,
     // so this cannot collide: funct3 0 = middle round, 1 = final round.
 #ifdef VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE
-    if (funct3 == 0x7) {
+    // Same legality predicate as VX_decode: funct7 carries nothing here and
+    // is reserved, so a non-zero one is not this instruction. Without the
+    // check the two models disagree about 128 encodings.
+    if (funct3 == 0x7 && funct7 == 0x0) {
       // chadd.sg4 rd, rs1, rs2 -- rs2 from the next lane of the quad.
       instr->set_fu_type(FUType::SYM);
       instr->set_op_type(SymType::CHADD_SG4);
@@ -1036,7 +1039,7 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
     }
 #endif
 #ifdef VX_CFG_EXT_SYM_CHACHA_ENABLE
-    if (funct3 == 0x6) {
+    if (funct3 == 0x6 && (funct7 & 0x40) == 0) {
       // chacha32.xr rd, rs1, rs2 -- rd = rol32(rs1 ^ rs2, rot), rot in
       // funct7[4:0] and a LEFT amount, unlike RORI's right one.
       instr->set_fu_type(FUType::SYM);
@@ -1066,7 +1069,7 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
       instr->set_fu_type(FUType::SYM);
       IntrSymArgs symArgs{};
       symArgs.sel = funct7 & 0x7;
-      if (funct3 == 0x3) {
+      if (funct3 == 0x3 && (funct7 & 0x78) == 0) {
         // aes.cwr rs1, sel -- rd is encoded x0, so wb is already 0.
         instr->set_op_type(SymType::AES_CWR);
         instr->set_src_reg(0, rs1, RegType::Integer);
@@ -1090,7 +1093,7 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
     }
 #endif
 #ifdef VX_CFG_EXT_AUTH_SG4_ENABLE
-    if (funct3 == 0x2) {
+    if (funct3 == 0x2 && funct7 == 0x0) {
       // Stateless subgroup GF(2^128) multiply; shares this opcode arm.
       instr->set_fu_type(FUType::AUTH);
       instr->set_op_type(AuthType::GHMUL_SG4);
@@ -1121,7 +1124,7 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
     // the ratified crypto encodings this cannot collide: funct3 0 = GHRED32L,
     // 1 = GHRED32H.
 #ifdef VX_CFG_EXT_AUTH_POLY_SG4_ENABLE
-    if (funct3 == 0x6) {
+    if (funct3 == 0x6 && funct7 == 0x0) {
       // poly26.rsum.sg4 rd, rs1 -- rd = sum of rs1 across the quad.
       instr->set_fu_type(FUType::AUTH);
       instr->set_op_type(AuthType::POLY_RSUM);
@@ -1157,7 +1160,7 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
       instr->set_fu_type(FUType::AUTH);
       IntrAuthArgs authArgs{};
       authArgs.sel = funct7 & 0x7;
-      if (funct3 == 0x2) {
+      if (funct3 == 0x2 && (funct7 & 0x78) == 0) {
         // ghash.cwr rs1, sel -- rd encoded x0.
         instr->set_op_type(AuthType::GH_CWR);
         instr->set_src_reg(0, rs1, RegType::Integer);

@@ -818,7 +818,10 @@ module VX_decode import
                 // of the aligned quad). ChaCha's diagonal round reads every one
                 // of its eight operands from lane +1, so a single route
                 // direction is enough and the wiring is a fixed permutation.
-                if (funct3 == 3'h7) begin
+                // funct7 carries nothing here, so it is reserved and must be
+                // zero. Without the check the instruction has 128 aliases and
+                // a future encoding cannot be added in that space.
+                if (funct3 == 3'h7 && funct7 == 7'h0) begin
                     ex_type = EX_SYM;
                     op_type = INST_OP_BITS'(INST_SYM_CHADD_SG4);
                     op_args.sym.bs = 2'b0;
@@ -829,7 +832,8 @@ module VX_decode import
                 end
             `endif
             `ifdef VX_CFG_EXT_SYM_CHACHA_ENABLE
-                if (funct3 == 3'h6) begin
+                // funct7[5] is the route bit, funct7[4:0] the rotate; funct7[6] is reserved.
+                if (funct3 == 3'h6 && funct7[6] == 1'b0) begin
                     // chacha32.xr rd, rs1, rs2 -- rd = rol32(rs1 ^ rs2, rot),
                     // rot in funct7[4:0]. It is the LEFT amount, because ChaCha
                     // specifies left rotates; RORI's shamt in the same field is
@@ -859,21 +863,24 @@ module VX_decode import
                 // own `wb` is `use_regs[RD] && rd != 0`, so no writeback and no
                 // scoreboard entry are produced. Ordering therefore cannot come
                 // from the scoreboard; the unit stalls instead.
-                if (funct3 == 3'h3) begin
+                // funct7[2:0] selects the context word; funct7[6:3] is reserved.
+                if (funct3 == 3'h3 && funct7[6:3] == 4'h0) begin
                     ex_type = EX_SYM;
                     op_type = INST_OP_BITS'(INST_SYM_AES_CWR);
                     op_args.sym.bs = 2'b0;
                     op_args.sym.shamt = {2'b0, funct7[2:0]};
                     `USED_IREG (rs1);
                 end
-                if (funct3 == 3'h4) begin
+                // funct7[2:0] selects the context word; funct7[6:3] is reserved.
+                if (funct3 == 3'h4 && funct7[6:3] == 4'h0) begin
                     ex_type = EX_SYM;
                     op_type = INST_OP_BITS'(INST_SYM_AES_CRD);
                     op_args.sym.bs = 2'b0;
                     op_args.sym.shamt = {2'b0, funct7[2:0]};
                     `USED_IREG (rd);
                 end
-                if (funct3 == 3'h5) begin
+                // funct7[1:0] is begin/middle/final; 3 and funct7[6:2] are reserved.
+                if (funct3 == 3'h5 && funct7[6:2] == 5'h0 && funct7[1:0] != 2'h3) begin
                     ex_type = EX_SYM;
                     op_args.sym.bs = 2'b0;
                     op_args.sym.shamt = 5'b0;
@@ -885,7 +892,8 @@ module VX_decode import
                 end
             `endif
             `ifdef VX_CFG_EXT_SYM_SG4_ENABLE
-                if (funct3 == 3'h0 || funct3 == 3'h1) begin
+                // funct3[0] picks middle or final; funct7 carries nothing and is reserved.
+                if ((funct3 == 3'h0 || funct3 == 3'h1) && funct7 == 7'h0) begin
                     ex_type = EX_SYM;
                     op_type = INST_OP_BITS'(funct3[0] ? INST_SYM_AESRF_SG4
                                                       : INST_SYM_AESRM_SG4);
@@ -899,7 +907,8 @@ module VX_decode import
             `ifdef VX_CFG_EXT_AUTH_SG4_ENABLE
                 // Stateless subgroup GF(2^128) multiply shares this opcode arm,
                 // so it requires VX_CFG_EXT_SYM_SG4_ENABLE to be set as well.
-                if (funct3 == 3'h2) begin
+                // ghmul.sg4 takes no field beyond its registers; funct7 is reserved.
+                if (funct3 == 3'h2 && funct7 == 7'h0) begin
                     ex_type = EX_AUTH;
                     op_type = INST_OP_BITS'(INST_AUTH_GHMUL_SG4);
                     `USED_IREG (rd);
@@ -916,7 +925,8 @@ module VX_decode import
                 // quad. Poly1305's block-parallel form leaves one partial sum
                 // per lane; this folds the four into every lane at once, so the
                 // serial parts afterwards need no broadcast.
-                if (funct3 == 3'h6) begin
+                // poly26.rsum.sg4 takes no field beyond its registers; funct7 is reserved.
+                if (funct3 == 3'h6 && funct7 == 7'h0) begin
                     ex_type = EX_AUTH;
                     op_type = INST_OP_BITS'(INST_AUTH_POLY_RSUM);
                     op_args.sym.bs = 2'b0;
@@ -956,21 +966,24 @@ module VX_decode import
                 // 3 = context read, 4 = init/block by funct7[0]. `sel` rides
                 // sym_args_t.shamt for the same reason the AES engine's does;
                 // the AUTH ops carry no args struct of their own.
-                if (funct3 == 3'h2) begin
+                // funct7[2:0] selects the context word; funct7[6:3] is reserved.
+                if (funct3 == 3'h2 && funct7[6:3] == 4'h0) begin
                     ex_type = EX_AUTH;
                     op_type = INST_OP_BITS'(INST_AUTH_GH_CWR);
                     op_args.sym.bs = 2'b0;
                     op_args.sym.shamt = {2'b0, funct7[2:0]};
                     `USED_IREG (rs1);
                 end
-                if (funct3 == 3'h3) begin
+                // funct7[2:0] selects the context word; funct7[6:3] is reserved.
+                if (funct3 == 3'h3 && funct7[6:3] == 4'h0) begin
                     ex_type = EX_AUTH;
                     op_type = INST_OP_BITS'(INST_AUTH_GH_CRD);
                     op_args.sym.bs = 2'b0;
                     op_args.sym.shamt = {2'b0, funct7[2:0]};
                     `USED_IREG (rd);
                 end
-                if (funct3 == 3'h4) begin
+                // funct7[0] picks init or block; funct7[6:1] is reserved.
+                if (funct3 == 3'h4 && funct7[6:1] == 6'h0) begin
                     ex_type = EX_AUTH;
                     op_args.sym.bs = 2'b0;
                     op_args.sym.shamt = 5'b0;
