@@ -267,8 +267,19 @@ def main():
                    help="where logs and records go (default: <build>/crypto_runs)")
     p.add_argument("--build", default=os.path.join(ROOT, "build32"))
     p.add_argument("--list", action="store_true", help="list the cases and exit")
-    for flag in "nbtai":
-        p.add_argument("-" + flag, help="override the case's -%s" % flag)
+    # The application's own options, passed straight through. A value given
+    # here replaces the one the case carries; anything omitted keeps the
+    # case's. Both apps take the same five.
+    p.add_argument("-n", metavar="MSGS", help="messages")
+    p.add_argument("-b", metavar="BLOCKS",
+                   help="blocks per message -- a block is 16 bytes for aes_gcm "
+                        "and 64 for chacha_poly, so compare the two through "
+                        "bytes, never through blocks")
+    p.add_argument("-t", metavar="BYTES",
+                   help="tail bytes: the partial block after the last whole one")
+    p.add_argument("-a", metavar="BYTES", help="AAD bytes")
+    p.add_argument("-i", metavar="IMPL",
+                   help="implementation index (--list shows each case's)")
     args = p.parse_args()
 
     cases = catalog_cases(args.yaml)
