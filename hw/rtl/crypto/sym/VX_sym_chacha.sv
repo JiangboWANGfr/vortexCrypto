@@ -56,6 +56,17 @@ module VX_sym_chacha import VX_gpu_pkg::*; #(
     reg [NW-1:0][NUM_LANES-1:0][2:0][31:0]  ctx_n;
     reg [NW-1:0][NUM_LANES-1:0][31:0]       ctx_ctr;
 
+    // Context lifetime. The context arrays above are 57,344 bits; clearing them
+    // on reset would put a reset net on every one of those flops, and the
+    // Vortex domain closes with 0.183 ns to spare. These 704 bits carry the
+    // same architectural guarantee at 1.2% of the flops: a word that has not
+    // been written by this context reads as zero, so a kernel cannot recover
+    // its predecessor's key by issuing cha.begin and cha.crd without first
+    // writing a key of its own. The bits are physically still there; this is a
+    // readability guarantee, not erasure, and section 24 says so.
+    reg [NW-1:0][NUM_LANES-1:0][10:0]       ctx_written;  // 8 key words + 3 nonce
+    reg [NW-1:0][NUM_LANES-1:0]             ctx_ready;    // cha.begin has run
+
     wire [NW_WIDTH-1:0] cwid = execute_if.data.header.wid;
     wire [3:0] csel = execute_if.data.op_args.sym.shamt[3:0];
 
@@ -163,21 +174,39 @@ module VX_sym_chacha import VX_gpu_pkg::*; #(
 
     wire [NUM_LANES-1:0][31:0] init_w, crd_w;
     for (genvar i = 0; i < NUM_LANES; ++i) begin : g_init
+        wire k_ok = ctx_written[cwid][i][3'(csel - 4'd4)];
+        wire n_ok = ctx_written[cwid][i][8 + (csel[1:0] - 2'd1)];
         assign init_w[i] = (csel < 4'd4)  ? sigma(csel[1:0])
-                         : (csel < 4'd12) ? ctx_k[cwid][i][3'(csel - 4'd4)]
+                         : (csel < 4'd12) ? (k_ok ? ctx_k[cwid][i][3'(csel - 4'd4)] : 32'b0)
                          : (csel == 4'd12) ? ctx_ctr[cwid][i]
-                                           : ctx_n[cwid][i][csel[1:0] - 2'd1];
+                                           : (n_ok ? ctx_n[cwid][i][csel[1:0] - 2'd1] : 32'b0);
         assign crd_w[i] = ctx_x[cwid][i][csel] + init_w[i];
     end
 
     wire cha_any = is_cwr | is_crd | is_begin | is_dr;
+
+`ifdef SIMULATION
+    // cha.dr and cha.crd operate on state that cha.begin builds. Issuing either
+    // before it is a kernel bug, and a silent one: the words read are whatever
+    // the previous owner of this (warp, lane) context left, and a ChaCha
+    // keystream is uniformly random-looking whether it is the right one or not.
+    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_ready_chk
+        `RUNTIME_ASSERT(!(execute_if.valid && (is_dr || is_crd)
+                          && execute_if.data.header.tmask[i])
+                        || ctx_ready[cwid][i],
+            ("cha.dr/crd on a context that cha.begin has not built: wid=%0d, lane=%0d",
+                cwid, i))
+    end
+`endif
     wire eb_ready;
     wire fire = execute_if.valid && eb_ready;
 
     always @(posedge clk) begin
         if (reset) begin
-            qr_step <= 4'd0;
-            s1_valid <= 1'b0;
+            qr_step     <= 4'd0;
+            s1_valid    <= 1'b0;
+            ctx_written <= '0;
+            ctx_ready   <= '0;
         end else if (fire) begin
             if (is_dr) begin
                 qr_step <= last_step ? 4'd0 : (qr_step + 4'd1);
@@ -211,12 +240,15 @@ module VX_sym_chacha import VX_gpu_pkg::*; #(
                             ctx_x[cwid][i][j] <= sigma(2'(j));
                         end
                         for (int j = 0; j < 8; ++j) begin
-                            ctx_x[cwid][i][4 + j] <= ctx_k[cwid][i][j];
+                            ctx_x[cwid][i][4 + j] <= ctx_written[cwid][i][j]
+                                                   ? ctx_k[cwid][i][j] : 32'b0;
                         end
                         ctx_x[cwid][i][12] <= execute_if.data.rs1_data[i][31:0];
                         for (int j = 0; j < 3; ++j) begin
-                            ctx_x[cwid][i][13 + j] <= ctx_n[cwid][i][j];
+                            ctx_x[cwid][i][13 + j] <= ctx_written[cwid][i][8 + j]
+                                                    ? ctx_n[cwid][i][j] : 32'b0;
                         end
+                        ctx_ready[cwid][i] <= 1'b1;
                     end
                 end
             end else if (is_cwr) begin
@@ -224,8 +256,10 @@ module VX_sym_chacha import VX_gpu_pkg::*; #(
                     if (execute_if.data.header.tmask[i]) begin
                         if (csel < 4'd8) begin
                             ctx_k[cwid][i][csel[2:0]] <= execute_if.data.rs1_data[i][31:0];
+                            ctx_written[cwid][i][csel[2:0]] <= 1'b1;
                         end else begin
                             ctx_n[cwid][i][csel[1:0]] <= execute_if.data.rs1_data[i][31:0];
+                            ctx_written[cwid][i][8 + csel[1:0]] <= 1'b1;
                         end
                     end
                 end

@@ -235,6 +235,13 @@ module VX_sym_aes import VX_gpu_pkg::*; #(
     reg [NW-1:0][NUM_LANES-1:0][3:0][31:0] ctx_k;
     reg [NW-1:0][NUM_LANES-1:0][3:0]       ctx_rnd;
 
+    // Context lifetime; see VX_sym_chacha for why this is a validity mask and
+    // not a zeroize of the arrays themselves. A round key word that this
+    // context has not written reads as zero, so aes.begin cannot fold a
+    // predecessor's key into a successor's state.
+    reg [NW-1:0][NUM_LANES-1:0][7:0]      ctx_written;  // 4 state + 4 key words
+    reg [NW-1:0][NUM_LANES-1:0]           ctx_ready;    // aes.begin has run
+
     wire [NW_WIDTH-1:0] s2_wid = execute_if.data.header.wid;
     wire [2:0] s2_sel = execute_if.data.op_args.sym.shamt[2:0];
 
@@ -258,7 +265,10 @@ module VX_sym_aes import VX_gpu_pkg::*; #(
 
     for (genvar i = 0; i < NUM_LANES; ++i) begin : g_s2_lane
         wire [3:0][31:0] cs = ctx_s[s2_wid][i];
-        wire [3:0][31:0] ck = ctx_k[s2_wid][i];
+        wire [3:0][31:0] ck;
+        for (genvar c = 0; c < 4; ++c) begin : g_ck
+            assign ck[c] = ctx_written[s2_wid][i][4 + c] ? ctx_k[s2_wid][i][c] : 32'b0;
+        end
         wire [3:0]       cr = ctx_rnd[s2_wid][i];
 
         // K_rnd from K_{rnd-1}: t = SubWord(RotWord(k3)) ^ Rcon[rnd]. RotWord
@@ -294,8 +304,10 @@ module VX_sym_aes import VX_gpu_pkg::*; #(
 
     always @(posedge clk) begin
         if (reset) begin
-            s2_phase <= 2'd0;
-            ctx_rnd  <= '0;
+            s2_phase    <= 2'd0;
+            ctx_rnd     <= '0;
+            ctx_written <= '0;
+            ctx_ready   <= '0;
         end else if (s2_fire) begin
             if (s2_round) begin
                 s2_phase <= s2_last_phase ? 2'd0 : (s2_phase + 2'd1);
@@ -323,9 +335,11 @@ module VX_sym_aes import VX_gpu_pkg::*; #(
                     if (execute_if.data.header.tmask[i]) begin
                         for (int c = 0; c < 4; ++c) begin
                             ctx_s[s2_wid][i][c] <= ctx_s[s2_wid][i][c]
-                                                 ^ ctx_k[s2_wid][i][c];
+                                                 ^ (ctx_written[s2_wid][i][4 + c]
+                                                    ? ctx_k[s2_wid][i][c] : 32'b0);
                         end
                         ctx_rnd[s2_wid][i] <= 4'd1;
+                        ctx_ready[s2_wid][i] <= 1'b1;
                     end
                 end
             end else if (s2_cwr) begin
@@ -333,8 +347,10 @@ module VX_sym_aes import VX_gpu_pkg::*; #(
                     if (execute_if.data.header.tmask[i]) begin
                         if (s2_sel[2] == 1'b0) begin
                             ctx_s[s2_wid][i][s2_sel[1:0]] <= execute_if.data.rs1_data[i];
+                            ctx_written[s2_wid][i][3'(s2_sel[1:0])] <= 1'b1;
                         end else begin
                             ctx_k[s2_wid][i][s2_sel[1:0]] <= execute_if.data.rs1_data[i];
+                            ctx_written[s2_wid][i][3'(4 + s2_sel[1:0])] <= 1'b1;
                         end
                     end
                 end
@@ -346,6 +362,19 @@ module VX_sym_aes import VX_gpu_pkg::*; #(
     for (genvar i = 0; i < NUM_LANES; ++i) begin : g_s2_rd
         assign s2_result[i] = ctx_s[s2_wid][i][s2_sel[1:0]];
     end
+
+`ifdef SIMULATION
+    // aes.rnd and aes.crd operate on state that aes.begin builds. Issuing
+    // either first reads whatever the previous owner of this (warp, lane)
+    // context left, which is a silent wrong answer, not a visible failure.
+    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_ready_chk
+        `RUNTIME_ASSERT(!(execute_if.valid && (s2_round || s2_crd)
+                          && execute_if.data.header.tmask[i])
+                        || ctx_ready[s2_wid][i],
+            ("aes.rnd/crd on a context that aes.begin has not built: wid=%0d, lane=%0d",
+                s2_wid, i))
+    end
+`endif
 
     wire s2_any = s2_cwr | s2_crd | s2_begin | s2_round;
 

@@ -218,6 +218,13 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
     reg [NW-1:0][NUM_LANES-1:0][3:0][XLEN-1:0] gctx_h;
     reg [NW-1:0][NUM_LANES-1:0][3:0][XLEN-1:0] gctx_y;
 
+    // Context lifetime; see VX_sym_chacha. ghash.init already clears Y, but H
+    // is the subkey derived from the cipher key and nothing cleared it: a
+    // successor issuing ghash.block would authenticate under its predecessor's
+    // H. A word this context has not written reads as zero.
+    reg [NW-1:0][NUM_LANES-1:0][3:0]           gctx_h_written;
+    reg [NW-1:0][NUM_LANES-1:0]                gctx_ready;  // ghash.init has run
+
     wire [NW_WIDTH-1:0] g2_wid = execute_if.data.header.wid;
     wire [2:0] g2_sel = execute_if.data.op_args.sym.shamt[2:0];
 
@@ -256,7 +263,8 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
     wire [3:0][XLEN-1:0] g2_a, g2_b;
     for (genvar c = 0; c < 4; ++c) begin : g_g2_operand
         assign g2_a[c] = gctx_y[g2_wid][g2_rd_lane][c];
-        assign g2_b[c] = gctx_h[g2_wid][g2_rd_lane][c];
+        assign g2_b[c] = gctx_h_written[g2_wid][g2_rd_lane][c]
+                       ? gctx_h[g2_wid][g2_rd_lane][c] : XLEN'(0);
     end
 
     reg                  g2_s1_valid;
@@ -305,9 +313,11 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
 
     always @(posedge clk) begin
         if (reset) begin
-            g2_step     <= '0;
-            g2_s1_valid <= 1'b0;
-            g2_s2_valid <= 1'b0;
+            g2_step        <= '0;
+            g2_s1_valid    <= 1'b0;
+            g2_s2_valid    <= 1'b0;
+            gctx_h_written <= '0;
+            gctx_ready     <= '0;
         end else if (g2_fire) begin
             if (g2_block) begin
                 g2_step <= g2_done_step ? '0 : (g2_step + STEP_W'(1));
@@ -339,6 +349,7 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
                         for (int c = 0; c < 4; ++c) begin
                             gctx_y[g2_wid][i][c] <= '0;
                         end
+                        gctx_ready[g2_wid][i] <= 1'b1;
                     end
                 end
             end else if (g2_cwr) begin
@@ -349,6 +360,7 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
                                                             ^ execute_if.data.rs1_data[i];
                         end else begin
                             gctx_h[g2_wid][i][g2_sel[1:0]] <= execute_if.data.rs1_data[i];
+                            gctx_h_written[g2_wid][i][g2_sel[1:0]] <= 1'b1;
                         end
                     end
                 end
@@ -361,6 +373,19 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
         assign g2_out[i] = g2_crd ? gctx_y[g2_wid][i][g2_sel[1:0]]
                          : (g2_any ? '0 : unit_result[i]);
     end
+
+`ifdef SIMULATION
+    // ghash.block and ghash.crd operate on an accumulator that ghash.init
+    // clears. Without it the accumulator carries the previous owner's Y, and a
+    // GCM tag is uniformly random-looking whether it is right or wrong.
+    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_ready_chk
+        `RUNTIME_ASSERT(!(execute_if.valid && (g2_block || g2_crd)
+                          && execute_if.data.header.tmask[i])
+                        || gctx_ready[g2_wid][i],
+            ("ghash.block/crd on a context that ghash.init has not cleared: wid=%0d, lane=%0d",
+                g2_wid, i))
+    end
+`endif
 
     wire unit_done = ~g2_block | g2_done_step;
 `else
