@@ -79,6 +79,11 @@
 // features share it -- the fused subgroup round and the stateful per-lane AES
 // engine -- and the SystemVerilog preprocessor has no boolean `ifdef, so the
 // arm is guarded by this derived macro rather than by either feature.
+// poly4.step.sg16 needs the sixteen-lane subgroup to exist at all.
+`ifdef VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE
+    `define EXT_AUTH_SG16_ARM
+`endif
+
 `ifdef VX_CFG_EXT_SYM_SG4_ENABLE
     `define EXT_SYM_EXT4_ARM
 `elsif VX_CFG_EXT_SYM_S2_ENABLE

@@ -299,7 +299,12 @@ enum class AuthType {
   POLY_MAC,
   // Sum one limb across the aligned quad, opt-in behind
   // VX_CFG_EXT_AUTH_POLY_SG4_ENABLE.
-  POLY_RSUM
+  POLY_RSUM,
+  // One aligned sixteen-lane subgroup absorbs a whole 64-byte ChaCha block --
+  // four Poly1305 blocks -- in one instruction, opt-in behind
+  // VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE. The r^2..r^4 schedule the software
+  // block-parallel form needs stays inside the unit.
+  POLY_STEP16
 };
 
 struct IntrAuthArgs {

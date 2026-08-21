@@ -599,6 +599,14 @@ package VX_gpu_pkg;
     // Sum one 26-bit limb across the aligned quad, for Poly1305's block-parallel
     // reduction. Opt-in behind VX_CFG_EXT_AUTH_POLY_SG4_ENABLE.
     localparam INST_AUTH_POLY_RSUM = 4'hB;
+    // poly4.step.sg16: one aligned sixteen-lane subgroup absorbs a whole
+    // 64-byte ChaCha block -- four Poly1305 blocks -- in one instruction.
+    // R4-type: rd = f(rs1 = h, rs2 = r, rs3 = m). Lanes 0..4 carry h and r as
+    // five 26-bit limbs; all sixteen lanes carry one message word each. The
+    // r^2, r^3 and r^4 the block-parallel form needs stay inside the unit and
+    // are never architectural, which is the point: measured, that schedule
+    // costs twenty loads and a third of the kernel's cycles.
+    localparam INST_AUTH_POLY_STEP16 = 4'hC;
     localparam INST_AUTH_BITS     = 4;
 `endif
 

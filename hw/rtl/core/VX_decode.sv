@@ -920,6 +920,30 @@ module VX_decode import
         `endif
         `ifdef VX_CFG_EXT_AUTH_ENABLE
             INST_EXT3: begin
+            `ifdef VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE
+                // poly4.step.sg16 rd, rs1, rs2, rs3 -- one aligned sixteen-lane
+                // subgroup absorbs a whole 64-byte ChaCha block, which is four
+                // Poly1305 blocks, in one instruction. rs1 = h and rs2 = r as
+                // five 26-bit limbs in lanes 0..4; rs3 = the sixteen message
+                // words, one per lane. R4-type, so rs3 costs no new operand
+                // path -- WGATHER already uses the format.
+                //
+                // The r^2, r^3, r^4 schedule stays inside the unit. That is the
+                // instruction's reason to exist: measured on s3f_norp, holding
+                // it in registers costs twenty loads per block and 36% of the
+                // kernel's cycles, and it is not part of the algorithm's state.
+                // funct7 carries nothing and is reserved.
+                if (funct3 == 3'h7 && funct7 == 7'h0) begin
+                    ex_type = EX_AUTH;
+                    op_type = INST_OP_BITS'(INST_AUTH_POLY_STEP16);
+                    op_args.sym.bs = 2'b0;
+                    op_args.sym.shamt = 5'b0;
+                    `USED_IREG (rd);
+                    `USED_IREG (rs1);
+                    `USED_IREG (rs2);
+                    `USED_IREG (rs3);
+                end
+            `endif
             `ifdef VX_CFG_EXT_AUTH_POLY_SG4_ENABLE
                 // poly26.rsum.sg4 rd, rs1 -- rd = sum of rs1 across the aligned
                 // quad. Poly1305's block-parallel form leaves one partial sum

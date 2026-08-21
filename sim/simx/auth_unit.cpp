@@ -105,8 +105,20 @@ AuthUnit::AuthUnit(const SimContext& ctx, const char* name, Core* core)
 {}
 
 uint32_t AuthUnit::latency_of(const instr_trace_t* trace) const {
-  if (std::get_if<AuthType>(&trace->op_type)) {
-    // Single-cycle combinational datapath plus the output elastic buffer.
+  if (auto p = std::get_if<AuthType>(&trace->op_type)) {
+    // Everything here is a single-cycle combinational datapath plus the output
+    // elastic buffer, except the sixteen-lane macro-op, which runs four
+    // Poly1305 block updates internally.
+    //
+    // These are placeholders, and the flat 2 is why: SimX does not model unit
+    // busy or dispatch backpressure, so its cycle counts for the multi-cycle
+    // forms are not usable and rtlsim is the authority for all of them. The
+    // instruction counts, which is what SimX is relied on for, are exact.
+#ifdef VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE
+    if (*p == AuthType::POLY_STEP16) return 21;  // 4 blocks x 5 limbs + carry
+#else
+    (void)p;
+#endif
     return 2;
   }
   std::abort();
@@ -117,6 +129,7 @@ void AuthUnit::execute(instr_trace_t* trace) {
   uint32_t num_threads = VX_CFG_NUM_THREADS;
   auto& rs1_data = trace->src_data[0];
   auto& rs2_data = trace->src_data[1];
+  auto& rs3_data = trace->src_data[2];
 
   trace->dst_data.assign(num_threads, reg_data_t{});
   auto& rd_data = trace->dst_data;
@@ -125,6 +138,73 @@ void AuthUnit::execute(instr_trace_t* trace) {
   const uint32_t width = (uint32_t)(sizeof(Word) * 8);
   const uint64_t mask = (width >= 64) ? ~0ull : ((1ull << width) - 1);
 
+#ifdef VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE
+  if (auth_type == AuthType::POLY_STEP16) {
+    // poly4.step.sg16 rd, rs1(h), rs2(r), rs3(m)
+    //
+    //   lanes 0..4 : h0..h4 and r0..r4, five 26-bit limbs each
+    //   lanes 0..15: one message word each, sixteen words = 64 bytes
+    //   result     : h0'..h4' in lanes 0..4 after absorbing four Poly1305
+    //                blocks; lanes 5..15 receive zero
+    //
+    // The unit runs h = (h + m_b) * r mod 2^130-5 four times. r^2, r^3 and r^4
+    // are never architectural: holding that schedule in registers is what costs
+    // the software form twenty loads and a third of its cycles.
+    for (uint32_t q = 0; q + 15 < num_threads; q += 16) {
+      bool first = tmask.test(q);
+      for (uint32_t c = 1; c < 16; ++c) {
+        if (tmask.test(q + c) != first) {
+          std::cerr << "error: poly4.step.sg16 on a partially active subgroup: q="
+                    << q << " -- all sixteen lanes must be active" << std::endl;
+          std::abort();
+        }
+      }
+      if (!first) continue;
+
+      uint32_t h[5], r[5], m[16];
+      for (uint32_t c = 0; c < 5; ++c) {
+        h[c] = (uint32_t)rs1_data[q + c].u & 0x3ffffffu;
+        r[c] = (uint32_t)rs2_data[q + c].u & 0x3ffffffu;
+      }
+      for (uint32_t c = 0; c < 16; ++c)
+        m[c] = (uint32_t)rs3_data[q + c].u;
+
+      for (uint32_t b = 0; b < 4; ++b) {
+        const uint32_t t0 = m[4*b + 0], t1 = m[4*b + 1];
+        const uint32_t t2 = m[4*b + 2], t3 = m[4*b + 3];
+        // Absorb, with the appended 0x01 byte a full block always carries.
+        uint32_t a0 = h[0] + (t0 & 0x3ffffffu);
+        uint32_t a1 = h[1] + (((t0 >> 26) | (t1 << 6)) & 0x3ffffffu);
+        uint32_t a2 = h[2] + (((t1 >> 20) | (t2 << 12)) & 0x3ffffffu);
+        uint32_t a3 = h[3] + (((t2 >> 14) | (t3 << 18)) & 0x3ffffffu);
+        uint32_t a4 = h[4] + ((t3 >> 8) | (1u << 24));
+        // Multiply by r modulo 2^130-5; the wrapped terms carry the factor 5.
+        const uint64_t s1 = (uint64_t)r[1] * 5, s2 = (uint64_t)r[2] * 5;
+        const uint64_t s3 = (uint64_t)r[3] * 5, s4 = (uint64_t)r[4] * 5;
+        uint64_t d0 = (uint64_t)a0*r[0] + (uint64_t)a1*s4 + (uint64_t)a2*s3
+                    + (uint64_t)a3*s2 + (uint64_t)a4*s1;
+        uint64_t d1 = (uint64_t)a0*r[1] + (uint64_t)a1*r[0] + (uint64_t)a2*s4
+                    + (uint64_t)a3*s3 + (uint64_t)a4*s2;
+        uint64_t d2 = (uint64_t)a0*r[2] + (uint64_t)a1*r[1] + (uint64_t)a2*r[0]
+                    + (uint64_t)a3*s4 + (uint64_t)a4*s3;
+        uint64_t d3 = (uint64_t)a0*r[3] + (uint64_t)a1*r[2] + (uint64_t)a2*r[1]
+                    + (uint64_t)a3*r[0] + (uint64_t)a4*s4;
+        uint64_t d4 = (uint64_t)a0*r[4] + (uint64_t)a1*r[3] + (uint64_t)a2*r[2]
+                    + (uint64_t)a3*r[1] + (uint64_t)a4*r[0];
+        uint32_t c = (uint32_t)(d0 >> 26); h[0] = (uint32_t)d0 & 0x3ffffffu;
+        d1 += c; c = (uint32_t)(d1 >> 26); h[1] = (uint32_t)d1 & 0x3ffffffu;
+        d2 += c; c = (uint32_t)(d2 >> 26); h[2] = (uint32_t)d2 & 0x3ffffffu;
+        d3 += c; c = (uint32_t)(d3 >> 26); h[3] = (uint32_t)d3 & 0x3ffffffu;
+        d4 += c; c = (uint32_t)(d4 >> 26); h[4] = (uint32_t)d4 & 0x3ffffffu;
+        h[0] += c * 5; c = h[0] >> 26; h[0] &= 0x3ffffffu;
+        h[1] += c;
+      }
+      for (uint32_t c = 0; c < 16; ++c)
+        rd_data[q + c].u = (c < 5) ? h[c] : 0u;
+    }
+    return;
+  }
+#endif
 #ifdef VX_CFG_EXT_AUTH_POLY_SG4_ENABLE
   if (auth_type == AuthType::POLY_RSUM) {
     // Same rule as the subgroup ops in sym_unit: a quad's mask must be uniform,
@@ -158,7 +238,6 @@ void AuthUnit::execute(instr_trace_t* trace) {
     auto pa = std::get<IntrAuthArgs>(trace->instr_ptr->get_args());
     const bool is_high   = (pa.sel & 0x1) != 0;
     const bool is_scale5 = (pa.sel & 0x2) != 0;
-    auto& rs3_data = trace->src_data[2];
     for (uint32_t t = 0; t < num_threads; ++t) {
       if (!tmask.test(t))
         continue;
