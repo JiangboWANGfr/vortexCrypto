@@ -41,7 +41,7 @@ struct impl_t {
   bool needs_sym;   // issues RORI, so requires EX_SYM
   bool needs_xr;    // issues chacha32.xr; needs VX_CFG_EXT_SYM_CHACHA_ENABLE
   bool needs_mac;   // issues poly26.mac*; needs VX_CFG_EXT_AUTH_POLY_ENABLE
-  bool needs_quad;  // four lanes own one message, so num_msgs must divide by 4
+  bool needs_quad;  // four lanes own one message: the warp must divide into whole quads
   bool needs_sg4;   // needs VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE and the poly twin
   bool needs_s2;    // needs VX_CFG_EXT_SYM_CHACHA_S2_ENABLE
 };
@@ -405,6 +405,26 @@ int main(int argc, char** argv) {
   vx_kernel_h kern;
   CHECK(vx_module_load_file(dev, g_kernel_file, &mod));
   vx_result_t kr = vx_module_get_kernel(mod, kImpls[g_impl].kernel, &kern);
+  // A subgroup implementation reads across an aligned quad, so the quad must be
+  // whole: a partially active one would read a masked lane's stale register.
+  // Two conditions, and both are load-bearing.
+  //
+  // The thread geometry is the one that guards the cross-lane read: a warp has
+  // to divide into whole quads before a quad can be uniform. This was missing.
+  //
+  // The message count is the one that was already here, and removing it was
+  // tried: at `-n5` the kernel does not produce a wrong answer, it deadlocks,
+  // and rtlsim stops on the scoreboard's 100,000-cycle timeout. The reasoning
+  // that said it was unnecessary -- that each message owns four consecutive
+  // lanes, so the loop's tail falls on a quad boundary whatever `-n` is -- is
+  // sound about the quad boundary and wrong about the kernel, which has more
+  // than the mask to keep aligned across a tail.
+  if (kImpls[g_impl].needs_quad && (num_threads < 4 || (num_threads % 4) != 0)) {
+    std::printf("impl '%s' reads across an aligned quad, so the device must have "
+                "at least 4 threads per warp and a multiple of 4; this one has %lu\n",
+                kImpls[g_impl].label, (unsigned long)num_threads);
+    return 1;
+  }
   if (kImpls[g_impl].needs_quad && (g_num_msgs % 4) != 0) {
     std::printf("impl '%s' has four lanes per message, so the message count "
                 "must be a multiple of 4, got %u\n",

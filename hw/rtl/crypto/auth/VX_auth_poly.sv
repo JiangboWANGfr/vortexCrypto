@@ -80,14 +80,31 @@ module VX_auth_poly import VX_gpu_pkg::*; #(
         VX_auth_poly_sg4_requires_NUM_LANES_multiple_of_4 __config_error();
     end
     wire is_rsum = (execute_if.data.op_type == INST_OP_BITS'(INST_AUTH_POLY_RSUM));
+
+    // Same rule as the subgroup ops in VX_sym_rot: a quad's thread mask must be
+    // uniform, and an inactive lane contributes zero rather than whatever the
+    // register file last left in its rs1. Summing an unmasked neighbour reads a
+    // stale limb into the accumulator, which is silent -- a Poly1305 tag is
+    // uniformly random-looking whether it is right or wrong.
     wire [NUM_LANES-1:0][XLEN-1:0] rsum_result;
     for (genvar i = 0; i < NUM_LANES; ++i) begin : g_rsum
         localparam int Q = (i / 4) * 4;
-        assign rsum_result[i] = XLEN'(execute_if.data.rs1_data[Q+0][31:0]
-                                    + execute_if.data.rs1_data[Q+1][31:0]
-                                    + execute_if.data.rs1_data[Q+2][31:0]
-                                    + execute_if.data.rs1_data[Q+3][31:0]);
+        wire [31:0] t [4];
+        for (genvar k = 0; k < 4; ++k) begin : g_term
+            assign t[k] = execute_if.data.header.tmask[Q+k]
+                        ? execute_if.data.rs1_data[Q+k][31:0] : 32'b0;
+        end
+        assign rsum_result[i] = XLEN'(t[0] + t[1] + t[2] + t[3]);
     end
+
+`ifdef SIMULATION
+    for (genvar q = 0; q < NUM_LANES / 4; ++q) begin : g_quad_chk
+        wire [3:0] qm = execute_if.data.header.tmask[q*4 +: 4];
+        `RUNTIME_ASSERT(!(execute_if.valid && is_rsum) || (qm == 4'b0000) || (qm == 4'b1111),
+            ("poly26.rsum.sg4 on a partially active quad: q=%0d, mask=%b, tmask=%b -- a quad's thread mask must be uniform",
+                q, qm, execute_if.data.header.tmask))
+    end
+`endif
 `endif
 
     wire [NUM_LANES-1:0][XLEN-1:0] poly_result;

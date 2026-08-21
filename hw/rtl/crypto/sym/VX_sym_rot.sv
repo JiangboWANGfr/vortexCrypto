@@ -102,17 +102,40 @@ module VX_sym_rot import VX_gpu_pkg::*; #(
     `UNUSED_VAR (execute_if.data.op_args.sym.bs)
 `endif
 
+    // A subgroup instruction reads a neighbour's register. An inactive lane's
+    // rs2_data is whatever the register file last left there, so reading it
+    // without consulting the mask returns a stale value and computes a wrong
+    // answer with nothing to show for it. The architectural rule is that a
+    // quad's mask is uniform -- all four lanes or none -- and the assertion
+    // below catches a violation in simulation. The mask on the read is what
+    // makes the hardware deterministic if one ever reaches silicon: a masked
+    // neighbour contributes zero rather than a leftover.
     wire [NUM_LANES-1:0][`VX_CFG_XLEN-1:0] xr_result;
     wire [NUM_LANES-1:0][`VX_CFG_XLEN-1:0] add_result;
     for (genvar i = 0; i < NUM_LANES; ++i) begin : g_xr
         localparam int NEXT = ((i / 4) * 4) + ((i + 1) % 4);
+        localparam int SRC  = (NUM_LANES >= 4) ? NEXT : i;
         wire [31:0] rs2_local = execute_if.data.rs2_data[i][31:0];
-        wire [31:0] rs2_next  = execute_if.data.rs2_data[(NUM_LANES >= 4) ? NEXT : i][31:0];
+        wire [31:0] rs2_next  = execute_if.data.header.tmask[SRC]
+                              ? execute_if.data.rs2_data[SRC][31:0] : 32'b0;
         wire [31:0] rs2_sel   = route ? rs2_next : rs2_local;
         wire [31:0] v = execute_if.data.rs1_data[i][31:0] ^ rs2_sel;
         assign xr_result[i]  = `VX_CFG_XLEN'((v << shamt) | (v >> lshamt));
         assign add_result[i] = `VX_CFG_XLEN'(execute_if.data.rs1_data[i][31:0] + rs2_next);
     end
+
+`ifdef SIMULATION
+    // Fires on the instruction that would read across a torn quad, not on the
+    // divergence itself: a warp is free to diverge, it just may not issue a
+    // subgroup instruction while it has.
+    wire sg4_active = execute_if.valid && (is_chadd || (is_xr && route));
+    for (genvar q = 0; q < NUM_LANES / 4; ++q) begin : g_quad_chk
+        wire [3:0] qm = execute_if.data.header.tmask[q*4 +: 4];
+        `RUNTIME_ASSERT(!sg4_active || (qm == 4'b0000) || (qm == 4'b1111),
+            ("subgroup op on a partially active quad: q=%0d, mask=%b, tmask=%b -- a quad's thread mask must be uniform",
+                q, qm, execute_if.data.header.tmask))
+    end
+`endif
 
     wire [NUM_LANES-1:0][`VX_CFG_XLEN-1:0] unit_result;
     for (genvar i = 0; i < NUM_LANES; ++i) begin : g_sel

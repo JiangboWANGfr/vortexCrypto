@@ -127,9 +127,22 @@ void AuthUnit::execute(instr_trace_t* trace) {
 
 #ifdef VX_CFG_EXT_AUTH_POLY_SG4_ENABLE
   if (auth_type == AuthType::POLY_RSUM) {
+    // Same rule as the subgroup ops in sym_unit: a quad's mask must be uniform,
+    // and a masked lane contributes zero rather than a leftover limb. A wrong
+    // Poly1305 tag looks exactly like a right one, so this cannot be left to
+    // show up downstream.
     for (uint32_t q = 0; q + 3 < num_threads; q += 4) {
-      const uint32_t sum = (uint32_t)rs1_data[q].u + (uint32_t)rs1_data[q+1].u
-                         + (uint32_t)rs1_data[q+2].u + (uint32_t)rs1_data[q+3].u;
+      const bool first = tmask.test(q);
+      for (uint32_t c = 1; c < 4; ++c) {
+        if (tmask.test(q + c) != first) {
+          std::cerr << "error: poly26.rsum.sg4 on a partially active quad: q="
+                    << q << " -- a quad's thread mask must be uniform" << std::endl;
+          std::abort();
+        }
+      }
+      uint32_t sum = 0;
+      for (uint32_t c = 0; c < 4; ++c)
+        sum += tmask.test(q + c) ? (uint32_t)rs1_data[q + c].u : 0u;
       for (uint32_t c = 0; c < 4; ++c) {
         if (tmask.test(q + c)) {
           rd_data[q + c].u = sum;

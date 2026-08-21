@@ -94,6 +94,31 @@ SymUnit::SymUnit(const SimContext& ctx, const char* name, Core* core)
 #endif
 {}
 
+// A subgroup instruction reads a neighbour's register. An inactive lane holds
+// whatever the register file last left there, so reading it without consulting
+// the mask returns a stale value and silently computes a wrong answer. The
+// architectural rule is that a quad's thread mask is uniform -- all four lanes
+// or none; this checks it, and the readers below treat a masked neighbour as
+// zero so that a violation is at least deterministic.
+static void check_quad_uniform(const ThreadMask& tmask, uint32_t num_threads,
+                               const char* op) {
+  for (uint32_t q = 0; q + 3 < num_threads; q += 4) {
+    const bool first = tmask.test(q);
+    for (uint32_t c = 1; c < 4; ++c) {
+      if (tmask.test(q + c) != first) {
+        std::cerr << "error: " << op << " on a partially active quad: q=" << q
+                  << " -- a quad's thread mask must be uniform" << std::endl;
+        std::abort();
+      }
+    }
+  }
+}
+
+static inline uint32_t quad_src(const ThreadMask& tmask,
+                                const std::vector<reg_data_t>& d, uint32_t t) {
+  return tmask.test(t) ? (uint32_t)d[t].u : 0u;
+}
+
 uint32_t SymUnit::latency_of(const instr_trace_t* trace) const {
   if (std::get_if<SymType>(&trace->op_type)) {
     // Single-cycle combinational datapath plus the output elastic buffer,
@@ -276,14 +301,15 @@ void SymUnit::execute(instr_trace_t* trace) {
 
 #ifdef VX_CFG_EXT_SYM_CHACHA_ENABLE
   if (sym_type == SymType::CHACHA_XR) {
-    // bs[0] routes rs2 from the next lane of the aligned quad. The source
-    // lane's mask is deliberately not consulted, as for the SG4 AES forms.
+    // bs[0] routes rs2 from the next lane of the aligned quad.
     const bool route = (symArgs.bs & 0x1) != 0;
+    if (route)
+      check_quad_uniform(tmask, num_threads, "chacha32.xr (routed)");
     for (uint32_t t = 0; t < num_threads; ++t) {
       if (!tmask.test(t))
         continue;
       const uint32_t src = route ? ((t & ~3u) | ((t + 1) & 3u)) : t;
-      uint32_t v = (uint32_t)rs1_data[t].u ^ (uint32_t)rs2_data[src].u;
+      uint32_t v = (uint32_t)rs1_data[t].u ^ quad_src(tmask, rs2_data, src);
       rd_data[t].u = rol32(v, shamt);
     }
     return;
@@ -291,11 +317,12 @@ void SymUnit::execute(instr_trace_t* trace) {
 #endif
 #ifdef VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE
   if (sym_type == SymType::CHADD_SG4) {
+    check_quad_uniform(tmask, num_threads, "chadd.sg4");
     for (uint32_t t = 0; t < num_threads; ++t) {
       if (!tmask.test(t))
         continue;
       const uint32_t src = (t & ~3u) | ((t + 1) & 3u);
-      rd_data[t].u = (uint32_t)rs1_data[t].u + (uint32_t)rs2_data[src].u;
+      rd_data[t].u = (uint32_t)rs1_data[t].u + quad_src(tmask, rs2_data, src);
     }
     return;
   }
