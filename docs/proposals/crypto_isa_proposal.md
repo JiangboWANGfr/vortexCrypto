@@ -3281,14 +3281,22 @@ arithmetic -- but the width at which to ask the question is not a constant.
 | | ALMs | vs baseline | Vortex domain | PCIe domain |
 | --- | ---: | ---: | ---: | ---: |
 | baseline | 208,513 | | +0.001 | +0.002 |
+| `arx`, stateless | 217,854 | +9,341 | +0.000 | -0.085 |
 | `s3f`, four lanes | 219,921 | +11,408 | +0.000 | **-0.352** |
 | **`sg16`** | **223,209** | **+14,696** | **+0.000** | **+0.002** |
-| `s2`, stateful | 299,907 | +91,394 | +0.000 | +0.001 |
+| `s2`, stateful | 289,353 | +80,840 | +0.000 | **-0.374** |
 
-**Six times cheaper than S2 and faster than it**, and the only one of the three
-that closes both clock domains. The area difference is not subtle and it is not
-a surprise: S2's 57,344 bits of per-(warp, lane) context are most of what it
-costs, and this design does not have them.
+**Five and a half times cheaper than S2 and faster than it.** The area
+difference is not subtle and it is not a surprise: S2's 57,344 bits of
+per-(warp, lane) context are most of what it costs, and this design does not
+have them.
+
+Every row closes the Vortex domain, which is the one this table is claiming.
+`sg16` is also the only one that closes the PCIe domain, and section 23.7 shows
+that is worth nothing as evidence: that domain has no relationship to area, two
+builds 0.2% apart in area differ by 0.815 ns in it, and the largest design in
+this document is among the few that close it. It is a placement lottery and a
+property of the FPGA project, not of any instruction here.
 
 Which is the claim to make carefully, because it is not "no state". There are
 three kinds here and they are worth separating:
@@ -3378,6 +3386,20 @@ where the count comes from -- SYM is 8% of `sg16`'s 118.8 instructions per block
 and 38% of `arx`'s 212.1, which is 9.5 against 80.6. That is ChaCha20's ten
 double-rounds taken one instruction each, or taken as the eight ARX lines each
 of them decomposes into.
+
+The area went the way the state axis predicts and further than expected. At
+217,854 ALMs the stateless form is 5,355 below the macro and 3,542 registers
+below it, which is the 1,154 bits of working state and the ten-cycle sequencer
+that holds them. It is also **cheaper than the four-lane S3 while being 1.81x
+faster**, and 471 ALMs above ChaCha's S1 while being 2.27x faster -- so the
+sixteen-lane subgroup buys 2.27x for what reads on this device as free. The
+instruction loses to `chacha.dr.sg16` and to nothing else in this section.
+
+That sharpens the axis rather than softening it. The macro's 1,154 bits cost
+2.4% more area than having none and return 2.19x the throughput; S2's 57,344
+cost 33% more than the macro and return 0.76x. **The middle wins on both axes
+against the stateful end and wins the trade decisively against the stateless
+one.**
 
 #### What the prediction missed, and it is the same thing twice
 
