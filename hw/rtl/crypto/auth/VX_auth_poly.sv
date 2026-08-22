@@ -137,17 +137,29 @@ module VX_auth_poly import VX_gpu_pkg::*; #(
 
     wire is_step16 = (execute_if.data.op_type == INST_OP_BITS'(INST_AUTH_POLY_STEP16));
 
-    // step 0     absorb h + m for this block
-    // step 1..5  one output limb each, carry running forward
-    // step 6     fold the carry out of d4 back into limb 0 and renormalise
-    // step 7     settle. The result buffer samples p_h combinationally, and
-    //            step 6's write lands on the same clock edge that would have
-    //            retired the instruction -- without this the buffer captures
-    //            the accumulator one update early, which it did: every limb of
-    //            every trial came back wrong and unmasked.
+    // step 0        absorb h + m for this block
+    // step 1..10    five output limbs, TWO cycles each: an odd step registers
+    //               the five products, the following even step sums them with
+    //               the running carry and writes the limb
+    // step 11       fold the carry out of d4 back into limb 0 and renormalise
+    // step 12       settle. The result buffer samples p_h combinationally and
+    //               step 11's write lands on the same edge that would retire
+    //               the instruction; without this the buffer captures the
+    //               accumulator one update early, which it did.
+    //
+    // The split into two cycles is what the first fitter run asked for. With
+    // five 26x26 multiplies and a five-term 58-bit adder tree in one cycle, the
+    // Vortex domain closed at -0.310 ns against +0.183 for the build before it,
+    // and Quartus named the path: auth_unit|g_blocks[0].auth_poly|mult_2~mac_1.
+    // Nothing else in either new unit appeared on a critical chain.
+    //
+    // It costs twenty cycles per instruction, 32 to 52, and that is close to
+    // free: this unit is not the throughput bottleneck. One poly4.step.sg16 per
+    // 64-byte block against ten chacha.dr.sg16 in the SYM unit, which is what
+    // actually sets the floor.
     localparam SW = 5;
     reg [SW-1:0] p_step;
-    wire p_last_in_block = (p_step == SW'(7));
+    wire p_last_in_block = (p_step == SW'(12));
 
     // Owner lock, for the same reason as VX_sym_chacha_sg16: thirty-two cycles
     // is long enough for the dispatcher to present another warp, and advancing
@@ -163,6 +175,11 @@ module VX_auth_poly import VX_gpu_pkg::*; #(
     reg [NSG-1:0][4:0][31:0] p_h;   // accumulator, five limbs
     reg [NSG-1:0][4:0][31:0] p_a;   // h + m for the block in flight
     reg [NSG-1:0][31:0]      p_c;   // running carry between limbs
+    reg [NSG-1:0][4:0][57:0]  p_prod; // the five products of the limb in flight
+
+    wire       p_mul  = p_step[0] && (p_step <= SW'(10));   // odd: multiply
+    wire       p_acc  = !p_step[0] && (p_step >= SW'(2)) && (p_step <= SW'(10));
+    wire [2:0] p_limb = 3'((p_step - SW'(1)) >> 1);
 
     wire [NSG-1:0][4:0][31:0] p_r;
     for (genvar g = 0; g < NSG; ++g) begin : g_r
@@ -174,23 +191,25 @@ module VX_auth_poly import VX_gpu_pkg::*; #(
     // The five products for the limb in flight. Output limb i takes
     // a[j] * r[i-j] for j <= i and a[j] * 5*r[5+i-j] for j > i, the factor five
     // being the reduction of 2^130 == 5.
-    wire [2:0] p_i = p_step[2:0] - 3'd1;
     wire [NSG-1:0][57:0] p_d;
+    // Hoisted out of the generate block so the sequential block can read them.
+    wire [NSG-1:0][4:0][57:0] p_term;
     for (genvar g = 0; g < NSG; ++g) begin : g_d
-        wire [57:0] terms [5];
         for (genvar j = 0; j < 5; ++j) begin : g_t
             // j == 0 never wraps -- a[0] always multiplies r[i] -- so this
             // comparison is constant there and Verilator is right to say so.
             /* verilator lint_off UNSIGNED */
-            wire [2:0] k    = (p_i >= 3'(j)) ? (p_i - 3'(j)) : (p_i + 3'd5 - 3'(j));
-            wire       wrap = (p_i < 3'(j));
+            wire [2:0] k    = (p_limb >= 3'(j)) ? (p_limb - 3'(j)) : (p_limb + 3'd5 - 3'(j));
+            wire       wrap = (p_limb < 3'(j));
             /* verilator lint_on UNSIGNED */
             wire [31:0] rk  = p_r[g][k];
             wire [57:0] prd = 58'(p_a[g][j] * rk);
-            assign terms[j] = wrap ? (prd + {prd[55:0], 2'b0}) : prd;  // x5 == x1 + x4
+            assign p_term[g][j] = wrap ? (prd + {prd[55:0], 2'b0}) : prd; // x5 == x1 + x4
         end
-        assign p_d[g] = terms[0] + terms[1] + terms[2] + terms[3] + terms[4]
-                      + 58'(p_c[g]);
+        // The adder tree now reads registered products, so the multiply and the
+        // sum sit in different cycles and neither carries the other's delay.
+        assign p_d[g] = p_prod[g][0] + p_prod[g][1] + p_prod[g][2]
+                      + p_prod[g][3] + p_prod[g][4] + 58'(p_c[g]);
     end
 
     always @(posedge clk) begin
@@ -226,11 +245,13 @@ module VX_auth_poly import VX_gpu_pkg::*; #(
                         p_a[g][3] <= hh[3] + (((t2 >> 14) | (t3 << 18)) & MASK);
                         p_a[g][4] <= hh[4] + ((t3 >> 8) | 32'h01000000);
                         p_c[g] <= '0;
-                    end else if (p_step == SW'(7)) begin
+                    end else if (p_step == SW'(12)) begin
                         // settle
-                    end else if (p_step <= SW'(5)) begin
-                        p_h[g][p_i] <= 32'(p_d[g][25:0]);
-                        p_c[g]      <= 32'(p_d[g][57:LIMB]);
+                    end else if (p_mul) begin
+                        for (int j = 0; j < 5; ++j) p_prod[g][j] <= p_term[g][j];
+                    end else if (p_acc) begin
+                        p_h[g][p_limb] <= 32'(p_d[g][25:0]);
+                        p_c[g]         <= 32'(p_d[g][57:LIMB]);
                     end else begin
                         // h0 += 5*c, then one more carry into h1.
                         automatic logic [31:0] n0 = p_h[g][0] + (p_c[g] + {p_c[g][29:0], 2'b0});
