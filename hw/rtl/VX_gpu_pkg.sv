@@ -569,6 +569,16 @@ package VX_gpu_pkg;
     localparam INST_SYM_CHA_CRD   = 4'hD;
     localparam INST_SYM_CHA_BEGIN = 4'hE;
     localparam INST_SYM_CHA_DR    = 4'hF;
+    // chacha.dr.sg16 shares CHA_DR's slot. The four-bit SYM op space is full,
+    // and widening it would touch 105 constants and every functional unit for
+    // the sake of one experiment. Sharing is safe because the two are competing
+    // designs for the same job -- a stateful per-lane engine against a
+    // sixteen-lane subgroup -- and no machine would carry both. gen_config.py
+    // refuses a configuration that enables them together.
+    //
+    // That the space ran out is worth stating rather than working around
+    // quietly: a crypto extension of this size does not fit four bits.
+    localparam INST_SYM_CHA_DR16  = 4'hF;
     localparam INST_SYM_BITS      = 4;
 `endif
 

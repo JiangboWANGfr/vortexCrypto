@@ -190,6 +190,28 @@ extern "C" {
 })
 #endif
 
+// chacha.dr.sg16: one aligned sixteen-lane subgroup holds one 512-bit ChaCha20
+// state, lane i carrying word i, and one instruction advances a full
+// double-round.
+//
+//   vx_chacha_dr_sg16(x)  -> the lane's word of the state after one double-round
+//
+// Single source, single destination, no hidden context -- which is the design's
+// claim against the stateful engine below: that one buys a low load count with
+// 57,344 bits of per-(warp, lane) state, this one with a register per lane.
+//
+// PRECONDITION: all sixteen lanes converged; both models assert it. Mutually
+// exclusive with the S2 engine, which shares its op_type slot.
+#ifdef VX_CFG_EXT_SYM_CHACHA_SG16_ENABLE
+#define vx_chacha_dr_sg16(x) ({                                              \
+    uint32_t __out;                                                          \
+    __asm__ (".insn r %1, 3, 0, %0, %2, x0"                                  \
+             : "=r"(__out)                                                   \
+             : "i"(0x2B), "r"((uint32_t)(x)));                               \
+    __out;                                                                   \
+})
+#endif
+
 // Stateful per-lane ChaCha20 engine (section 23 of the crypto proposal). One
 // lane holds a whole 512-bit state in a context keyed by (warp, lane) and one
 // instruction advances a double-round.

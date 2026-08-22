@@ -258,6 +258,9 @@ enum class SymType {
   // Subgroup add for ChaCha's diagonal round; rs2 comes from the next lane of
   // the quad. Opt-in behind VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE.
   CHADD_SG4,
+  // One aligned sixteen-lane subgroup advances a whole ChaCha20 double-round,
+  // lane i holding state word i. Opt-in behind VX_CFG_EXT_SYM_CHACHA_SG16_ENABLE.
+  CHA_DR16,
   // Stateful per-lane ChaCha20 engine, opt-in behind
   // VX_CFG_EXT_SYM_CHACHA_S2_ENABLE. A whole 512-bit state lives in a context
   // keyed by (warp, lane); CHA_DR advances a double-round.

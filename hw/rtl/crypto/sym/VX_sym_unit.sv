@@ -37,6 +37,10 @@ module VX_sym_unit import VX_gpu_pkg::*; #(
     localparam PARTIAL_BW  = (BLOCK_SIZE != `VX_CFG_ISSUE_WIDTH) || (NUM_LANES != `VX_CFG_SIMD_WIDTH);
 `ifdef VX_CFG_EXT_SYM_CHACHA_S2_ENABLE
     localparam PE_COUNT    = 3;
+`elsif VX_CFG_EXT_SYM_CHACHA_SG16_ENABLE
+    // Mutually exclusive with the S2 engine and sharing its op_type slot, so it
+    // takes the same PE index rather than a fourth one.
+    localparam PE_COUNT    = 3;
 `else
     localparam PE_COUNT    = 2;
 `endif
@@ -95,6 +99,11 @@ module VX_sym_unit import VX_gpu_pkg::*; #(
         wire [`UP(PE_SEL_BITS)-1:0] pe_select = is_cha ? PE_SEL_BITS'(PE_IDX_CHA)
                                               : (is_rot ? PE_SEL_BITS'(PE_IDX_ROT)
                                                         : PE_SEL_BITS'(PE_IDX_AES));
+    `elsif VX_CFG_EXT_SYM_CHACHA_SG16_ENABLE
+        wire is_cha = (per_block_execute_if[block_idx].data.op_type == INST_OP_BITS'(INST_SYM_CHA_DR16));
+        wire [`UP(PE_SEL_BITS)-1:0] pe_select = is_cha ? PE_SEL_BITS'(PE_IDX_CHA)
+                                              : (is_rot ? PE_SEL_BITS'(PE_IDX_ROT)
+                                                        : PE_SEL_BITS'(PE_IDX_AES));
     `else
         wire [`UP(PE_SEL_BITS)-1:0] pe_select = is_rot ? PE_IDX_ROT : PE_IDX_AES;
     `endif
@@ -140,6 +149,16 @@ module VX_sym_unit import VX_gpu_pkg::*; #(
             .INSTANCE_ID (`SFORMATF(("%s-cha%0d", INSTANCE_ID, block_idx))),
             .NUM_LANES   (NUM_LANES)
         ) sym_chacha (
+            .clk        (clk),
+            .reset      (reset),
+            .execute_if (pe_execute_if[PE_IDX_CHA]),
+            .result_if  (pe_result_if[PE_IDX_CHA])
+        );
+    `elsif VX_CFG_EXT_SYM_CHACHA_SG16_ENABLE
+        VX_sym_chacha_sg16 #(
+            .INSTANCE_ID (`SFORMATF(("%s-cha16%0d", INSTANCE_ID, block_idx))),
+            .NUM_LANES   (NUM_LANES)
+        ) sym_chacha_sg16 (
             .clk        (clk),
             .reset      (reset),
             .execute_if (pe_execute_if[PE_IDX_CHA]),

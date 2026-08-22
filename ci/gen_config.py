@@ -1500,6 +1500,16 @@ CRYPTO_DEPS = [
   ("EXT_AUTH_S2",        "EXT_AUTH"),
   ("EXT_AUTH_POLY",      "EXT_AUTH"),
   ("EXT_AUTH_POLY_SG4",  "EXT_AUTH_POLY"),
+  ("EXT_SYM_CHACHA_SG16", "EXT_SYM"),
+  ("EXT_AUTH_POLY_STEP16", "EXT_AUTH_POLY"),
+]
+
+# Mutually exclusive: chacha.dr.sg16 shares CHA_DR's op_type slot with the
+# stateful engine's cha.dr, because the four-bit SYM op space is full. They are
+# competing designs for the same job and no machine would carry both, so the
+# sharing is safe exactly as long as this refuses the combination.
+CRYPTO_CONFLICTS = [
+  ("EXT_SYM_CHACHA_SG16", "EXT_SYM_CHACHA_S2"),
 ]
 
 
@@ -1516,6 +1526,9 @@ def validate_crypto_deps(flags: str) -> None:
     return ("VX_CFG_" + name) in present and ("VX_CFG_" + name) not in off
   bad = ["VX_CFG_{}_ENABLE requires VX_CFG_{}_ENABLE".format(f, p)
          for f, p in CRYPTO_DEPS if on(f) and not on(p)]
+  bad += ["VX_CFG_{}_ENABLE and VX_CFG_{}_ENABLE are mutually exclusive "
+          "(they share an op_type slot)".format(a, b)
+          for a, b in CRYPTO_CONFLICTS if on(a) and on(b)]
   if bad:
     raise SystemExit("gen_config: invalid crypto configuration:\n  " + "\n  ".join(bad))
 

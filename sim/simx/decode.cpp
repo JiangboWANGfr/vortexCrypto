@@ -1208,6 +1208,18 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
   } break;
 #endif
   case Opcode::EXT2: {
+#ifdef VX_CFG_EXT_SYM_CHACHA_SG16_ENABLE
+    // chacha.dr.sg16 rd, rs1 -- funct3 3, funct7 reserved. Shares CHA_DR's
+    // op_type slot; the two are mutually exclusive by configuration.
+    if (funct3 == 0x3 && funct7 == 0x0) {
+      instr->set_fu_type(FUType::SYM);
+      instr->set_op_type(SymType::CHA_DR16);
+      instr->set_dest_reg(rd, RegType::Integer);
+      instr->set_src_reg(0, rs1, RegType::Integer);
+      instr->set_args(IntrSymArgs{});
+      break;
+    }
+#endif
 #ifdef VX_CFG_EXT_SYM_CHACHA_S2_ENABLE
     if (funct3 == 0x1) {
       // Stateful ChaCha20 engine: funct7[6:5] the class, funct7[3:0] the

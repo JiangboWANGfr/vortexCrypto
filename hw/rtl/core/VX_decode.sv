@@ -1030,6 +1030,24 @@ module VX_decode import
             end
         `endif
             INST_EXT2: begin
+            `ifdef VX_CFG_EXT_SYM_CHACHA_SG16_ENABLE
+                // chacha.dr.sg16 rd, rs1 -- one aligned sixteen-lane subgroup
+                // holds one 512-bit ChaCha state, lane i carrying word i, and
+                // one instruction advances a full double-round. Single source,
+                // single destination, no hidden context: the column and
+                // diagonal permutations are fixed wiring, not a crossbar.
+                //
+                // funct3 3 was the last free slot on this opcode. funct7 is
+                // reserved.
+                if (funct3 == 3'h3 && funct7 == 7'h0) begin
+                    ex_type = EX_SYM;
+                    op_type = INST_OP_BITS'(INST_SYM_CHA_DR16);
+                    op_args.sym.bs = 2'b0;
+                    op_args.sym.shamt = 5'b0;
+                    `USED_IREG (rd);
+                    `USED_IREG (rs1);
+                end
+            `endif
             `ifdef VX_CFG_EXT_SYM_CHACHA_S2_ENABLE
                 // Stateful per-lane ChaCha20 engine. One funct3 carries all
                 // four operations: funct7[6:5] selects the class and

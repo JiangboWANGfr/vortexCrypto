@@ -317,6 +317,37 @@ void SymUnit::execute(instr_trace_t* trace) {
     return;
   }
 #endif
+#ifdef VX_CFG_EXT_SYM_CHACHA_SG16_ENABLE
+  if (sym_type == SymType::CHA_DR16) {
+    // chacha.dr.sg16 rd, rs1 -- lane i carries state word i; one instruction is
+    // a whole double-round. Column groups are {g, g+4, g+8, g+12}; diagonal
+    // ones are {g, 4+((g+1)&3), 8+((g+2)&3), 12+((g+3)&3)}.
+    for (uint32_t q = 0; q + 15 < num_threads; q += 16) {
+      bool first = tmask.test(q);
+      for (uint32_t c = 1; c < 16; ++c) {
+        if (tmask.test(q + c) != first) {
+          std::cerr << "error: chacha.dr.sg16 on a partially active subgroup: q="
+                    << q << " -- all sixteen lanes must be active" << std::endl;
+          std::abort();
+        }
+      }
+      if (!first) continue;
+      uint32_t x[16];
+      for (uint32_t c = 0; c < 16; ++c) x[c] = (uint32_t)rs1_data[q + c].u;
+      auto qr = [&](uint32_t a, uint32_t b, uint32_t c2, uint32_t d) {
+        x[a] += x[b]; x[d] ^= x[a]; x[d] = rol32(x[d], 16);
+        x[c2] += x[d]; x[b] ^= x[c2]; x[b] = rol32(x[b], 12);
+        x[a] += x[b]; x[d] ^= x[a]; x[d] = rol32(x[d], 8);
+        x[c2] += x[d]; x[b] ^= x[c2]; x[b] = rol32(x[b], 7);
+      };
+      for (uint32_t g = 0; g < 4; ++g) qr(g, g + 4, g + 8, g + 12);
+      for (uint32_t g = 0; g < 4; ++g)
+        qr(g, 4 + ((g + 1) & 3), 8 + ((g + 2) & 3), 12 + ((g + 3) & 3));
+      for (uint32_t c = 0; c < 16; ++c) rd_data[q + c].u = x[c];
+    }
+    return;
+  }
+#endif
 #ifdef VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE
   if (sym_type == SymType::CHADD_SG4) {
     check_quad_uniform(tmask, num_threads, "chadd.sg4");
