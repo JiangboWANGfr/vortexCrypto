@@ -148,6 +148,15 @@ module VX_auth_poly import VX_gpu_pkg::*; #(
     localparam SW = 5;
     reg [SW-1:0] p_step;
     wire p_last_in_block = (p_step == SW'(7));
+
+    // Owner lock, for the same reason as VX_sym_chacha_sg16: thirty-two cycles
+    // is long enough for the dispatcher to present another warp, and advancing
+    // on it would finish one warp's accumulator with another's message.
+    reg [`VX_CFG_NUM_WARPS > 1 ? $clog2(`VX_CFG_NUM_WARPS)-1 : 0:0] p_wid;
+    wire [`VX_CFG_NUM_WARPS > 1 ? $clog2(`VX_CFG_NUM_WARPS)-1 : 0:0] p_cur_wid =
+        execute_if.data.header.wid;
+    wire p_idle = (p_step == '0) && (p_blk == 2'd0);
+    wire p_mine = p_idle || (p_cur_wid == p_wid);
     reg [1:0] p_blk;
     wire p_last = p_last_in_block && (p_blk == 2'd3);
 
@@ -188,8 +197,9 @@ module VX_auth_poly import VX_gpu_pkg::*; #(
         if (reset) begin
             p_step <= '0;
             p_blk  <= '0;
-        end else if (execute_if.valid && eb_ready && is_step16) begin
+        end else if (execute_if.valid && eb_ready && is_step16 && p_mine) begin
             p_step <= p_last_in_block ? '0 : (p_step + SW'(1));
+            if (p_idle) p_wid <= p_cur_wid;
             if (p_last_in_block) begin
                 p_blk <= p_last ? 2'd0 : (p_blk + 2'd1);
             end
@@ -276,7 +286,7 @@ module VX_auth_poly import VX_gpu_pkg::*; #(
     // The sixteen-lane macro-op occupies the unit for twenty-eight cycles and
     // must not retire until the last one; everything else is a single cycle.
 `ifdef VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE
-    wire unit_done = ~is_step16 | p_last;
+    wire unit_done = ~is_step16 | (p_last && p_mine);
 `else
     wire unit_done = 1'b1;
 `endif

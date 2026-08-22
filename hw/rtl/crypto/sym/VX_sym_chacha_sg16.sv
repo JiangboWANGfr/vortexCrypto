@@ -60,6 +60,18 @@ module VX_sym_chacha_sg16 import VX_gpu_pkg::*; #(
     reg [3:0] d_step;
     wire d_last = (d_step == 4'd9);
 
+    // The machine is stateless per instruction but takes ten cycles, and the
+    // dispatcher may present a different warp while ready is low. Without an
+    // owner the sequence would advance on whoever happens to be at the port and
+    // finish with another warp's state -- which it did: subgroup 0 was correct
+    // and every later one wrong, because subgroup 0 is warp 0 and the rest are
+    // not.
+    reg [`VX_CFG_NUM_WARPS > 1 ? $clog2(`VX_CFG_NUM_WARPS)-1 : 0:0] d_wid;
+    wire [`VX_CFG_NUM_WARPS > 1 ? $clog2(`VX_CFG_NUM_WARPS)-1 : 0:0] cur_wid =
+        execute_if.data.header.wid;
+    wire d_idle  = (d_step == 4'd0);
+    wire d_mine  = d_idle || (cur_wid == d_wid);
+
     reg [NSG-1:0][15:0][31:0] xw;
 
     // The four lane indices of the quarter-round lane i belongs to, in role
@@ -106,13 +118,14 @@ module VX_sym_chacha_sg16 import VX_gpu_pkg::*; #(
     end
 
     wire eb_ready;
-    wire fire = execute_if.valid && eb_ready && is_dr16;
+    wire fire = execute_if.valid && eb_ready && is_dr16 && d_mine;
 
     always @(posedge clk) begin
         if (reset) begin
             d_step <= 4'd0;
         end else if (fire) begin
             d_step <= d_last ? 4'd0 : (d_step + 4'd1);
+            if (d_idle) d_wid <= cur_wid;
             for (int g = 0; g < NSG; ++g) begin
                 if (execute_if.data.header.tmask[g*16]) begin
                     if (d_step == 4'd0) begin
@@ -144,7 +157,7 @@ module VX_sym_chacha_sg16 import VX_gpu_pkg::*; #(
         assign dr_result[i] = XLEN'(xw[G][C]);
     end
 
-    wire unit_done = ~is_dr16 | d_last;
+    wire unit_done = ~is_dr16 | (d_last && d_mine);
     assign execute_if.ready = eb_ready && unit_done;
 
     VX_elastic_buffer #(

@@ -83,6 +83,10 @@ const impl_t kImpls[] = {
   // fifteen live values in load traffic, and the PERF line prints on a wrong
   // answer, which is the whole reason it can be measured at all.
   { "chacha_poly_s3f_norp", "s3f_norp", true, true, true, true, true, false },
+  // S3-SG16, index 12: one sixteen-lane subgroup owns one message. Needs
+  // NUM_THREADS to be a multiple of 16, which the recorded shape c2w4t16 is and
+  // the CI default c1w4t4 is not.
+  { "chacha_poly_sg16", "sg16", true, false, true, false, false, false },
 };
 
 const uint32_t kNumImpls = (uint32_t)(sizeof(kImpls) / sizeof(kImpls[0]));

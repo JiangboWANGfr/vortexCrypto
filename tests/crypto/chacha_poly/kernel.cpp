@@ -902,6 +902,140 @@ inline void chacha_poly_s3_body(kernel_arg_t* __UNIFORM__ arg) {
 }
 #endif
 
+#if defined(VX_CFG_EXT_SYM_CHACHA_SG16_ENABLE) && defined(VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE)
+// S3-SG16: one aligned sixteen-lane subgroup owns one message. Lane i carries
+// ChaCha20 state word i, and lanes 0..4 carry one Poly1305 limb each.
+//
+// This is the layout the SG4 measurements pointed at. SG4 cut per-lane ChaCha
+// state from sixteen words to four and the loads did not fall, because its
+// block-parallel Poly1305 needs r, r^2, r^3 and r^4 -- fifteen live values
+// against the twelve saved. SG16 takes the state to one word per lane AND
+// removes the power schedule into the poly4.step.sg16 unit, so neither cost is
+// paid. Whether that is enough to reach S2's 121.7 cycles per block is what
+// this row is here to answer.
+//
+// Per-message setup runs redundantly in all sixteen lanes rather than being
+// routed to one: every lane already needs the key, and a broadcast would cost
+// more than the arithmetic.
+template <int USE_DR16 = 1, int USE_STEP16 = 1>
+inline void chacha_poly_sg16_body(kernel_arg_t* __UNIFORM__ arg) {
+  // One key for every message; the nonce is per message and is a BYTE array,
+  // not a word one. Indexing the key per message was this kernel's first bug:
+  // message 0 was right and every later one wrong, because msg >= 1 read past
+  // the key buffer.
+  const uint32_t* key_base = (const uint32_t*)arg->key_addr;
+  const uint8_t* non_base = (const uint8_t*)arg->nonce_addr;
+  const uint32_t* src_base = (const uint32_t*)arg->src_addr;
+  uint32_t* dst_base = (uint32_t*)arg->dst_addr;
+  uint32_t* tag_base = (uint32_t*)arg->tag_addr;
+  const uint8_t* aad = (const uint8_t*)arg->aad_addr;
+
+  const uint32_t tid   = blockIdx.x * blockDim.x + threadIdx.x;
+  const uint32_t lane  = tid % 16;
+  const uint32_t sgid  = tid / 16;
+  const uint32_t nsg   = (gridDim.x * blockDim.x) / 16;
+
+  const uint32_t blocks     = arg->blocks_per_msg;
+  const uint32_t tail       = arg->tail_bytes;
+  const uint32_t aad_bytes  = arg->aad_bytes;
+  const uint32_t words      = blocks * 16 + ((tail + 3) / 4);
+  const uint32_t msg_bytes  = blocks * CHACHA_BLOCK_BYTES + tail;
+
+  for (uint32_t msg = sgid; msg < arg->num_msgs; msg += nsg) {
+    uint32_t k[8];
+    for (int i = 0; i < 8; ++i) k[i] = key_base[i];
+    const uint8_t* np = non_base + CHACHA_NONCE_BYTES * msg;
+    const uint32_t n0 = load_le32(np);
+    const uint32_t n1 = load_le32(np + 4);
+    const uint32_t n2 = load_le32(np + 8);
+
+    poly1305_t st;
+    {
+      uint32_t x0[16];
+      chacha20_keystream<rot_sw, 0>(k, n0, n1, n2, 0, x0);
+      poly1305_init(st, x0);
+    }
+    // Each lane keeps only its own limb of r and h. The rest of poly1305_init's
+    // output dies here, which is the point: the r-power schedule the SG4 form
+    // needed twenty loads a block for does not exist in this layout.
+    const uint32_t r_l = (lane == 0) ? st.r0 : (lane == 1) ? st.r1
+                       : (lane == 2) ? st.r2 : (lane == 3) ? st.r3
+                       : (lane == 4) ? st.r4 : 0u;
+    uint32_t h_l = 0;
+
+    for (uint32_t off = 0; off < aad_bytes; off += POLY1305_BLOCK_BYTES) {
+      const uint32_t n = (aad_bytes - off < POLY1305_BLOCK_BYTES)
+                       ? (aad_bytes - off) : POLY1305_BLOCK_BYTES;
+      uint8_t padded[POLY1305_BLOCK_BYTES] = {0};
+      for (uint32_t i = 0; i < n; ++i) padded[i] = aad[off + i];
+      poly1305_block<0, 0>(st, load_le32(padded), load_le32(padded + 4),
+                           load_le32(padded + 8), load_le32(padded + 12));
+    }
+    // The AAD ran in the redundant serial form, so seed the per-lane limb from
+    // it rather than from zero.
+    h_l = (lane == 0) ? st.h0 : (lane == 1) ? st.h1 : (lane == 2) ? st.h2
+        : (lane == 3) ? st.h3 : (lane == 4) ? st.h4 : 0u;
+
+    const uint32_t* pt = src_base + (size_t)words * msg;
+    uint32_t* ct = dst_base + (size_t)words * msg;
+
+    for (uint32_t b = 0; b < blocks; ++b) {
+      // Lane i builds state word i of this block.
+      uint32_t init;
+      if (lane < 4)       init = (lane == 0) ? 0x61707865u : (lane == 1) ? 0x3320646eu
+                               : (lane == 2) ? 0x79622d32u : 0x6b206574u;
+      else if (lane < 12) init = k[lane - 4];
+      else if (lane == 12) init = b + 1;
+      else                init = (lane == 13) ? n0 : (lane == 14) ? n1 : n2;
+
+      uint32_t x = init;
+      for (int i = 0; i < 10; ++i) x = vx_chacha_dr_sg16(x);
+      x += init;
+
+      const uint32_t c = pt[16 * b + lane] ^ x;
+      ct[16 * b + lane] = c;
+      h_l = vx_poly4_step_sg16(h_l, r_l, c);
+    }
+
+    // Gather the five limbs back into every lane for the serial finish. Once
+    // per message, not per block.
+    st.h0 = (uint32_t)vx_shfl_idx(h_l, 0, 15, 0);
+    st.h1 = (uint32_t)vx_shfl_idx(h_l, 1, 15, 0);
+    st.h2 = (uint32_t)vx_shfl_idx(h_l, 2, 15, 0);
+    st.h3 = (uint32_t)vx_shfl_idx(h_l, 3, 15, 0);
+    st.h4 = (uint32_t)vx_shfl_idx(h_l, 4, 15, 0);
+
+    if (tail != 0) {
+      uint32_t xt[16];
+      chacha20_keystream<rot_sw, 0>(k, n0, n1, n2, blocks + 1, xt);
+      uint8_t padded[CHACHA_BLOCK_BYTES] = {0};
+      const uint8_t* pb = (const uint8_t*)(pt + 16 * blocks);
+      uint8_t* cb = (uint8_t*)(ct + 16 * blocks);
+      for (uint32_t i = 0; i < tail; ++i) {
+        const uint8_t ks = (uint8_t)(xt[i >> 2] >> (8 * (i & 3)));
+        const uint8_t cv = (uint8_t)(pb[i] ^ ks);
+        cb[i] = cv;
+        padded[i] = cv;
+      }
+      for (uint32_t off = 0; off < tail; off += POLY1305_BLOCK_BYTES) {
+        poly1305_block<0, 0>(st, load_le32(padded + off), load_le32(padded + off + 4),
+                             load_le32(padded + off + 8), load_le32(padded + off + 12));
+      }
+    }
+    poly1305_block<0, 0>(st, (uint32_t)aad_bytes, 0u, (uint32_t)msg_bytes, 0u);
+
+    uint32_t tag[4];
+    poly1305_finish(st, tag);
+    uint32_t* tp = tag_base + 4 * msg;
+    if (lane == 0) { tp[0] = tag[0]; tp[1] = tag[1]; tp[2] = tag[2]; tp[3] = tag[3]; }
+  }
+}
+
+__kernel void chacha_poly_sg16(kernel_arg_t* __UNIFORM__ arg) {
+  chacha_poly_sg16_body<1, 1>(arg);
+}
+#endif
+
 #ifdef VX_CFG_EXT_AUTH_POLY_ENABLE
 // Poly1305's 5x5 convolution as three-source multiply-accumulates. The ChaCha20
 // half is untouched, so the difference against the sw row is the authenticator
