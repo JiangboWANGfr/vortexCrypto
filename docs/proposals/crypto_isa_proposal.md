@@ -3258,6 +3258,7 @@ Both are single-destination and hold no context between instructions.
 
 | | instrs/block | cycles, cache-resident | cycles, memory-bound |
 | --- | ---: | ---: | ---: |
+| `rori`, S0 | 123.0 | 801.0 **+67.3%** | 769.7 **+67.1%** |
 | `s1` | 75.5 | 478.8 | 460.6 |
 | `s3f`, four lanes | 90.5 | 487.6 **+1.8%** | 368.3 **-20.0%** |
 | `s2`, stateful | 28.9 | 95.4 **-80.1%** | 121.8 **-73.6%** |
@@ -3292,13 +3293,13 @@ costs, and this design does not have them.
 Which is the claim to make carefully, because it is not "no state". There are
 three kinds here and they are worth separating:
 
-| | AES-GCM S3 | ChaCha `sg16` | ChaCha S2 |
-| --- | ---: | ---: | ---: |
-| architectural context, per (warp, lane) | 0 | **0** | 57,344 bits |
-| internal working registers, per subgroup | 0 | **1,154 bits** | -- |
-| survives between instructions | -- | no | **yes** |
-| needs zeroize, owner, valid semantics | no | **no** | **yes** (section 24) |
-| occupies its unit for more than a cycle | no | **yes** | yes |
+| | AES-GCM S3 | ChaCha `arx` | ChaCha `sg16` | ChaCha S2 |
+| --- | ---: | ---: | ---: | ---: |
+| architectural context, per (warp, lane) | 0 | **0** | **0** | 57,344 bits |
+| internal working registers, per subgroup | 0 | **0** | **1,154 bits** | -- |
+| survives between instructions | -- | -- | no | **yes** |
+| needs zeroize, owner, valid semantics | no | **no** | **no** | **yes** (section 24) |
+| occupies its unit for more than a cycle | no | **no** | **yes** | yes |
 
 `sg16` has no architectural context and so needs none of section 24's lifetime
 apparatus, which is the security-relevant difference. It does have working
@@ -3323,6 +3324,96 @@ The floor is therefore the per-warp latency times the chain length, divided by
 whatever warp count is available to hide it -- not unit throughput. Shortening
 `chacha.dr.sg16` below ten cycles, or giving a warp two independent blocks to
 interleave, are the changes that would move it. Pipelining is not.
+
+#### The other end of the axis
+
+The first of those changes was then built, taken to its limit, and it refutes
+the paragraph above. `chacha.arx.sg16` is one quarter-round line, combinational,
+one cycle, and no state whatever -- the direct analogue of AES-GCM's `aesrm.sg4`,
+and the third point on a question this section had been answering with two.
+
+    chacha.arx.sg16  rd, rs1     funct7[2:0] selects one of the eight ARX
+                                 lines of a double-round -- 0..3 the column
+                                 round's, 4..7 the diagonal round's. The
+                                 sixteen lanes of the subgroup carry the
+                                 state; nothing survives the instruction.
+
+    state per subgroup             0 bits     1,154 bits     57,344 bits
+    instructions / 64 B             142.0           49.0            28.9
+    cycles / 64 B                   203.1           92.6           121.8
+    against S1                      2.27x          4.97x           3.78x
+                                 arx line     dr16 macro       S2 engine
+
+**The middle wins and neither end does.** On the full ladder, at the
+memory-bound point:
+
+| | instrs/64 B | cycles/64 B | against `s1` |
+| --- | ---: | ---: | ---: |
+| `rori`, S0 | 123.0 | 769.7 | 0.60x |
+| `s1` | 75.5 | 460.6 | 1.00x |
+| `s3f`, S3 at four lanes | 90.5 | 368.3 | 1.25x |
+| `arx`, S3 at sixteen, stateless | 142.0 | 203.1 | 2.27x |
+| `s2`, stateful | 28.9 | 121.8 | 3.78x |
+| **`sg16`, S3 at sixteen, macro** | **49.0** | **92.6** | **4.97x** |
+
+The stateless form is not a bad instruction. It beats S1 by 2.27x and the
+four-lane S3 by 1.81x, which is to say that matching the subgroup to the state
+width is worth most of this section's result on its own, independently of how
+the instruction is packaged. It is simply the worse of the two sixteen-lane
+packagings, and the margin decomposes exactly:
+
+| | `sg16` | `arx` | ratio |
+| --- | ---: | ---: | ---: |
+| instructions / 64 B | 49.0 | 142.0 | **2.90x** |
+| cycles / 64 B | 92.6 | 203.1 | 2.19x |
+| cycles per instruction | 1.89 | **1.43** | 0.76x |
+| scoreboard stall | 88% | **74%** | -- |
+
+2.90 divided by 1.32 is 2.19, and the sign of the bottom two rows is the
+finding:
+the machine runs the stateless stream **better** per instruction and stalls
+**less** on it. There are simply 2.9x as many instructions, and a 1.32x gain in
+cycles per instruction cannot pay for that. The measured instruction mix says
+where the count comes from -- SYM is 8% of `sg16`'s 118.8 instructions per block
+and 38% of `arx`'s 212.1, which is 9.5 against 80.6. That is ChaCha20's ten
+double-rounds taken one instruction each, or taken as the eight ARX lines each
+of them decomposes into.
+
+#### What the prediction missed, and it is the same thing twice
+
+The model this instruction was built on is the one stated two subsections above:
+per-warp latency times chain length. Eighty one-cycle instructions should beat
+ten ten-cycle ones, 80 against 100.
+
+The refutation was already on the page. Doubling the warp count buys `sg16` 12%
+-- 97.4 cycles per 64 B at four warps against 86.0 at eight, same binary, same
+session. Warp count is the standard cure for exposed latency, and all it
+recovers is 12%. **The ten-cycle latency was therefore costing about 12%, and
+removing it entirely cannot win more than that.** Paying 2.9x the instruction
+count against a 12% ceiling is a bad trade, and the measurement calls it by a
+factor of two.
+
+So the floor stated above is right in its first half and wrong in its second.
+Chain length times per-warp latency is what one warp sees; it is not what the
+machine delivers, because other warps fill the wait and nothing fills an issue
+slot. What survives is that **a macro instruction wins by moving work out of the
+instruction stream, not by being fast.** The ten cycles inside
+`chacha.dr.sg16` are close to free; the seventy instructions it removes are not.
+
+Two predictions about this row have now been wrong -- that pipelining the macro
+would help, and that shortening its latency would help -- and each was settled
+only by building the alternative and measuring it. Both alternatives were
+correct hardware that passed the RFC 8439 vectors; neither was faster. The
+instruction is kept in the tree behind `VX_CFG_EXT_SYM_CHACHA_ARX16_ENABLE`,
+mutually exclusive with `chacha.dr.sg16` because the two share an op_type slot,
+as the ablation that prices the middle of the axis rather than as a candidate.
+
+One caveat on the numbers above. `sg16`'s marginal fit is the worst conditioned
+in this section: its fixed cost is about 555,000 cycles against a slope of 92,
+so the two-point amplification is 14.7x and repeat runs of the same binary span
+92.6 to 97.4 cycles per 64 B. A least-squares fit over all four payload sizes
+gives 92.1. The comparison against `arx` is robust across that band -- 2.09x to
+2.19x -- and so is the conclusion.
 
 #### The encoding ran out
 
@@ -3533,6 +3624,20 @@ context, and that is S2, which already returns 3.87x.
   one's own implementation.**
 - **"6.0x for S2."** Arithmetic error: the wrong block delta. It is 3.87x. The
   commit was amended from the raw rows rather than from the derived figure.
+- **"Pipelining `chacha.dr.sg16` will let three other warps in."** Ten blocking
+  cycles per instruction looked like a structural hazard. SYM is 8% of the
+  kernel and the unit runs at about 13% occupancy, so it was never the
+  bottleneck: the eight-stage version is 1.1% slower on total cycles at four
+  warps and 1.4% slower at eight, and was reverted.
+- **"Eighty one-cycle instructions will beat ten ten-cycle ones."** 80 against
+  100 by per-warp latency times chain length. `chacha.arx.sg16` is 2.19x
+  *slower*, because the model counts only latency and every instruction also
+  costs an issue slot. Doubling the warps -- the standard cure for exposed
+  latency -- buys the macro form 12%, which is the whole prize the stateless
+  form was paying 2.9x the instruction count to collect. **Both of these were
+  correct hardware that passed the RFC 8439 vectors, and both were settled only
+  by building the alternative.** Two consecutive predictions about one row, from
+  the same model, in the same direction.
 - One functional bug survived every performance measurement: the ChaCha engine's
   first RTL build indexed the key with `csel[2:0]` where it needed `csel-4`,
   rotating the eight key words by four. Instruction count, cycle count and timing
