@@ -3408,8 +3408,8 @@ per-warp latency times chain length. Eighty one-cycle instructions should beat
 ten ten-cycle ones, 80 against 100.
 
 The refutation was already on the page. Doubling the warp count buys `sg16` 12%
--- 97.4 cycles per 64 B at four warps against 86.0 at eight, same binary, same
-session. Warp count is the standard cure for exposed latency, and all it
+-- 97.4 cycles per 64 B at four warps against 86.0 at eight, same RTL revision
+on both sides. Warp count is the standard cure for exposed latency, and all it
 recovers is 12%. **The ten-cycle latency was therefore costing about 12%, and
 removing it entirely cannot win more than that.** Paying 2.9x the instruction
 count against a 12% ceiling is a bad trade, and the measurement calls it by a
@@ -3430,12 +3430,23 @@ instruction is kept in the tree behind `VX_CFG_EXT_SYM_CHACHA_ARX16_ENABLE`,
 mutually exclusive with `chacha.dr.sg16` because the two share an op_type slot,
 as the ablation that prices the middle of the axis rather than as a candidate.
 
-One caveat on the numbers above. `sg16`'s marginal fit is the worst conditioned
-in this section: its fixed cost is about 555,000 cycles against a slope of 92,
-so the two-point amplification is 14.7x and repeat runs of the same binary span
-92.6 to 97.4 cycles per 64 B. A least-squares fit over all four payload sizes
-gives 92.1. The comparison against `arx` is robust across that band -- 2.09x to
-2.19x -- and so is the conclusion.
+One note on the two figures this subsection quotes for `sg16`. The main table
+says 92.6 cycles per 64 B and the warp comparison above says 97.4; they are two
+builds, not two runs. 97.4 is the RTL before section 23.7's multiply and adder
+tree were split into separate cycles, 92.6 is after, and the warp pair -- 97.4
+at four against 86.0 at eight -- is measured on the earlier revision on both
+sides, so the 12% it reports is internally consistent.
+
+Calling that spread run-to-run noise would be wrong, because there is none:
+rtlsim is deterministic for a given binary, and four repeats of each `sg16` size
+in `docs/proposals/data/crypto_measurements.csv`'s source records are
+byte-identical in both cycles and instructions. Every cycle difference in this
+document is a difference in the design or in its configuration. What the fit is
+sensitive to is the build, not the run -- and it is sensitive, because `sg16`'s
+marginal fit is the worst conditioned in this section: about 555,000 cycles of
+fixed cost against a slope of 92, so a two-point fit amplifies any change 14.7x.
+A least-squares fit over all four payload sizes gives 92.1. The comparison
+against `arx` holds either way, 2.09x to 2.19x.
 
 #### The encoding ran out
 
