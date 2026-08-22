@@ -13,7 +13,7 @@ Those logs have since been moved out of `/tmp`. All 649 files, 78 MB, are now in
 `build32/crypto_runs/archive-2026-08/`, verified identical by checksum. The `log`
 column is a path relative to `build32/crypto_runs/`, one base for every row: the
 original ones sit under `archive-2026-08/`, later batches under their own
-directory. All 377 rows resolve to a file that exists.
+directory. All 428 rows resolve to a file that exists.
 
 ## Columns
 
@@ -45,15 +45,22 @@ per_block = (metric[hi] - metric[lo]) / (blocks[hi] - blocks[lo])
 
 with `lo`/`hi` = 1/4 (cache-resident, 4-16 KB working set) and 16/32
 (memory-bound, 64-128 KB) for `chacha_poly`, and 8/64 for `aes_gcm`. Rows for a
-fit must share `driver`, `warps` and `extensions`; the same row measured in two
-different builds moves by up to 4% on cycles, which is instruction layout, not
-noise in the measurement.
+fit must share `driver`, `warps` and `extensions` -- **and must come from the
+same batch**, because `extensions` does not identify a build. rtlsim is
+deterministic for a given binary: four repeats of each `sg16` size in the
+`paper16` batch are byte-identical in cycles and instructions, so there is no
+run-to-run noise anywhere in this file and every difference between two rows is
+a difference in the design, the kernel or the configuration. Those differences
+are not small. `chacha_poly` `s1` at b16, same `extensions` and same shape,
+reads 513,086 in the `measure` batch and 500,015 in `paper16` -- 2.5% on the
+total and 6.4% at b1. Mixing batches inside one fit is the easiest way to
+manufacture a result.
 
 ## Where the runs live
 
 | | |
 | --- | --- |
-| `crypto_measurements.csv` | 271 rows, in the repository, the durable record |
+| `crypto_measurements.csv` | 428 rows, in the repository, the durable record |
 | `build32/crypto_runs/archive-2026-08/` | the logs the first 271 rows came from |
 | `build32/crypto_runs/<batch>/logs/` | logs from later batches, one file per run |
 | `build32/crypto_runs/<batch>/records.csv` | that batch's rows, same 15 columns |
