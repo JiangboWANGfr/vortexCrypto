@@ -3202,7 +3202,7 @@ row. Each of the six explicit rotations per double-round produced a value that
 had to stay live; fused, nothing moves at all and each lane merely reads its
 neighbour.
 
-### 23.4 S2: the best row this AEAD has, at 3.87x
+### 23.4 S2: 3.87x, and the best row until section 23.5
 
 Four instructions on one funct3 of custom-1, because a sixteen-word state needs
 four bits of selector and the crypto opcodes' three-bit field could not hold it.
@@ -3229,26 +3229,125 @@ than eight.
 **3.87x** at the memory-bound point, and **5.60x** at the cache-resident one --
 this row, like AES-GCM's S2, is the one that starts caring about working-set
 size, because the stateful engine has moved the bottleneck to memory. Better than
-every other tier of this AEAD, and better than AES-GCM gets from S2 (2.23x and
-3.91x).
+AES-GCM gets from S2 (2.23x and 3.91x), and the best row this AEAD had until the
+subgroup was widened to match its state: section 23.5 returns 4.98x on a sixth
+of the area and without the 57,344 bits of context this row needs.
 
-### 23.5 Two rules, and they are orthogonal
+### 23.5 S3 at sixteen lanes: the subgroup width is the state width
+
+Section 23.3's S3 uses four lanes because AES-GCM's does, and it returns 1.25x
+where AES-GCM's returns 4.15x. That asymmetry was read for several drafts as a
+property of the algorithm -- ChaCha20's diagonal step is a write-side state
+move, so only its routing folds into arithmetic and not its arithmetic. The
+reading is right about the mechanism and wrong about the conclusion, and the
+thing it missed is that a subgroup does not have to be four lanes wide.
+
+AES-GCM's block state is 128 bits, which is four 32-bit lanes. ChaCha20's is
+512, which is sixteen. Matching the subgroup to the state rather than to the
+other algorithm's subgroup gives:
+
+    chacha.dr.sg16   rd, rs1              one aligned sixteen-lane subgroup
+                                          holds one 512-bit state, lane i
+                                          carrying word i, and one instruction
+                                          advances a full double-round
+    poly4.step.sg16  rd, rs1, rs2, rs3    the same subgroup absorbs a whole
+                                          64-byte ChaCha block -- four Poly1305
+                                          blocks -- in one instruction
+
+Both are single-destination and hold no context between instructions.
+
+| | instrs/block | cycles, cache-resident | cycles, memory-bound |
+| --- | ---: | ---: | ---: |
+| `s1` | 75.5 | 478.8 | 460.6 |
+| `s3f`, four lanes | 90.5 | 487.6 **+1.8%** | 368.3 **-20.0%** |
+| `s2`, stateful | 28.9 | 95.4 **-80.1%** | 121.8 **-73.6%** |
+| **`sg16`, sixteen lanes** | **49.0** | **83.4 -82.6%** | **92.6 -79.9%** |
+
+**4.98x against S1**, against S2's 3.78x and the four-lane S3's 1.25x. The tier
+ordering this document reported for ChaCha20-Poly1305 inverts: S3 is its best
+row, as it is AES-GCM's, and the two algorithms stop disagreeing.
+
+What replaces the asymmetry is a rule with more in it. Both designs process 64
+bytes per warp with about ten round instructions and one authentication
+instruction; AES-GCM does it as four lanes on each of four 16-byte messages,
+ChaCha20-Poly1305 as sixteen lanes on one 64-byte message. **The subgroup width
+that works is the one that matches the algorithm's block state.** Section 23.5's
+two rules survive intact -- S3 still pays when cross-lane traffic folds into
+arithmetic -- but the width at which to ask the question is not a constant.
+
+#### What it costs
+
+| | ALMs | vs baseline | Vortex domain | PCIe domain |
+| --- | ---: | ---: | ---: | ---: |
+| baseline | 208,513 | | +0.001 | +0.002 |
+| `s3f`, four lanes | 219,921 | +11,408 | +0.000 | **-0.352** |
+| **`sg16`** | **223,209** | **+14,696** | **+0.000** | **+0.002** |
+| `s2`, stateful | 299,907 | +91,394 | +0.000 | +0.001 |
+
+**Six times cheaper than S2 and faster than it**, and the only one of the three
+that closes both clock domains. The area difference is not subtle and it is not
+a surprise: S2's 57,344 bits of per-(warp, lane) context are most of what it
+costs, and this design does not have them.
+
+Which is the claim to make carefully, because it is not "no state". There are
+three kinds here and they are worth separating:
+
+| | AES-GCM S3 | ChaCha `sg16` | ChaCha S2 |
+| --- | ---: | ---: | ---: |
+| architectural context, per (warp, lane) | 0 | **0** | 57,344 bits |
+| internal working registers, per subgroup | 0 | **1,154 bits** | -- |
+| survives between instructions | -- | no | **yes** |
+| needs zeroize, owner, valid semantics | no | **no** | **yes** (section 24) |
+| occupies its unit for more than a cycle | no | **yes** | yes |
+
+`sg16` has no architectural context and so needs none of section 24's lifetime
+apparatus, which is the security-relevant difference. It does have working
+registers, which is a real one: a multi-cycle unit holding state cannot accept
+another warp's instruction while it runs, and that is where its remaining cost
+is. The measured floor from `chacha.dr.sg16`'s occupancy alone is 50 cycles per
+block against 97.4 measured, so roughly half of what this row spends is the unit
+being unavailable rather than busy. Doubling the warp count buys 12%, which is
+what says the queue is for the unit and not for memory.
+
+#### The encoding ran out
+
+The four-bit SYM op_type space is full: all sixteen values are taken.
+`chacha.dr.sg16` shares `cha.dr`'s slot, and the two are refused together by
+`ci/gen_config.py` -- safe, because a stateful per-lane engine and a
+sixteen-lane subgroup are competing answers to one question and no machine
+carries both. Widening the field means editing 105 constants and every
+functional unit in the machine.
+
+This is a finding and not a workaround. A cryptographic extension of this size
+does not fit four bits, and the instruction after this one has nowhere to go.
+
+
+### 23.6 Two rules, and they are orthogonal
 
 Every row below is one build per algorithm, the tier selected with `-i`, at the
 same four payload sizes. Against each algorithm's own S1, at the memory-bound
 point:
 
-| | S0 | S1 | S2 | S3 |
-| --- | --- | --- | ---: | ---: |
-| AES-GCM | yes | baseline | 2.23x | **4.15x** |
-| ChaCha20-Poly1305 | yes | 1.64x | **3.87x** | 1.28x |
+| | S0 | S1 | S2 | S3, four lanes | S3, matched width |
+| --- | --- | --- | ---: | ---: | ---: |
+| AES-GCM | yes | baseline | 2.23x | **4.15x** | -- |
+| ChaCha20-Poly1305 | yes | 1.64x | 3.87x | 1.28x | **4.98x** |
 
-At the cache-resident point the S2 rows pull further ahead -- 3.91x for AES-GCM,
-5.60x for ChaCha20-Poly1305 -- because that is the tier at which the bottleneck
-becomes memory. The S0 and S1 rows barely move between the two points.
+AES-GCM's S3 already is at its matched width: its block state is 128 bits and
+its subgroup is four 32-bit lanes. ChaCha20-Poly1305's is 512 bits, and section
+23.5 is what happens when the subgroup is sixteen lanes instead of four.
 
-The optimum is at a different tier for each algorithm, and neither ordering is
-arbitrary.
+**S3 is the best row for both algorithms**, which an earlier draft of this
+section denied. It reported the optimum at a different tier for each and read
+that asymmetry as the result -- AES to S3, ChaCha to S2. The asymmetry was in
+the subgroup width, not in the algorithms: at four lanes ChaCha's S3 returns
+1.28x, at sixteen it returns 4.98x, and nothing about the algorithm changed
+between those two rows.
+
+At the cache-resident point the stateful and subgroup rows pull further ahead --
+3.91x for AES-GCM's S2, 5.60x for ChaCha's, 5.74x for `sg16` -- because those
+are the tiers at which the bottleneck becomes memory. The S0 and S1 rows barely
+move between the two points.
 
 **Those speedups are each against their own baseline and must not be read across
 the row.** AES-GCM's block is 16 bytes and ChaCha20's is 64, so a cycle count per
@@ -3263,13 +3362,16 @@ memory-bound point:
 | ChaCha20-Poly1305, S1 | 7.35 |
 | ChaCha20-Poly1305, S3 fused | 5.76 |
 | AES-GCM, S1 (`hw_s1`) | 3.86 |
-| **ChaCha20-Poly1305, S2** | **1.90** |
+| **ChaCha20-Poly1305, S2** | 1.90 |
 | AES-GCM, S2 (`hw_s2`) | 1.73 |
+| **ChaCha20-Poly1305, S3 sixteen-lane** | **1.45** |
 | **AES-GCM, S3 (`hw_s3g`)** | **0.93** |
 
-So the best AES-GCM row is **2.04x faster per byte** than the best
+So the best AES-GCM row is **1.56x faster per byte** than the best
 ChaCha20-Poly1305 row, which the per-block figures hide entirely -- 4.15x and
-3.87x sit next to each other and read as a tie.
+4.98x sit next to each other and read as ChaCha winning. It does not: a ChaCha
+block is four times an AES-GCM one, so a speedup against its own baseline says
+nothing about the comparison across the two.
 
 The second observation is worth as much as the first, and it has to be stated in
 both directions or it misleads. Software against software, ChaCha20-Poly1305 is
@@ -3298,12 +3400,19 @@ column (j+r)&3 and each lane writes only its own output -- so it folds into
 gathering folds into `ghmul.sg4`. Together, 4.15x. ChaCha's diagonal step is a
 **write-side state move**: a quarter-round produces four results in four
 different lanes, which one write port cannot express, so only the routing folds
-and the arithmetic stays where it was. 1.28x.
+and the arithmetic stays where it was. 1.28x -- at four lanes.
+
+The rule holds; the width at which to apply it does not follow from the other
+algorithm. Give ChaCha20 a subgroup as wide as its state and the same
+write-side move becomes expressible, because the four results of a
+quarter-round land in four lanes the instruction already owns. 4.98x, section
+23.5. A quarter of the area of the stateful engine that this document spent
+sections 23.4 and 24 on, and none of its context.
 
 These are rules a third algorithm can be measured against, which a list of
 speedups is not.
 
-### 23.6 Fitted, and the same mistake twice
+### 23.7 Fitted, and the same mistake twice
 
 The stateful ChaCha20 engine was built flat first: one quarter-round per cycle,
 eight cycles per double-round. The Vortex clock fell to **-2.752 ns**, worse than
@@ -3358,7 +3467,7 @@ The context model, by contrast, held on a second algorithm. ChaCha's context is
 be computed from its context definition before any RTL is written.** The ALM
 figure cannot: 310,000 was predicted and 281,666 measured, 9% out.
 
-### 23.7 S3, pushed as far as it goes
+### 23.8 S3, pushed as far as it goes
 
 Three attempts at the fused S3 row after the first measurement:
 
@@ -3390,7 +3499,7 @@ requires each lane to hold five limbs of its own r^{4-c}, and that is inherent t
 the decomposition. The only way to remove those registers is to put them in a
 context, and that is S2, which already returns 3.87x.
 
-### 23.8 What this section got wrong
+### 23.9 What this section got wrong
 
 - **"Poly1305 barely has an S1."** Argued from a machine model that was wrong:
   the tree is not 2R1W and WGATHER already reads rs3. `poly26.mac` turned out to
