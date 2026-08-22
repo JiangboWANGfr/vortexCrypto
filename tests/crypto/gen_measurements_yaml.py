@@ -25,7 +25,8 @@ CSV = "docs/proposals/data/crypto_measurements.csv"
 GRID = {"chacha_poly": (64, [1, 4, 16, 32]), "aes_gcm": (128, [2, 8, 32, 64])}
 
 IMPL = {("chacha_poly", l): i for i, l in enumerate(
-        ["sw","rori","sw_perm","sw_perm2","sw_perm3","xr","mac","s1","s3","s3f","s2"])}
+        ["sw","rori","sw_perm","sw_perm2","sw_perm3","xr","mac","s1","s3","s3f","s2",
+         "s3f_norp","sg16"])}
 IMPL.update({("aes_gcm", l): i for i, l in enumerate(
         ["sw_ttable","hw_s1","sw_perm","hw_sg4","hw_s1_ilv","hw_s1_ofs","hw_s3",
          "hw_s3f","hw_s3g","hw_s2a","hw_s2","hw_s2_ilv"])})
@@ -37,6 +38,10 @@ IMPL.update({("aes_gcm", l): i for i, l in enumerate(
 # speedups inside the noise floor. With one build there is no cross-build
 # comparison left to correct for, and so no S1 anchor to repeat.
 CHACHA = "AUTH AUTH_POLY AUTH_POLY_SG4 SYM_CHACHA SYM_CHACHA_S2 SYM_CHACHA_SG4 SYM"
+# The sixteen-lane pair cannot share a build with the S2 engine -- they share an
+# op_type slot -- so its rows come from their own, and the S1 row is repeated in
+# it as the anchor between the two.
+CHACHA16 = "AUTH AUTH_POLY AUTH_POLY_STEP16 SYM_CHACHA SYM_CHACHA_SG16 SYM"
 AES    = "AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4"
 
 # tier -> (app, impl). S0 for ChaCha is `rori`, not `sw`: RORI is ratified
@@ -44,7 +49,8 @@ AES    = "AUTH AUTH_S2 AUTH_SG4 SYM SYM_S2 SYM_SG4"
 PAPER = [("aes_gcm", AES,    [("S0","sw_ttable"),("S1","hw_s1"),
                               ("S2","hw_s2"),("S3","hw_s3g")]),
          ("chacha_poly", CHACHA, [("S0","rori"),("S1","s1"),
-                                  ("S2","s2"),("S3","s3f")])]
+                                  ("S2","s2"),("S3","s3f")]),
+         ("chacha_poly", CHACHA16, [("S1","s1"),("S3-16","sg16")])]
 
 # Rows that explain a tier rather than define one.
 ABLATION = [
