@@ -3302,12 +3302,27 @@ three kinds here and they are worth separating:
 
 `sg16` has no architectural context and so needs none of section 24's lifetime
 apparatus, which is the security-relevant difference. It does have working
-registers, which is a real one: a multi-cycle unit holding state cannot accept
-another warp's instruction while it runs, and that is where its remaining cost
-is. The measured floor from `chacha.dr.sg16`'s occupancy alone is 50 cycles per
-block against 97.4 measured, so roughly half of what this row spends is the unit
-being unavailable rather than busy. Doubling the warp count buys 12%, which is
-what says the queue is for the unit and not for memory.
+registers, and a unit that holds them cannot accept another warp's instruction
+while it runs.
+
+That last fact costs nothing here, which took building the alternative to find
+out. `chacha.dr.sg16` was rewritten as an eight-stage pipeline accepting one
+instruction per cycle, on the reasoning that ten blocking cycles per instruction
+were keeping three other warps out. The pipelined version is 1.1% *slower* on
+total cycles at four warps and 1.4% slower at eight, and the reason is in the
+instruction mix: SYM instructions are 8% of the kernel and the unit runs at
+about 13% occupancy. It was never the bottleneck.
+
+What limits this row is that a warp's ten double-rounds are serially dependent.
+While one warp waits out its own chain the others are waiting out theirs, so
+blocking excludes nothing that was going to arrive. The pipeline bought 4,096
+bits of stage registers and no cycles, and was reverted. Doubling the warp count
+buys 12%, which is the part that does overlap.
+
+The floor is therefore the per-warp latency times the chain length, divided by
+whatever warp count is available to hide it -- not unit throughput. Shortening
+`chacha.dr.sg16` below ten cycles, or giving a warp two independent blocks to
+interleave, are the changes that would move it. Pipelining is not.
 
 #### The encoding ran out
 
