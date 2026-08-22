@@ -902,7 +902,8 @@ inline void chacha_poly_s3_body(kernel_arg_t* __UNIFORM__ arg) {
 }
 #endif
 
-#if defined(VX_CFG_EXT_SYM_CHACHA_SG16_ENABLE) && defined(VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE)
+#if (defined(VX_CFG_EXT_SYM_CHACHA_SG16_ENABLE) || defined(VX_CFG_EXT_SYM_CHACHA_ARX16_ENABLE)) \
+    && defined(VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE)
 // S3-SG16: one aligned sixteen-lane subgroup owns one message. Lane i carries
 // ChaCha20 state word i, and lanes 0..4 carry one Poly1305 limb each.
 //
@@ -989,7 +990,19 @@ inline void chacha_poly_sg16_body(kernel_arg_t* __UNIFORM__ arg) {
       else                init = (lane == 13) ? n0 : (lane == 14) ? n1 : n2;
 
       uint32_t x = init;
+#ifdef VX_CFG_EXT_SYM_CHACHA_ARX16_ENABLE
+      // Eighty stateless quarter-round lines where the double-round form issues
+      // ten. The line index has to be a compile-time constant, so the ten
+      // double-rounds unroll rather than loop over it.
+      for (int i = 0; i < 10; ++i) {
+        x = vx_chacha_arx_sg16(x, 0); x = vx_chacha_arx_sg16(x, 1);
+        x = vx_chacha_arx_sg16(x, 2); x = vx_chacha_arx_sg16(x, 3);
+        x = vx_chacha_arx_sg16(x, 4); x = vx_chacha_arx_sg16(x, 5);
+        x = vx_chacha_arx_sg16(x, 6); x = vx_chacha_arx_sg16(x, 7);
+      }
+#else
       for (int i = 0; i < 10; ++i) x = vx_chacha_dr_sg16(x);
+#endif
       x += init;
 
       const uint32_t c = pt[16 * b + lane] ^ x;

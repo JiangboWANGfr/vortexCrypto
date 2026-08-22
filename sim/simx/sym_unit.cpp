@@ -317,6 +317,46 @@ void SymUnit::execute(instr_trace_t* trace) {
     return;
   }
 #endif
+#ifdef VX_CFG_EXT_SYM_CHACHA_ARX16_ENABLE
+  if (sym_type == SymType::CHA_DR16) {
+    // chacha.arx.sg16: one quarter-round line, stateless. shamt[2] is the
+    // round, shamt[1:0] the line.
+    const uint32_t line = symArgs.shamt & 0x3;
+    const bool rnd = (symArgs.shamt & 0x4) != 0;
+    const uint32_t rot = (line == 0) ? 16 : (line == 1) ? 12 : (line == 2) ? 8 : 7;
+    for (uint32_t q = 0; q + 15 < num_threads; q += 16) {
+      bool first = tmask.test(q);
+      for (uint32_t c = 1; c < 16; ++c) {
+        if (tmask.test(q + c) != first) {
+          std::cerr << "error: chacha.arx.sg16 on a partially active subgroup: q="
+                    << q << " -- all sixteen lanes must be active" << std::endl;
+          std::abort();
+        }
+      }
+      if (!first) continue;
+      uint32_t x[16];
+      for (uint32_t c = 0; c < 16; ++c) x[c] = (uint32_t)rs1_data[q + c].u;
+      uint32_t y[16];
+      for (uint32_t c = 0; c < 16; ++c) y[c] = x[c];
+      for (uint32_t g = 0; g < 4; ++g) {
+        uint32_t a, b, c2, d;
+        if (!rnd) { a = g; b = g + 4; c2 = g + 8; d = g + 12; }
+        else { a = g; b = 4 + ((g + 1) & 3); c2 = 8 + ((g + 2) & 3); d = 12 + ((g + 3) & 3); }
+        if ((line & 1) == 0) {
+          uint32_t an = x[a] + x[b];
+          y[a] = an;
+          y[d] = rol32(x[d] ^ an, rot);
+        } else {
+          uint32_t cn = x[c2] + x[d];
+          y[c2] = cn;
+          y[b] = rol32(x[b] ^ cn, rot);
+        }
+      }
+      for (uint32_t c = 0; c < 16; ++c) rd_data[q + c].u = y[c];
+    }
+    return;
+  }
+#endif
 #ifdef VX_CFG_EXT_SYM_CHACHA_SG16_ENABLE
   if (sym_type == SymType::CHA_DR16) {
     // chacha.dr.sg16 rd, rs1 -- lane i carries state word i; one instruction is

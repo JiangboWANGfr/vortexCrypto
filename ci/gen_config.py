@@ -1501,6 +1501,7 @@ CRYPTO_DEPS = [
   ("EXT_AUTH_POLY",      "EXT_AUTH"),
   ("EXT_AUTH_POLY_SG4",  "EXT_AUTH_POLY"),
   ("EXT_SYM_CHACHA_SG16", "EXT_SYM"),
+  ("EXT_SYM_CHACHA_ARX16", "EXT_SYM"),
   ("EXT_AUTH_POLY_STEP16", "EXT_AUTH_POLY"),
 ]
 
@@ -1510,6 +1511,8 @@ CRYPTO_DEPS = [
 # sharing is safe exactly as long as this refuses the combination.
 CRYPTO_CONFLICTS = [
   ("EXT_SYM_CHACHA_SG16", "EXT_SYM_CHACHA_S2"),
+  ("EXT_SYM_CHACHA_ARX16", "EXT_SYM_CHACHA_S2"),
+  ("EXT_SYM_CHACHA_ARX16", "EXT_SYM_CHACHA_SG16"),
 ]
 
 

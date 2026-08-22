@@ -79,6 +79,16 @@
 // features share it -- the fused subgroup round and the stateful per-lane AES
 // engine -- and the SystemVerilog preprocessor has no boolean `ifdef, so the
 // arm is guarded by this derived macro rather than by either feature.
+// The two sixteen-lane ChaCha forms share an op_type slot and are alternatives
+// to each other: one double-round holding a working state, or one quarter-round
+// line holding nothing.
+`ifdef VX_CFG_EXT_SYM_CHACHA_ARX16_ENABLE
+    `define EXT_SYM_SG16_ANY
+`endif
+`ifdef VX_CFG_EXT_SYM_CHACHA_SG16_ENABLE
+    `define EXT_SYM_SG16_ANY
+`endif
+
 // poly4.step.sg16 needs the sixteen-lane subgroup to exist at all.
 `ifdef VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE
     `define EXT_AUTH_SG16_ARM

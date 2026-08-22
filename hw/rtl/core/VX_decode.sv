@@ -1030,6 +1030,24 @@ module VX_decode import
             end
         `endif
             INST_EXT2: begin
+            `ifdef VX_CFG_EXT_SYM_CHACHA_ARX16_ENABLE
+                // chacha.arx.sg16 rd, rs1, line -- one quarter-round LINE of a
+                // sixteen-lane subgroup, combinational and stateless, the
+                // direct analogue of aesrm.sg4. funct7[2:0] selects the line:
+                // 0..3 the column round's four, 4..7 the diagonal round's.
+                //
+                // Eighty per 64-byte block against the double-round form's ten,
+                // and the trade is the point: that one holds a working state
+                // for ten cycles, this one holds nothing for one.
+                if (funct3 == 3'h3 && funct7[6:3] == 4'h0) begin
+                    ex_type = EX_SYM;
+                    op_type = INST_OP_BITS'(INST_SYM_CHA_DR16);
+                    op_args.sym.bs = 2'b0;
+                    op_args.sym.shamt = {2'b0, funct7[2:0]};
+                    `USED_IREG (rd);
+                    `USED_IREG (rs1);
+                end
+            `endif
             `ifdef VX_CFG_EXT_SYM_CHACHA_SG16_ENABLE
                 // chacha.dr.sg16 rd, rs1 -- one aligned sixteen-lane subgroup
                 // holds one 512-bit ChaCha state, lane i carrying word i, and

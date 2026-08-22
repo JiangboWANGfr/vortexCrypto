@@ -212,6 +212,23 @@ extern "C" {
 })
 #endif
 
+// chacha.arx.sg16: one quarter-round line of a sixteen-lane subgroup, stateless
+// and combinational -- the direct analogue of aesrm.sg4.
+//
+//   vx_chacha_arx_sg16(x, line)   line 0..3 = column round, 4..7 = diagonal
+//
+// Eighty per 64-byte block against vx_chacha_dr_sg16's ten. Mutually exclusive
+// with it; the two share an op_type slot and are alternatives.
+#ifdef VX_CFG_EXT_SYM_CHACHA_ARX16_ENABLE
+#define vx_chacha_arx_sg16(x, line) ({                                       \
+    uint32_t __out;                                                          \
+    __asm__ (".insn r %1, 3, %2, %0, %3, x0"                                 \
+             : "=r"(__out)                                                   \
+             : "i"(0x2B), "i"((line) & 7), "r"((uint32_t)(x)));              \
+    __out;                                                                   \
+})
+#endif
+
 // Stateful per-lane ChaCha20 engine (section 23 of the crypto proposal). One
 // lane holds a whole 512-bit state in a context keyed by (warp, lane) and one
 // instruction advances a double-round.

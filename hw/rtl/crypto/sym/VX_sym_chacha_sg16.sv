@@ -53,6 +53,61 @@ module VX_sym_chacha_sg16 import VX_gpu_pkg::*; #(
 
     wire is_dr16 = (execute_if.data.op_type == INST_OP_BITS'(INST_SYM_CHA_DR16));
 
+    // The four lane indices of the quarter-round lane i belongs to, in role
+    // order a, b, c, d. Round 0 is the column round, round 1 the diagonal.
+    function automatic [3:0] qr_member(input [3:0] i, input rnd, input [1:0] role);
+        logic [1:0] p, r, g;
+        p = i[1:0];
+        r = i[3:2];
+        g = rnd ? (p - r) : p;
+        qr_member = rnd ? {role, ((g + role) & 2'b11)} : {role, g};
+    endfunction
+
+`ifdef VX_CFG_EXT_SYM_CHACHA_ARX16_ENABLE
+    // chacha.arx.sg16: one quarter-round line, combinational, no state at all.
+    //
+    // The direct analogue of aesrm.sg4, and the reason it exists is to price
+    // what the double-round form's working state is worth. That one holds
+    // sixteen words for ten cycles and cannot be re-entered; this one holds
+    // nothing and retires in one, at eight times the instruction count.
+    //
+    //   line 0: a += b; d ^= a; d <<<= 16      line 1: c += d; b ^= c; b <<<= 12
+    //   line 2: a += b; d ^= a; d <<<= 8       line 3: c += d; b ^= c; b <<<= 7
+    //
+    // shamt[2] picks the round, shamt[1:0] the line within it.
+    wire       a_rnd  = execute_if.data.op_args.sym.shamt[2];
+    wire [1:0] a_line = execute_if.data.op_args.sym.shamt[1:0];
+    wire [4:0] a_rot  = (a_line == 2'd0) ? 5'd16 : (a_line == 2'd1) ? 5'd12
+                      : (a_line == 2'd2) ? 5'd8  : 5'd7;
+
+    wire [NUM_LANES-1:0][31:0] arx_result;
+    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_arx
+        localparam int G = (i / 16) * 16;
+        localparam int C = i % 16;
+        wire [3:0] ia = qr_member(4'(C), a_rnd, 2'd0);
+        wire [3:0] ib = qr_member(4'(C), a_rnd, 2'd1);
+        wire [3:0] ic = qr_member(4'(C), a_rnd, 2'd2);
+        wire [3:0] id = qr_member(4'(C), a_rnd, 2'd3);
+        wire [31:0] va = execute_if.data.rs1_data[G + ia][31:0];
+        wire [31:0] vb = execute_if.data.rs1_data[G + ib][31:0];
+        wire [31:0] vc = execute_if.data.rs1_data[G + ic][31:0];
+        wire [31:0] vd = execute_if.data.rs1_data[G + id][31:0];
+        wire [31:0] a_n = va + vb;
+        wire [31:0] c_n = vc + vd;
+        wire [31:0] d_x = vd ^ a_n;
+        wire [31:0] b_x = vb ^ c_n;
+        wire [31:0] d_n = (d_x << a_rot) | (d_x >> (6'd32 - {1'b0, a_rot}));
+        wire [31:0] b_n = (b_x << a_rot) | (b_x >> (6'd32 - {1'b0, a_rot}));
+        wire even = (a_line == 2'd0) || (a_line == 2'd2);
+        assign arx_result[i] = (C[3:2] == 2'd0) ? (even ? a_n : execute_if.data.rs1_data[i][31:0])
+                             : (C[3:2] == 2'd1) ? (even ? execute_if.data.rs1_data[i][31:0] : b_n)
+                             : (C[3:2] == 2'd2) ? (even ? execute_if.data.rs1_data[i][31:0] : c_n)
+                                                : (even ? d_n : execute_if.data.rs1_data[i][31:0]);
+    end
+
+    wire eb_ready;
+    assign execute_if.ready = eb_ready;
+`else
     // step 0     load rs1 into the working state
     // step 1..4  column round, one quarter-round line per cycle
     // step 5..8  diagonal round
@@ -74,15 +129,6 @@ module VX_sym_chacha_sg16 import VX_gpu_pkg::*; #(
 
     reg [NSG-1:0][15:0][31:0] xw;
 
-    // The four lane indices of the quarter-round lane i belongs to, in role
-    // order a, b, c, d. Round 0 is the column round, round 1 the diagonal.
-    function automatic [3:0] qr_member(input [3:0] i, input rnd, input [1:0] role);
-        logic [1:0] p, r, g;
-        p = i[1:0];
-        r = i[3:2];
-        g = rnd ? (p - r) : p;
-        qr_member = rnd ? {role, ((g + role) & 2'b11)} : {role, g};
-    endfunction
 
     wire       d_rnd  = (d_step > 4'd4);
     wire [1:0] d_line = d_rnd ? 2'(d_step - 4'd5) : 2'(d_step - 4'd1);
@@ -150,7 +196,13 @@ module VX_sym_chacha_sg16 import VX_gpu_pkg::*; #(
     end
 `endif
 
+`endif
     wire [NUM_LANES-1:0][XLEN-1:0] dr_result;
+`ifdef VX_CFG_EXT_SYM_CHACHA_ARX16_ENABLE
+    for (genvar i = 0; i < NUM_LANES; ++i) begin : g_out
+        assign dr_result[i] = XLEN'(arx_result[i]);
+    end
+`else
     for (genvar i = 0; i < NUM_LANES; ++i) begin : g_out
         localparam int G = i / 16;
         localparam int C = i % 16;
@@ -159,13 +211,18 @@ module VX_sym_chacha_sg16 import VX_gpu_pkg::*; #(
 
     wire unit_done = ~is_dr16 | (d_last && d_mine);
     assign execute_if.ready = eb_ready && unit_done;
+`endif
 
     VX_elastic_buffer #(
         .DATAW ($bits(sym_header_t) + (NUM_LANES * XLEN))
     ) rsp_buf (
         .clk       (clk),
         .reset     (reset),
+`ifdef VX_CFG_EXT_SYM_CHACHA_ARX16_ENABLE
+        .valid_in  (execute_if.valid),
+`else
         .valid_in  (execute_if.valid && unit_done),
+`endif
         .ready_in  (eb_ready),
         .data_in   ({execute_if.data.header, dr_result}),
         .data_out  ({result_if.data.header,  result_if.data.data}),
