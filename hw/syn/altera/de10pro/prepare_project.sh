@@ -49,6 +49,10 @@ EXT_CHACHA_S2=${VX_DE10PRO_EXT_CHACHA_S2:-0}
 # below and the same rule in ci/gen_config.py.
 EXT_CHACHA_SG16=${VX_DE10PRO_EXT_CHACHA_SG16:-0}
 EXT_POLY_STEP16=${VX_DE10PRO_EXT_POLY_STEP16:-0}
+# The stateless sixteen-lane form, section 23.5. One quarter-round line per
+# instruction and no working state, so it shares CHA_DR's slot with both of the
+# other two answers and is refused alongside either.
+EXT_CHACHA_ARX16=${VX_DE10PRO_EXT_CHACHA_ARX16:-0}
 
 if [[ ! "$NUM_CORES" =~ ^[1-9][0-9]*$ \
    || ! "$NUM_WARPS" =~ ^[1-9][0-9]*$ \
@@ -84,6 +88,9 @@ if [[ "$EXT_SYM" != 0 ]]; then
     if [[ "$EXT_CHACHA_SG16" != 0 ]]; then
         EXT_MACROS+=('VX_CFG_EXT_SYM_CHACHA_SG16_ENABLE=1')
     fi
+    if [[ "$EXT_CHACHA_ARX16" != 0 ]]; then
+        EXT_MACROS+=('VX_CFG_EXT_SYM_CHACHA_ARX16_ENABLE=1')
+    fi
     if [[ "$EXT_CHACHA_SG4" != 0 ]]; then
         EXT_MACROS+=('VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE=1')
     fi
@@ -114,6 +121,14 @@ if [[ "$EXT_AUTH" != 0 ]]; then
 fi
 if [[ "$EXT_CHACHA_SG16" != 0 && "$EXT_CHACHA_S2" != 0 ]]; then
     echo "error: VX_DE10PRO_EXT_CHACHA_SG16 and VX_DE10PRO_EXT_CHACHA_S2 are mutually exclusive (they share an op_type slot)" >&2
+    exit 1
+fi
+if [[ "$EXT_CHACHA_ARX16" != 0 && "$EXT_CHACHA_S2" != 0 ]]; then
+    echo "error: VX_DE10PRO_EXT_CHACHA_ARX16 and VX_DE10PRO_EXT_CHACHA_S2 are mutually exclusive (they share an op_type slot)" >&2
+    exit 1
+fi
+if [[ "$EXT_CHACHA_ARX16" != 0 && "$EXT_CHACHA_SG16" != 0 ]]; then
+    echo "error: VX_DE10PRO_EXT_CHACHA_ARX16 and VX_DE10PRO_EXT_CHACHA_SG16 are mutually exclusive (they share an op_type slot)" >&2
     exit 1
 fi
 if [[ "$EXT_POLY_STEP16" != 0 && "$EXT_POLY" == 0 ]]; then
