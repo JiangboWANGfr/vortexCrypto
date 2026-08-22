@@ -65,14 +65,22 @@ def macros(short):
     return " ".join("-DVX_CFG_EXT_%s_ENABLE" % m for m in short.split())
 
 def emit(path, header, groups):
+    """Ids carry the build index, not just the implementation name.
+
+    Without it the same implementation measured in two builds collapses to one
+    case: catalog_cases keys by short name and keeps the first. That silently
+    dropped the S1 anchor from the sixteen-lane build -- 36 cases ran where 40
+    were declared, and the anchor is exactly the row a cross-build comparison
+    needs.
+    """
     out = [header]
     n = 0
-    for app, ext, rows in groups:
+    for gi, (app, ext, rows) in enumerate(groups):
         msgs, blocks = GRID[app]
         for label, note in rows:
             for b in blocks:
                 n += 1
-                out += [f"- id: {label}-{app.split('_')[0]}-b{b}",
+                out += [f"- id: {label}-{app.split('_')[0]}{gi}-b{b}",
                         "  via: make-run", "  drivers:", "  - rtlsim",
                         f"  dir: tests/crypto/{app}", "  target: run-{driver}",
                         f"  configs: {macros(ext)}", "  vars:",

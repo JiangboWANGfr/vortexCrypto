@@ -22,7 +22,7 @@ defaults:
   - 32
   tier: full
 tests:
-- id: sw_ttable-aes-b2
+- id: sw_ttable-aes0-b2
   via: make-run
   drivers:
   - rtlsim
@@ -31,7 +31,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
   vars:
     OPTS: -n128 -b2 -i0
-- id: sw_ttable-aes-b8
+- id: sw_ttable-aes0-b8
   via: make-run
   drivers:
   - rtlsim
@@ -40,7 +40,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
   vars:
     OPTS: -n128 -b8 -i0
-- id: sw_ttable-aes-b32
+- id: sw_ttable-aes0-b32
   via: make-run
   drivers:
   - rtlsim
@@ -49,7 +49,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
   vars:
     OPTS: -n128 -b32 -i0
-- id: sw_ttable-aes-b64
+- id: sw_ttable-aes0-b64
   via: make-run
   drivers:
   - rtlsim
@@ -58,7 +58,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
   vars:
     OPTS: -n128 -b64 -i0
-- id: hw_s1-aes-b2
+- id: hw_s1-aes0-b2
   via: make-run
   drivers:
   - rtlsim
@@ -67,7 +67,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
   vars:
     OPTS: -n128 -b2 -i1
-- id: hw_s1-aes-b8
+- id: hw_s1-aes0-b8
   via: make-run
   drivers:
   - rtlsim
@@ -76,7 +76,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
   vars:
     OPTS: -n128 -b8 -i1
-- id: hw_s1-aes-b32
+- id: hw_s1-aes0-b32
   via: make-run
   drivers:
   - rtlsim
@@ -85,7 +85,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
   vars:
     OPTS: -n128 -b32 -i1
-- id: hw_s1-aes-b64
+- id: hw_s1-aes0-b64
   via: make-run
   drivers:
   - rtlsim
@@ -94,7 +94,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
   vars:
     OPTS: -n128 -b64 -i1
-- id: hw_s2-aes-b2
+- id: hw_s2-aes0-b2
   via: make-run
   drivers:
   - rtlsim
@@ -103,7 +103,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
   vars:
     OPTS: -n128 -b2 -i10
-- id: hw_s2-aes-b8
+- id: hw_s2-aes0-b8
   via: make-run
   drivers:
   - rtlsim
@@ -112,7 +112,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
   vars:
     OPTS: -n128 -b8 -i10
-- id: hw_s2-aes-b32
+- id: hw_s2-aes0-b32
   via: make-run
   drivers:
   - rtlsim
@@ -121,7 +121,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
   vars:
     OPTS: -n128 -b32 -i10
-- id: hw_s2-aes-b64
+- id: hw_s2-aes0-b64
   via: make-run
   drivers:
   - rtlsim
@@ -130,7 +130,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
   vars:
     OPTS: -n128 -b64 -i10
-- id: hw_s3g-aes-b2
+- id: hw_s3g-aes0-b2
   via: make-run
   drivers:
   - rtlsim
@@ -139,7 +139,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
   vars:
     OPTS: -n128 -b2 -i8
-- id: hw_s3g-aes-b8
+- id: hw_s3g-aes0-b8
   via: make-run
   drivers:
   - rtlsim
@@ -148,7 +148,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
   vars:
     OPTS: -n128 -b8 -i8
-- id: hw_s3g-aes-b32
+- id: hw_s3g-aes0-b32
   via: make-run
   drivers:
   - rtlsim
@@ -157,7 +157,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
   vars:
     OPTS: -n128 -b32 -i8
-- id: hw_s3g-aes-b64
+- id: hw_s3g-aes0-b64
   via: make-run
   drivers:
   - rtlsim
@@ -166,7 +166,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
   vars:
     OPTS: -n128 -b64 -i8
-- id: rori-chacha-b1
+- id: rori-chacha1-b1
   via: make-run
   drivers:
   - rtlsim
@@ -175,7 +175,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b1 -i1
-- id: rori-chacha-b4
+- id: rori-chacha1-b4
   via: make-run
   drivers:
   - rtlsim
@@ -184,7 +184,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b4 -i1
-- id: rori-chacha-b16
+- id: rori-chacha1-b16
   via: make-run
   drivers:
   - rtlsim
@@ -193,7 +193,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b16 -i1
-- id: rori-chacha-b32
+- id: rori-chacha1-b32
   via: make-run
   drivers:
   - rtlsim
@@ -202,7 +202,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b32 -i1
-- id: s1-chacha-b1
+- id: s1-chacha1-b1
   via: make-run
   drivers:
   - rtlsim
@@ -211,7 +211,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b1 -i7
-- id: s1-chacha-b4
+- id: s1-chacha1-b4
   via: make-run
   drivers:
   - rtlsim
@@ -220,7 +220,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b4 -i7
-- id: s1-chacha-b16
+- id: s1-chacha1-b16
   via: make-run
   drivers:
   - rtlsim
@@ -229,7 +229,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b16 -i7
-- id: s1-chacha-b32
+- id: s1-chacha1-b32
   via: make-run
   drivers:
   - rtlsim
@@ -238,7 +238,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b32 -i7
-- id: s2-chacha-b1
+- id: s2-chacha1-b1
   via: make-run
   drivers:
   - rtlsim
@@ -247,7 +247,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b1 -i10
-- id: s2-chacha-b4
+- id: s2-chacha1-b4
   via: make-run
   drivers:
   - rtlsim
@@ -256,7 +256,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b4 -i10
-- id: s2-chacha-b16
+- id: s2-chacha1-b16
   via: make-run
   drivers:
   - rtlsim
@@ -265,7 +265,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b16 -i10
-- id: s2-chacha-b32
+- id: s2-chacha1-b32
   via: make-run
   drivers:
   - rtlsim
@@ -274,7 +274,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b32 -i10
-- id: s3f-chacha-b1
+- id: s3f-chacha1-b1
   via: make-run
   drivers:
   - rtlsim
@@ -283,7 +283,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b1 -i9
-- id: s3f-chacha-b4
+- id: s3f-chacha1-b4
   via: make-run
   drivers:
   - rtlsim
@@ -292,7 +292,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b4 -i9
-- id: s3f-chacha-b16
+- id: s3f-chacha1-b16
   via: make-run
   drivers:
   - rtlsim
@@ -301,7 +301,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b16 -i9
-- id: s3f-chacha-b32
+- id: s3f-chacha1-b32
   via: make-run
   drivers:
   - rtlsim
@@ -310,7 +310,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b32 -i9
-- id: s1-chacha-b1
+- id: s1-chacha2-b1
   via: make-run
   drivers:
   - rtlsim
@@ -319,7 +319,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG16_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b1 -i7
-- id: s1-chacha-b4
+- id: s1-chacha2-b4
   via: make-run
   drivers:
   - rtlsim
@@ -328,7 +328,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG16_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b4 -i7
-- id: s1-chacha-b16
+- id: s1-chacha2-b16
   via: make-run
   drivers:
   - rtlsim
@@ -337,7 +337,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG16_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b16 -i7
-- id: s1-chacha-b32
+- id: s1-chacha2-b32
   via: make-run
   drivers:
   - rtlsim
@@ -346,7 +346,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG16_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b32 -i7
-- id: sg16-chacha-b1
+- id: sg16-chacha2-b1
   via: make-run
   drivers:
   - rtlsim
@@ -355,7 +355,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG16_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b1 -i12
-- id: sg16-chacha-b4
+- id: sg16-chacha2-b4
   via: make-run
   drivers:
   - rtlsim
@@ -364,7 +364,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG16_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b4 -i12
-- id: sg16-chacha-b16
+- id: sg16-chacha2-b16
   via: make-run
   drivers:
   - rtlsim
@@ -373,7 +373,7 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG16_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
     OPTS: -n64 -b16 -i12
-- id: sg16-chacha-b32
+- id: sg16-chacha2-b32
   via: make-run
   drivers:
   - rtlsim
