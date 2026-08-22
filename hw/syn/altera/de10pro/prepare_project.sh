@@ -44,6 +44,11 @@ EXT_POLY=${VX_DE10PRO_EXT_POLY:-0}
 EXT_CHACHA_SG4=${VX_DE10PRO_EXT_CHACHA_SG4:-0}
 EXT_POLY_SG4=${VX_DE10PRO_EXT_POLY_SG4:-0}
 EXT_CHACHA_S2=${VX_DE10PRO_EXT_CHACHA_S2:-0}
+# The sixteen-lane subgroup pair. chacha.dr.sg16 shares CHA_DR's op_type slot
+# with the S2 engine, so the two cannot be built together -- see the refusal
+# below and the same rule in ci/gen_config.py.
+EXT_CHACHA_SG16=${VX_DE10PRO_EXT_CHACHA_SG16:-0}
+EXT_POLY_STEP16=${VX_DE10PRO_EXT_POLY_STEP16:-0}
 
 if [[ ! "$NUM_CORES" =~ ^[1-9][0-9]*$ \
    || ! "$NUM_WARPS" =~ ^[1-9][0-9]*$ \
@@ -76,6 +81,9 @@ if [[ "$EXT_SYM" != 0 ]]; then
     if [[ "$EXT_CHACHA" != 0 ]]; then
         EXT_MACROS+=('VX_CFG_EXT_SYM_CHACHA_ENABLE=1')
     fi
+    if [[ "$EXT_CHACHA_SG16" != 0 ]]; then
+        EXT_MACROS+=('VX_CFG_EXT_SYM_CHACHA_SG16_ENABLE=1')
+    fi
     if [[ "$EXT_CHACHA_SG4" != 0 ]]; then
         EXT_MACROS+=('VX_CFG_EXT_SYM_CHACHA_SG4_ENABLE=1')
     fi
@@ -97,9 +105,20 @@ if [[ "$EXT_AUTH" != 0 ]]; then
     if [[ "$EXT_POLY" != 0 ]]; then
         EXT_MACROS+=('VX_CFG_EXT_AUTH_POLY_ENABLE=1')
     fi
+    if [[ "$EXT_POLY_STEP16" != 0 ]]; then
+        EXT_MACROS+=('VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE=1')
+    fi
     if [[ "$EXT_POLY_SG4" != 0 ]]; then
         EXT_MACROS+=('VX_CFG_EXT_AUTH_POLY_SG4_ENABLE=1')
     fi
+fi
+if [[ "$EXT_CHACHA_SG16" != 0 && "$EXT_CHACHA_S2" != 0 ]]; then
+    echo "error: VX_DE10PRO_EXT_CHACHA_SG16 and VX_DE10PRO_EXT_CHACHA_S2 are mutually exclusive (they share an op_type slot)" >&2
+    exit 1
+fi
+if [[ "$EXT_POLY_STEP16" != 0 && "$EXT_POLY" == 0 ]]; then
+    echo "error: VX_DE10PRO_EXT_POLY_STEP16 requires VX_DE10PRO_EXT_POLY" >&2
+    exit 1
 fi
 if [[ "$EXT_CHACHA_SG4" != 0 && "$EXT_CHACHA" == 0 ]]; then
     echo "error: VX_DE10PRO_EXT_CHACHA_SG4 requires VX_DE10PRO_EXT_CHACHA" >&2
