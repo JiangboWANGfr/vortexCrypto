@@ -3352,20 +3352,28 @@ and the third point on a question this section had been answering with two.
     against S1                      2.27x          4.97x           3.78x
                                  arx line     dr16 macro       S2 engine
 
-**The middle wins and neither end does.** On the full ladder, at the
-memory-bound point:
+**The middle wins and neither end does.** On the full ladder, both operating
+points, against each row's own `s1`:
 
-| | instrs/64 B | cycles/64 B | against `s1` |
-| --- | ---: | ---: | ---: |
-| `rori`, S0 | 123.0 | 769.7 | 0.60x |
-| `s1` | 75.5 | 460.6 | 1.00x |
-| `s3f`, S3 at four lanes | 90.5 | 368.3 | 1.25x |
-| `arx`, S3 at sixteen, stateless | 142.0 | 203.1 | 2.27x |
-| `s2`, stateful | 28.9 | 121.8 | 3.78x |
-| **`sg16`, S3 at sixteen, macro** | **49.0** | **92.6** | **4.97x** |
+| | instrs/64 B | cache-resident | vs `s1` | memory-bound | vs `s1` |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `rori`, S0 | 123.0 | 801.0 | 0.60x | 769.7 | 0.60x |
+| `s1` | 75.5 | 478.8 | 1.00x | 460.6 | 1.00x |
+| `s3f`, S3 at four lanes | 90.5 | 487.6 | 0.98x | 368.3 | 1.25x |
+| `arx`, S3 at sixteen, stateless | 142.0 | 129.6 | 3.69x | 203.1 | 2.27x |
+| `s2`, stateful | 28.9 | 95.4 | 5.02x | 121.8 | 3.78x |
+| **`sg16`, S3 at sixteen, macro** | **49.0** | **83.4** | **5.74x** | **92.6** | **4.97x** |
+
+The two columns do not rank the rows the same way, and the row that moves is the
+stateless one. Between the operating points `sg16` loses 11% and `arx` loses
+57%, so the gap between them is 1.55x on a 16 KB working set and 2.19x on a
+128 KB one. Whatever the instruction count costs, it costs more once the working
+set leaves the cache -- which is the opposite of the intuition that a
+memory-bound kernel has cycles to spare for extra instructions.
 
 The stateless form is not a bad instruction. It beats S1 by 2.27x and the
-four-lane S3 by 1.81x, which is to say that matching the subgroup to the state
+four-lane S3 by 1.81x at the memory-bound point, and by 3.69x and 3.76x at the
+cache-resident one, which is to say that matching the subgroup to the state
 width is worth most of this section's result on its own, independently of how
 the instruction is packaged. It is simply the worse of the two sixteen-lane
 packagings, and the margin decomposes exactly:

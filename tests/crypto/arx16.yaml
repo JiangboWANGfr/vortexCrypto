@@ -1,0 +1,51 @@
+# chacha.arx.sg16, the stateless end of section 23.5's state axis.
+#
+# The same four payload sizes and the same -i12 row as measurements.yaml's
+# sg16-chacha2-*, with SYM_CHACHA_ARX16 in place of SYM_CHACHA_SG16. The two
+# share CHA_DR's op_type slot and gen_config.py refuses them together, so this
+# cannot be folded into that file's build: it is a second build of the same
+# kernel, which is exactly what makes it an ablation and not a row.
+#
+#   tests/crypto/bench.py --yaml tests/crypto/arx16.yaml --runs build32/crypto_runs/arx16
+category: crypto_measure
+defaults:
+  xlen:
+  - 32
+  tier: full
+tests:
+- id: arx16-chacha3-b1
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ARX16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b1 -i12
+- id: arx16-chacha3-b4
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ARX16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b4 -i12
+- id: arx16-chacha3-b16
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ARX16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b16 -i12
+- id: arx16-chacha3-b32
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ARX16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_ENABLE
+  vars:
+    OPTS: -n64 -b32 -i12

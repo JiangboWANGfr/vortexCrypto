@@ -13,7 +13,7 @@ Those logs have since been moved out of `/tmp`. All 649 files, 78 MB, are now in
 `build32/crypto_runs/archive-2026-08/`, verified identical by checksum. The `log`
 column is a path relative to `build32/crypto_runs/`, one base for every row: the
 original ones sit under `archive-2026-08/`, later batches under their own
-directory. All 428 rows resolve to a file that exists.
+directory. All 432 rows resolve to a file that exists.
 
 ## Columns
 
@@ -28,6 +28,12 @@ directory. All 428 rows resolve to a file that exists.
 | `opts` | the command line |
 | `extensions` | which `VX_CFG_EXT_*` macros the build carried |
 | `log` | path under `build32/crypto_runs/` to the run it came from |
+
+`impl` is what the application prints, not what the hardware is. Two different
+instructions report `sg16`: `chacha.dr.sg16` and `chacha.arx.sg16` are the same
+`-i12` row of the same kernel, selected by which macro the build carried, so
+they are told apart only by `SYM_CHACHA_SG16` against `SYM_CHACHA_ARX16` in
+`extensions`. Filtering on `impl` alone mixes two designs that differ by 2.19x.
 
 A block is **16 bytes** for `aes_gcm` and **64 bytes** for `chacha_poly`. Any
 comparison across the two must go through `bytes`, not `blocks`; the `cycles/B`
@@ -60,7 +66,7 @@ manufacture a result.
 
 | | |
 | --- | --- |
-| `crypto_measurements.csv` | 428 rows, in the repository, the durable record |
+| `crypto_measurements.csv` | 432 rows, in the repository, the durable record |
 | `build32/crypto_runs/archive-2026-08/` | the logs the first 271 rows came from |
 | `build32/crypto_runs/<batch>/logs/` | logs from later batches, one file per run |
 | `build32/crypto_runs/<batch>/records.csv` | that batch's rows, same 15 columns |
