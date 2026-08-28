@@ -139,12 +139,13 @@ void AuthUnit::execute(instr_trace_t* trace) {
 
 #ifdef VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE
   if (auth_type == AuthType::POLY_STEP16) {
-    // poly4.step.sg16 rd, rs1(h), rs2(r), rs3(m)
+    // poly4.step.sg16 rd, rs1(h and r), rs2(m)
     //
-    //   lanes 0..4 : h0..h4 and r0..r4, five 26-bit limbs each
-    //   lanes 0..15: one message word each, sixteen words = 64 bytes
-    //   result     : h0'..h4' in lanes 0..4 after absorbing four Poly1305
-    //                blocks; lanes 5..15 receive zero
+    //   rs1 lanes 0..4 : h0..h4, five 26-bit limbs
+    //   rs1 lanes 5..9 : r0..r4, the same
+    //   rs2 lanes 0..15: one message word each, sixteen words = 64 bytes
+    //   result         : h0'..h4' in lanes 0..4 after absorbing four Poly1305
+    //                    blocks, r unchanged in 5..9, zero in 10..15
     //
     // The unit runs h = (h + m_b) * r mod 2^130-5 four times. r^2, r^3 and r^4
     // are never architectural: holding that schedule in registers is what costs
@@ -160,14 +161,13 @@ void AuthUnit::execute(instr_trace_t* trace) {
       }
       if (!first) continue;
 
-      auto& rs3_data = trace->src_data[2];
       uint32_t h[5], r[5], m[16];
       for (uint32_t c = 0; c < 5; ++c) {
         h[c] = (uint32_t)rs1_data[q + c].u & 0x3ffffffu;
-        r[c] = (uint32_t)rs2_data[q + c].u & 0x3ffffffu;
+        r[c] = (uint32_t)rs1_data[q + 5 + c].u & 0x3ffffffu;
       }
       for (uint32_t c = 0; c < 16; ++c)
-        m[c] = (uint32_t)rs3_data[q + c].u;
+        m[c] = (uint32_t)rs2_data[q + c].u;
 
       for (uint32_t b = 0; b < 4; ++b) {
         const uint32_t t0 = m[4*b + 0], t1 = m[4*b + 1];
@@ -200,7 +200,8 @@ void AuthUnit::execute(instr_trace_t* trace) {
         h[1] += c;
       }
       for (uint32_t c = 0; c < 16; ++c)
-        rd_data[q + c].u = (c < 5) ? h[c] : 0u;
+        rd_data[q + c].u = (c < 5) ? h[c]
+                         : (c < 10) ? (uint32_t)rs1_data[q + c].u : 0u;
     }
     return;
   }

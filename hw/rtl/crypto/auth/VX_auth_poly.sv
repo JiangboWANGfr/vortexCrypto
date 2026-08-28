@@ -108,13 +108,21 @@ module VX_auth_poly import VX_gpu_pkg::*; #(
 `endif
 
 `ifdef VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE
-    // poly4.step.sg16 rd, rs1(h), rs2(r), rs3(m)
+    // poly4.step.sg16 rd, rs1(h and r), rs2(m)
     //
     // One aligned sixteen-lane subgroup absorbs a whole 64-byte ChaCha block --
     // four Poly1305 blocks -- and returns the new accumulator in lanes 0..4.
     //
-    //   lanes 0..4 : h0..h4 (rs1) and r0..r4 (rs2), five 26-bit limbs each
-    //   lanes 0..15: one message word each (rs3)
+    //   rs1 lanes 0..4 : h0..h4, five 26-bit limbs
+    //   rs1 lanes 5..9 : r0..r4, the same
+    //   rs2 lanes 0..15: one message word each
+    //   rd  lanes 0..4 : the new h; lanes 5..9 return r unchanged so that rd
+    //                    feeds straight back into rs1, and 10..15 are zero
+    //
+    // Two five-limb values in sixteen lanes, with six to spare. The first
+    // version spent a register on each and eleven dead lanes with it, which
+    // made the instruction R4-type for no reason. Packed it is 2R1W at the same
+    // instruction count, and funct7 comes back in place of R4's funct2.
     //
     // The r^2, r^3, r^4 schedule the software block-parallel form needs never
     // becomes architectural. That is the whole point of the instruction:
@@ -184,7 +192,7 @@ module VX_auth_poly import VX_gpu_pkg::*; #(
     wire [NSG-1:0][4:0][31:0] p_r;
     for (genvar g = 0; g < NSG; ++g) begin : g_r
         for (genvar c = 0; c < 5; ++c) begin : g_rl
-            assign p_r[g][c] = execute_if.data.rs2_data[g*16 + c][31:0] & MASK;
+            assign p_r[g][c] = execute_if.data.rs1_data[g*16 + 5 + c][31:0] & MASK;
         end
     end
 
@@ -235,10 +243,10 @@ module VX_auth_poly import VX_gpu_pkg::*; #(
                                                 execute_if.data.rs1_data[g*16+1][31:0] & MASK,
                                                 execute_if.data.rs1_data[g*16+0][31:0] & MASK}
                                             : p_h[g];
-                        automatic logic [31:0] t0 = execute_if.data.rs3_data[g*16 + 32'({p_blk, 2'd0})][31:0];
-                        automatic logic [31:0] t1 = execute_if.data.rs3_data[g*16 + 32'({p_blk, 2'd1})][31:0];
-                        automatic logic [31:0] t2 = execute_if.data.rs3_data[g*16 + 32'({p_blk, 2'd2})][31:0];
-                        automatic logic [31:0] t3 = execute_if.data.rs3_data[g*16 + 32'({p_blk, 2'd3})][31:0];
+                        automatic logic [31:0] t0 = execute_if.data.rs2_data[g*16 + 32'({p_blk, 2'd0})][31:0];
+                        automatic logic [31:0] t1 = execute_if.data.rs2_data[g*16 + 32'({p_blk, 2'd1})][31:0];
+                        automatic logic [31:0] t2 = execute_if.data.rs2_data[g*16 + 32'({p_blk, 2'd2})][31:0];
+                        automatic logic [31:0] t3 = execute_if.data.rs2_data[g*16 + 32'({p_blk, 2'd3})][31:0];
                         p_a[g][0] <= hh[0] + (t0 & MASK);
                         p_a[g][1] <= hh[1] + (((t0 >> 26) | (t1 << 6)) & MASK);
                         p_a[g][2] <= hh[2] + (((t1 >> 20) | (t2 << 12)) & MASK);
@@ -267,7 +275,11 @@ module VX_auth_poly import VX_gpu_pkg::*; #(
     for (genvar i = 0; i < NUM_LANES; ++i) begin : g_s16
         localparam int G = i / 16;
         localparam int C = i % 16;
-        assign step16_result[i] = (C < 5) ? XLEN'(p_h[G][C]) : XLEN'(0);
+        // r rides through untouched: execute_if holds this instruction for the
+        // whole sequence, so rs1 is still there when the result is sampled.
+        assign step16_result[i] = (C < 5)  ? XLEN'(p_h[G][C])
+                                : (C < 10) ? execute_if.data.rs1_data[i]
+                                           : XLEN'(0);
     end
 
 `ifdef SIMULATION

@@ -1124,16 +1124,16 @@ Instr::Ptr Decoder::decode(uint32_t code, uint64_t uuid) {
     // the ratified crypto encodings this cannot collide: funct3 0 = GHRED32L,
     // 1 = GHRED32H.
 #ifdef VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE
-    // poly4.step.sg16 rd, rs1(h), rs2(r), rs3(m) -- one aligned sixteen-lane
-    // subgroup absorbs a whole 64-byte ChaCha block. R4-type, so bits 31:27
-    // are rs3 and 26:25 are funct2; funct2 is the only reserved field.
-    if (funct3 == 0x7 && funct2 == 0x0) {
+    // poly4.step.sg16 rd, rs1(h in lanes 0..4, r in 5..9), rs2(m) -- one
+    // aligned sixteen-lane subgroup absorbs a whole 64-byte ChaCha block. Two
+    // five-limb values fit one sixteen-lane register with six lanes to spare,
+    // so this is R-type and 2R1W; funct7 is reserved.
+    if (funct3 == 0x7 && funct7 == 0x0) {
       instr->set_fu_type(FUType::AUTH);
       instr->set_op_type(AuthType::POLY_STEP16);
       instr->set_dest_reg(rd, RegType::Integer);
       instr->set_src_reg(0, rs1, RegType::Integer);
       instr->set_src_reg(1, rs2, RegType::Integer);
-      instr->set_src_reg(2, rs3, RegType::Integer);
       instr->set_args(IntrAuthArgs{});
       break;
     }

@@ -956,13 +956,12 @@ inline void chacha_poly_sg16_body(kernel_arg_t* __UNIFORM__ arg) {
       chacha20_keystream<rot_sw, 0>(k, n0, n1, n2, 0, x0);
       poly1305_init(st, x0);
     }
-    // Each lane keeps only its own limb of r and h. The rest of poly1305_init's
-    // output dies here, which is the point: the r-power schedule the SG4 form
-    // needed twenty loads a block for does not exist in this layout.
-    const uint32_t r_l = (lane == 0) ? st.r0 : (lane == 1) ? st.r1
-                       : (lane == 2) ? st.r2 : (lane == 3) ? st.r3
-                       : (lane == 4) ? st.r4 : 0u;
-    uint32_t h_l = 0;
+    // Each lane keeps only its own limb, and h and r share one register: h in
+    // lanes 0..4, r in 5..9, which is what makes the instruction 2R1W. Every
+    // lane already holds all of poly1305_init's output, so the packing is a
+    // wider select and not a cross-lane move. The rest of that output dies
+    // here, which is the point: the r-power schedule the SG4 form needed twenty
+    // loads a block for does not exist in this layout.
 
     for (uint32_t off = 0; off < aad_bytes; off += POLY1305_BLOCK_BYTES) {
       const uint32_t n = (aad_bytes - off < POLY1305_BLOCK_BYTES)
@@ -973,9 +972,15 @@ inline void chacha_poly_sg16_body(kernel_arg_t* __UNIFORM__ arg) {
                            load_le32(padded + 8), load_le32(padded + 12));
     }
     // The AAD ran in the redundant serial form, so seed the per-lane limb from
-    // it rather than from zero.
-    h_l = (lane == 0) ? st.h0 : (lane == 1) ? st.h1 : (lane == 2) ? st.h2
-        : (lane == 3) ? st.h3 : (lane == 4) ? st.h4 : 0u;
+    // it rather than from zero. r is loop-invariant and rides in the same
+    // register from here to the end of the block loop.
+    const uint32_t h_part = (lane == 0) ? st.h0 : (lane == 1) ? st.h1
+                          : (lane == 2) ? st.h2 : (lane == 3) ? st.h3
+                          : (lane == 4) ? st.h4 : 0u;
+    const uint32_t r_part = (lane == 5) ? st.r0 : (lane == 6) ? st.r1
+                          : (lane == 7) ? st.r2 : (lane == 8) ? st.r3
+                          : (lane == 9) ? st.r4 : 0u;
+    uint32_t hr_l = h_part | r_part;
 
     const uint32_t* pt = src_base + (size_t)words * msg;
     uint32_t* ct = dst_base + (size_t)words * msg;
@@ -1007,16 +1012,16 @@ inline void chacha_poly_sg16_body(kernel_arg_t* __UNIFORM__ arg) {
 
       const uint32_t c = pt[16 * b + lane] ^ x;
       ct[16 * b + lane] = c;
-      h_l = vx_poly4_step_sg16(h_l, r_l, c);
+      hr_l = vx_poly4_step_sg16(hr_l, c);
     }
 
     // Gather the five limbs back into every lane for the serial finish. Once
     // per message, not per block.
-    st.h0 = (uint32_t)vx_shfl_idx(h_l, 0, 15, 0);
-    st.h1 = (uint32_t)vx_shfl_idx(h_l, 1, 15, 0);
-    st.h2 = (uint32_t)vx_shfl_idx(h_l, 2, 15, 0);
-    st.h3 = (uint32_t)vx_shfl_idx(h_l, 3, 15, 0);
-    st.h4 = (uint32_t)vx_shfl_idx(h_l, 4, 15, 0);
+    st.h0 = (uint32_t)vx_shfl_idx(hr_l, 0, 15, 0);
+    st.h1 = (uint32_t)vx_shfl_idx(hr_l, 1, 15, 0);
+    st.h2 = (uint32_t)vx_shfl_idx(hr_l, 2, 15, 0);
+    st.h3 = (uint32_t)vx_shfl_idx(hr_l, 3, 15, 0);
+    st.h4 = (uint32_t)vx_shfl_idx(hr_l, 4, 15, 0);
 
     if (tail != 0) {
       uint32_t xt[16];

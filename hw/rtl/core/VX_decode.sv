@@ -921,21 +921,26 @@ module VX_decode import
         `ifdef VX_CFG_EXT_AUTH_ENABLE
             INST_EXT3: begin
             `ifdef VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE
-                // poly4.step.sg16 rd, rs1, rs2, rs3 -- one aligned sixteen-lane
+                // poly4.step.sg16 rd, rs1, rs2 -- one aligned sixteen-lane
                 // subgroup absorbs a whole 64-byte ChaCha block, which is four
-                // Poly1305 blocks, in one instruction. rs1 = h and rs2 = r as
-                // five 26-bit limbs in lanes 0..4; rs3 = the sixteen message
-                // words, one per lane. R4-type, so rs3 costs no new operand
-                // path -- WGATHER already uses the format.
+                // Poly1305 blocks, in one instruction. rs1 carries h in lanes
+                // 0..4 and r in lanes 5..9, five 26-bit limbs each; rs2 the
+                // sixteen message words, one per lane.
+                //
+                // h and r used two registers and eleven dead lanes each, which
+                // made this R4-type for no reason: sixteen lanes hold both with
+                // six to spare. Packing them is 2R1W, the same instruction
+                // count, and it returns funct7 in place of R4's funct2 -- five
+                // more encoding bits on an opcode this document has already run
+                // out of. rd returns the new h in lanes 0..4 and r unchanged in
+                // 5..9, so it feeds straight back into rs1.
                 //
                 // The r^2, r^3, r^4 schedule stays inside the unit. That is the
                 // instruction's reason to exist: measured on s3f_norp, holding
                 // it in registers costs twenty loads per block and 36% of the
                 // kernel's cycles, and it is not part of the algorithm's state.
-                // R4-type: bits 31:27 are rs3 and 26:25 are funct2, so there
-                // is no funct7 to reserve here -- funct2 is the only free field
-                // and it must be zero.
-                if (funct3 == 3'h7 && funct2 == 2'h0) begin
+                // funct7 carries nothing and is reserved.
+                if (funct3 == 3'h7 && funct7 == 7'h0) begin
                     ex_type = EX_AUTH;
                     op_type = INST_OP_BITS'(INST_AUTH_POLY_STEP16);
                     op_args.sym.bs = 2'b0;
@@ -943,7 +948,6 @@ module VX_decode import
                     `USED_IREG (rd);
                     `USED_IREG (rs1);
                     `USED_IREG (rs2);
-                    `USED_IREG (rs3);
                 end
             `endif
             `ifdef VX_CFG_EXT_AUTH_POLY_SG4_ENABLE

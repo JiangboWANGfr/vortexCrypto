@@ -165,12 +165,18 @@ extern "C" {
 // poly4.step.sg16: one aligned sixteen-lane subgroup absorbs a whole 64-byte
 // ChaCha block -- four Poly1305 blocks -- in a single instruction.
 //
-//   vx_poly4_step_sg16(h, r, m)
+//   vx_poly4_step_sg16(hr, m)
 //
-//     lane 0..4  h  -> h0..h4, the accumulator's five 26-bit limbs
-//     lane 0..4  r  -> r0..r4, the key's
+//     lane 0..4  hr -> h0..h4, the accumulator's five 26-bit limbs
+//     lane 5..9  hr -> r0..r4, the key's
 //     lane 0..15 m  -> one message word each, sixteen words = 64 bytes
-//     lane 0..4  rd -> the new accumulator; lanes 5..15 receive zero
+//     lane 0..4  rd -> the new accumulator, lanes 5..9 r unchanged so that rd
+//                      feeds straight back in, lanes 10..15 zero
+//
+// h and r are five limbs each and the subgroup is sixteen lanes wide, so both
+// fit one register with six lanes to spare. Packing them makes this 2R1W at
+// the same instruction count, and r is loop-invariant: the packed value is
+// built once per message, not once per block.
 //
 // The r^2, r^3 and r^4 that the software block-parallel form needs stay inside
 // the unit. That schedule is not part of Poly1305's state, only of one way of
@@ -180,12 +186,11 @@ extern "C" {
 // PRECONDITION: all sixteen lanes converged. The subgroup's mask must be
 // 0xffff, and both models assert it.
 #ifdef VX_CFG_EXT_AUTH_POLY_STEP16_ENABLE
-#define vx_poly4_step_sg16(h, r, m) ({                                       \
+#define vx_poly4_step_sg16(hr, m) ({                                         \
     uint32_t __out;                                                          \
-    __asm__ (".insn r4 %1, 7, 0, %0, %2, %3, %4"                             \
+    __asm__ (".insn r %1, 7, 0, %0, %2, %3"                                  \
              : "=r"(__out)                                                   \
-             : "i"(0x5B), "r"((uint32_t)(h)), "r"((uint32_t)(r)),            \
-               "r"((uint32_t)(m)));                                          \
+             : "i"(0x5B), "r"((uint32_t)(hr)), "r"((uint32_t)(m)));          \
     __out;                                                                   \
 })
 #endif
