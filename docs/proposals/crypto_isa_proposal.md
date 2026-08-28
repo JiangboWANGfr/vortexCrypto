@@ -3250,9 +3250,11 @@ other algorithm's subgroup gives:
                                           holds one 512-bit state, lane i
                                           carrying word i, and one instruction
                                           advances a full double-round
-    poly4.step.sg16  rd, rs1, rs2, rs3    the same subgroup absorbs a whole
+    poly4.step.sg16  rd, rs1, rs2         the same subgroup absorbs a whole
                                           64-byte ChaCha block -- four Poly1305
-                                          blocks -- in one instruction
+                                          blocks -- in one instruction, with
+                                          rs1 carrying h in lanes 0..4 and r
+                                          in 5..9
 
 Both are single-destination and hold no context between instructions.
 
@@ -3456,6 +3458,67 @@ fixed cost against a slope of 92, so a two-point fit amplifies any change 14.7x.
 A least-squares fit over all four payload sizes gives 92.1. The comparison
 against `arx` holds either way, 2.09x to 2.19x.
 
+#### Two source registers, not four
+
+`poly4.step.sg16` was first written R4-type, reading h from rs1, r from rs2 and
+the message from rs3. That was a waste hiding in plain sight. h and r are five
+26-bit limbs each and the subgroup is sixteen lanes wide, so each of those two
+operands spent a whole register to use five lanes and leave eleven dead. The two
+of them fit one register with six lanes to spare.
+
+    lane      0  1  2  3  4   5  6  7  8  9   10..15
+    rs1      h0 h1 h2 h3 h4  r0 r1 r2 r3 r4        0
+    rs2                    sixteen message words
+    rd       h0'h1'h2'h3'h4' r0 r1 r2 r3 r4        0
+
+The packing is in lane space, not inside a word: two 26-bit limbs do not fit one
+RV32 register, and on RV64 they would, which is a portability trap rather than a
+design. rd returns r untouched, so the result feeds straight back into rs1 and r
+is never reloaded. The hardware still takes its operands from fixed lane
+positions -- no crossbar appears, only different constants.
+
+Two things follow. The third read port goes, so this stops asking for an operand
+path that only WGATHER needed and the extension becomes implementable on any
+2R1W core. And funct7 comes back in place of R4's funct2: five more encoding
+bits, on the opcode this section is about to report having run out of. The
+reserved-field bug this instruction shipped with -- a check written against a
+funct7 that R4-type does not have -- was a direct consequence of the format.
+
+The instruction count is unchanged, which is the claim worth checking rather
+than asserting. Measured against the R4 build at four payload sizes, the total
+instruction difference is **+136 at every size, which is +17 per message and
+exactly zero per block**; the per-block figure stays 49.0 per 64 bytes to the
+instruction, in rtlsim and simx alike. The packed register costs one wider
+select, once per message, and no cross-lane move at all, because every lane
+already holds all of `poly1305_init`'s output.
+
+    n=8      3R total    2R total    delta
+    b=256     364,233     367,294    +0.84%
+    b=512     589,270     590,089    +0.14%
+    b=768     818,037     823,866    +0.71%
+    b=1024  1,077,420   1,095,595    +1.69%
+
+**Under 2% of cycles at every size, for one fewer read port.**
+
+The first attempt to measure this said 3% to 6%, and the difference between the
+two answers is the operating point, not the design. At the recorded n=64, b=32
+point, 555,520 of 743,444 cycles -- **75%** -- are per-message setup, so anything
+that touches per-message code is magnified fourfold before it reaches the total.
+At n=8, b=256 the same 2,048 blocks carry only 19% setup. A change whose whole
+cost is per-message cannot be priced at an operating point that is three
+quarters per-message, and section 22.3's grid is at that point for a different
+reason: it was chosen to expose the cache-to-memory transition, not to price
+per-message code.
+
+Two cautions on the numbers above. The per-block marginal is still not resolvable
+even here: successive fits over the four sizes give -1.0%, +2.2% and +4.8%, which
+is the same scheduling sensitivity that made two software spellings of this one
+instruction differ by 20% at the old point. And the slope is not constant across
+this span -- 109.9, 111.7, 126.7 cycles per block as the working set grows from
+16 to 64 KiB per message -- so the wide fit's 2.1% is an average over a changing
+regime and the totals above are the honest comparison. What is exact is the
+instruction count, because it is deterministic and needs no fit.
+
 #### The encoding ran out
 
 The four-bit SYM op_type space is full: all sixteen values are taken.
@@ -3467,6 +3530,9 @@ functional unit in the machine.
 
 This is a finding and not a workaround. A cryptographic extension of this size
 does not fit four bits, and the instruction after this one has nowhere to go.
+The one direction that gave space back was the format change above, and it gave
+back five bits inside a funct3 rather than a funct3 -- which is the wrong
+currency for the problem, and the reason it is a caution and not a solution.
 
 
 ### 23.6 Two rules, and they are orthogonal

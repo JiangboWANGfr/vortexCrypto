@@ -13,7 +13,7 @@ Those logs have since been moved out of `/tmp`. All 649 files, 78 MB, are now in
 `build32/crypto_runs/archive-2026-08/`, verified identical by checksum. The `log`
 column is a path relative to `build32/crypto_runs/`, one base for every row: the
 original ones sit under `archive-2026-08/`, later batches under their own
-directory. All 432 rows resolve to a file that exists.
+directory. All 444 rows resolve to a file that exists.
 
 ## Columns
 
@@ -66,7 +66,7 @@ manufacture a result.
 
 | | |
 | --- | --- |
-| `crypto_measurements.csv` | 432 rows, in the repository, the durable record |
+| `crypto_measurements.csv` | 444 rows, in the repository, the durable record |
 | `build32/crypto_runs/archive-2026-08/` | the logs the first 271 rows came from |
 | `build32/crypto_runs/<batch>/logs/` | logs from later batches, one file per run |
 | `build32/crypto_runs/<batch>/records.csv` | that batch's rows, same 15 columns |
