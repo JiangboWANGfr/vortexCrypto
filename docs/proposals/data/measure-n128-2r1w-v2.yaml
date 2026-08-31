@@ -25,3 +25,11 @@ build_id: hare-dac-measure-n128-v1
 gate_passed: true
 core_balance_min: 1.00
 rows: 77
+# Re-anchor 2026-08-31 (after the sg16 tail-stride fix, commit 7143196b5):
+# the sg16-build fit points re-measured at that commit move s1 +1.8%/+0.6%
+# and sg16 -7.3%/-2.5% (small/large; the small chord is the documented
+# signal-starved estimator), giving ratios 9.24x/4.45x against this
+# dataset's 8.41x/4.32x. The fix touches no t=0 semantics; the drift is
+# kernel layout. The published v2 figures are therefore the conservative
+# pair and stand; datasets re-baseline at milestones (the pre-submission
+# freeze), not per commit. Evidence: reanchor-sg16-20260831.csv.

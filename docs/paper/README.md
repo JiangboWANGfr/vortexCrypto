@@ -59,7 +59,12 @@ Decisions of record:
   (223,209) is preserved as results/c2w4t16.sg16-r4.
 - The GPU-TEE overhead numbers (12.69x etc.) are deliberately NOT cited in
   the intro; the two arXiv papers appear once in related work, no numbers.
-- bib entries marked TODO-verify need checking before submission.
+- Bibliography verified 2026-08-31; no TODO-verify entries remain.
+- The sg16 tail-stride bug (fixed in 7143196b5; found by the first sg16
+  tail case ever written) affects no t=0 measurement. Re-anchored at the
+  fix commit the sg16 ratios read 9.24x/4.45x vs the published 8.41x/4.32x
+  -- v2 is the conservative pair and stands. Policy: datasets re-baseline
+  at milestones (the pre-submission freeze), not per commit.
 
 - Combined-build cross-check (U4, data/measure-n128-combined-v1.csv):
   anchors and subgroup forms re-measured in the deployable Combined build
@@ -69,5 +74,5 @@ Decisions of record:
   SYM_CHACHA_SG16/AUTH_POLY_STEP16.
 
 Open items: the draft is 7 pages against DAC's 6 -- needs a compression
-pass; same-version PPA
-(U5); correctness/boundary audit + gate self-test (U6); board (U7).
+pass; same-version PPA (U5); board (U7); final re-baseline of the
+performance dataset at the submission commit.
