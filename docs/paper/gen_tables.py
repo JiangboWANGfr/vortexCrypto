@@ -3,7 +3,7 @@
 
 Every number in tables/*.tex traces to one of two sources:
 
-  1. docs/proposals/data/measure-n128-2r1w-v1.csv  (cycles, instructions),
+  1. docs/proposals/data/measure-n128-2r1w-v2.csv  (cycles, instructions),
      the gated n=128 dataset described by its .yaml sidecar
   2. the archived Quartus reports under $RESULTS   (ALMs, registers, slack)
 
@@ -11,9 +11,19 @@ The performance dataset is loaded through hard gates: schema version 2, the
 recorded c2w4t16 shape, 128 messages, a git stamp the sidecar declares, an
 even per-core instruction split (balance >= 0.90) in every row, and a config
 hash matching the sidecar. The S3/16 rows take their S1 denominator from the
-s1 anchor measured in the same build, never across builds. Rows from the
-historical crypto_measurements.csv (n=64, mixed core utilisation, pre-2R1W
-revisions) are not read at all.
+s1 anchor measured in the same build, never across builds.
+
+Mainline tiers (S1, S2, and each algorithm's subgroup form) fit three points
+per regime with an intercept, every point at a power-of-two blocks count
+(small b=1,2,4 / 2,4,8; large b=16,32,64 / 32,64,128) -- a non-power-of-two
+count gives every message a non-power-of-two stride and lands in a different
+cache/DRAM conflict family (the b=24/48 rows in the dataset measure exactly
+that, and no fit reads them). Each three-point slope must agree with the
+original two-point pair (16,32)/(32,64) within 5%, and the middle point must
+sit within 5% of the triplet's endpoint chord, or generation aborts. S0, the
+ChaCha SG4 row, and the ARX16 ablation keep two-point fits on the original
+pairs. Rows from the historical crypto_measurements.csv (n=64, mixed core
+utilisation) are not read at all.
 
 Run from anywhere; writes docs/paper/tables/*.tex.  If a results directory is
 missing, the script falls back to the values read from those same reports on
@@ -23,7 +33,7 @@ import csv, hashlib, io, os, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "..", "proposals", "data")
-DATASET = "measure-n128-2r1w-v1"
+DATASET = "measure-n128-2r1w-v2"
 RESULTS = os.environ.get(
     "RESULTS",
     os.path.join(HERE, "..", "..", "..", "fpga_proj",
@@ -112,45 +122,77 @@ def load_dataset():
 
 R = load_dataset()
 
-def marginal(app, impl, extmark, lo, hi):
-    """Two-point marginal fit between blocks_per_msg lo and hi, within the
-    single build the extension marker selects."""
-    g = {}
+def points(app, impl, extmark):
+    """blocks_per_msg -> (cycles, instrs, bytes) within one build."""
+    g, ext = {}, None
     for r in R:
         if (r["app"], r["impl"]) != (app, impl):
             continue
         if extmark not in r["extensions"].split():
             continue
+        gate(ext in (None, r["extensions"]), f"{app}/{impl} spans builds")
+        ext = r["extensions"]
         g[int(r["blocks_per_msg"])] = (int(r["cycles"]), int(r["instrs"]),
-                                       int(r["bytes"]), r["extensions"])
-    if lo not in g or hi not in g:
-        raise SystemExit(f"missing rows for {app}/{impl}/{extmark} b={lo},{hi}")
-    gate(g[lo][3] == g[hi][3], f"{app}/{impl} fit would mix builds")
-    dc = g[hi][0] - g[lo][0]
-    di = g[hi][1] - g[lo][1]
-    db = g[hi][2] - g[lo][2]
-    return dc / db, di / db, g[lo][3]
+                                       int(r["bytes"]))
+    return g, ext
 
-# app, impl, build-selecting extension, (cache pair), (mem pair)
+def lsq(xs, ys):
+    n = len(xs)
+    mx, my = sum(xs) / n, sum(ys) / n
+    return (sum((x - mx) * (y - my) for x, y in zip(xs, ys)) /
+            sum((x - mx) ** 2 for x in xs))
+
+def fit_regime(g, bs, who, orig=None):
+    """Slope of cycles and instrs over bytes across the given b points. A
+    three-point fit must agree with the original two-point pair (default:
+    the triplet's endpoints) within 5%, and the middle point must sit
+    within 5% of the triplet's endpoint chord."""
+    for b in bs:
+        gate(b in g, f"missing b={b} for {who}")
+    xs = [g[b][2] for b in bs]
+    cyc = [g[b][0] for b in bs]
+    ins = [g[b][1] for b in bs]
+    slope = lsq(xs, cyc)
+    if len(bs) >= 3:
+        lo, hi = orig or (bs[0], bs[-1])
+        two = (g[hi][0] - g[lo][0]) / (g[hi][2] - g[lo][2])
+        gate(abs(slope - two) / two <= 0.05,
+             f"{who}: 3-point slope {slope:.4f} vs original pair {two:.4f} "
+             f"({100*abs(slope-two)/two:.1f}% apart)")
+        chord = (cyc[-1] - cyc[0]) / (xs[-1] - xs[0])
+        for x, y in zip(xs[1:-1], cyc[1:-1]):
+            pred = cyc[0] + chord * (x - xs[0])
+            gate(abs(y - pred) / pred <= 0.05,
+                 f"{who}: middle point off the endpoint chord by "
+                 f"{100*abs(y-pred)/pred:.1f}%")
+    return slope, lsq(xs, ins)
+
+# app, impl, build-selecting extension, small-regime b list, large-regime b list
+CH3, CH2 = ([1, 2, 4], [16, 32, 64]), ([1, 4], [16, 32])
+AE3, AE2 = ([2, 4, 8], [32, 64, 128]), ([2, 8], [32, 64])
+ORIG = {"chacha_poly": (16, 32), "aes_gcm": (32, 64)}
 SPEC = {
-  ("AES-GCM", "S0"):        ("aes_gcm", "sw_ttable", "SYM_SG4",  2,  8, 32, 64),
-  ("AES-GCM", "S1"):        ("aes_gcm", "hw_s1",     "SYM_SG4",  2,  8, 32, 64),
-  ("AES-GCM", "S2"):        ("aes_gcm", "hw_s2",     "SYM_SG4",  2,  8, 32, 64),
-  ("AES-GCM", "S3/4"):      ("aes_gcm", "hw_s3g",    "SYM_SG4",  2,  8, 32, 64),
-  ("ChaCha-Poly", "S0"):    ("chacha_poly", "rori",  "SYM_CHACHA_SG4",  1, 4, 16, 32),
-  ("ChaCha-Poly", "S1"):    ("chacha_poly", "s1",    "SYM_CHACHA_SG4",  1, 4, 16, 32),
-  ("ChaCha-Poly", "S2"):    ("chacha_poly", "s2",    "SYM_CHACHA_SG4",  1, 4, 16, 32),
-  ("ChaCha-Poly", "S3/4"):  ("chacha_poly", "s3f",   "SYM_CHACHA_SG4",  1, 4, 16, 32),
-  ("ChaCha-Poly", "S1@16"): ("chacha_poly", "s1",    "SYM_CHACHA_SG16", 1, 4, 16, 32),
-  ("ChaCha-Poly", "S3/16"): ("chacha_poly", "sg16",  "SYM_CHACHA_SG16", 1, 4, 16, 32),
-  ("ChaCha-Poly", "ARX16"): ("chacha_poly", "sg16",  "SYM_CHACHA_ARX16",1, 4, 16, 32),
+  ("AES-GCM", "S0"):        ("aes_gcm", "sw_ttable", "SYM_SG4") + AE2,
+  ("AES-GCM", "S1"):        ("aes_gcm", "hw_s1",     "SYM_SG4") + AE3,
+  ("AES-GCM", "S2"):        ("aes_gcm", "hw_s2",     "SYM_SG4") + AE3,
+  ("AES-GCM", "S3/4"):      ("aes_gcm", "hw_s3g",    "SYM_SG4") + AE3,
+  ("ChaCha-Poly", "S0"):    ("chacha_poly", "rori",  "SYM_CHACHA_SG4") + CH2,
+  ("ChaCha-Poly", "S1"):    ("chacha_poly", "s1",    "SYM_CHACHA_SG4") + CH3,
+  ("ChaCha-Poly", "S2"):    ("chacha_poly", "s2",    "SYM_CHACHA_SG4") + CH3,
+  ("ChaCha-Poly", "S3/4"):  ("chacha_poly", "s3f",   "SYM_CHACHA_SG4") + CH2,
+  ("ChaCha-Poly", "S1@16"): ("chacha_poly", "s1",    "SYM_CHACHA_SG16") + CH3,
+  ("ChaCha-Poly", "S3/16"): ("chacha_poly", "sg16",  "SYM_CHACHA_SG16") + CH3,
+  ("ChaCha-Poly", "ARX16"): ("chacha_poly", "sg16",  "SYM_CHACHA_ARX16") + CH2,
 }
 
-FIT = {}
-for k, (app, impl, mark, cl, ch, ml, mh) in SPEC.items():
-    cb, ib, build = marginal(app, impl, mark, ml, mh)
-    ccb, cib, _ = marginal(app, impl, mark, cl, ch)
-    FIT[k] = dict(mem_cb=cb, mem_ib=ib, cache_cb=ccb, build=build)
+FIT, PTS = {}, {}
+for k, (app, impl, mark, small, large) in SPEC.items():
+    g, build = points(app, impl, mark)
+    scb, sib = fit_regime(g, small, f"{k} small")
+    lcb, lib = fit_regime(g, large, f"{k} large",
+                          ORIG[app] if len(large) >= 3 else None)
+    FIT[k] = dict(small_cb=scb, large_cb=lcb, large_ib=lib, build=build)
+    PTS[k] = g
 
 # The S3/16 speedups divide by the s1 measured in the same build, never the
 # all-on s1: the gate is that anchor and subject share one extensions string.
@@ -191,9 +233,9 @@ for algo in ("AES-GCM", "ChaCha-Poly"):
         rows.append(" & ".join([
             algo if i == 0 else "",
             bb(names[t]),
-            bb(fmt(f["cache_cb"])), bb(fmt(f["mem_cb"])), fmt(f["mem_ib"]),
-            bb(fmt(s1["cache_cb"] / f["cache_cb"], 2)),
-            bb(fmt(s1["mem_cb"] / f["mem_cb"], 2)),
+            bb(fmt(f["small_cb"])), bb(fmt(f["large_cb"])), fmt(f["large_ib"]),
+            bb(fmt(s1["small_cb"] / f["small_cb"], 2)),
+            bb(fmt(s1["large_cb"] / f["large_cb"], 2)),
             d]) + r" \\")
     rows.append(r"\midrule" if algo == "AES-GCM" else "")
 
@@ -201,7 +243,7 @@ tab2 = r"""%% generated by gen_tables.py -- do not edit
 \begin{tabular}{@{}llrrrrrr@{}}
 \toprule
  & Tier & \multicolumn{2}{c}{c/B} & instr/B & \multicolumn{2}{c}{$\times$S1} & $\Delta$ALM \\
- &      & cache & mem &          & cache & mem & \\
+ &      & small & large &         & small & large & \\
 \midrule
 """ + "\n".join(r for r in rows if r) + "\n" + r"""\bottomrule
 \end{tabular}
@@ -211,12 +253,12 @@ tab2 = r"""%% generated by gen_tables.py -- do not edit
 arx, dr, s2 = FIT[("ChaCha-Poly","ARX16")], FIT[("ChaCha-Poly","S3/16")], FIT[("ChaCha-Poly","S2")]
 t3rows = [
  ("none (\\texttt{chacha.arx.sg16})", "0",
-   fmt(arx["mem_ib"]*64,1), fmt(arx["mem_cb"]*64,1), com(AREA["c2w4t16.arx16"][0])),
+   fmt(arx["large_ib"]*64,1), fmt(arx["large_cb"]*64,1), com(AREA["c2w4t16.arx16"][0])),
  ("\\textbf{working regs (\\texttt{chacha.dr.sg16})}", "\\textbf{1{,}154}",
-   f"\\textbf{{{fmt(dr['mem_ib']*64,1)}}}", f"\\textbf{{{fmt(dr['mem_cb']*64,1)}}}",
+   f"\\textbf{{{fmt(dr['large_ib']*64,1)}}}", f"\\textbf{{{fmt(dr['large_cb']*64,1)}}}",
    f"\\textbf{{{com(AREA['c2w4t16'][0])}}}"),
  ("architectural context (S2)", "57{,}344",
-   fmt(s2["mem_ib"]*64,1), fmt(s2["mem_cb"]*64,1), com(AREA["c2w4t16.chacha-s2p"][0])),
+   fmt(s2["large_ib"]*64,1), fmt(s2["large_cb"]*64,1), com(AREA["c2w4t16.chacha-s2p"][0])),
 ]
 tab3 = r"""%% generated by gen_tables.py -- do not edit
 \begin{tabular}{@{}lrrrr@{}}
@@ -264,13 +306,13 @@ for label, a, b in [("S0 $\\to$ S1", "S0", "S1"), ("S1 $\\to$ S2", "S1", "S2"),
     cells = [label]
     for algo in ("AES-GCM", "ChaCha-Poly"):
         bb = b or s3(algo)
-        cells += [step(algo, a, bb, "mem_cb"), step(algo, a, bb, "cache_cb")]
+        cells += [step(algo, a, bb, "large_cb"), step(algo, a, bb, "small_cb")]
     t5rows.append(" & ".join(cells) + r" \\")
 tab5 = r"""%% generated by gen_tables.py -- do not edit
 \begin{tabular}{@{}lrrrr@{}}
 \toprule
  & \multicolumn{2}{c}{AES-GCM} & \multicolumn{2}{c}{ChaCha-Poly} \\
-Step & mem & cache & mem & cache \\
+Step & large & small & large & small \\
 \midrule
 """ + "\n".join(t5rows) + "\n" + r"""\bottomrule
 \end{tabular}
@@ -278,8 +320,8 @@ Step & mem & cache & mem & cache \\
 
 # ------------------------------------------------------------- fig 2 -----
 def sp16(k):
-    return s1_for("ChaCha-Poly", k)["mem_cb"] / FIT[("ChaCha-Poly", k)]["mem_cb"]
-spa = FIT[("AES-GCM","S1")]["mem_cb"]/FIT[("AES-GCM","S3/4")]["mem_cb"]
+    return s1_for("ChaCha-Poly", k)["large_cb"] / FIT[("ChaCha-Poly", k)]["large_cb"]
+spa = FIT[("AES-GCM","S1")]["large_cb"]/FIT[("AES-GCM","S3/4")]["large_cb"]
 c4, c16 = sp16("S3/4"), sp16("S3/16")
 SC = 0.62   # cm per 1x speedup
 fig = rf"""%% generated by gen_tables.py -- do not edit
@@ -325,16 +367,23 @@ print(f"SG4 pair over AES S1      : +{com(AREA['c2w4t16.sg4'][0]-AREA['c2w4t16.b
       f"  ({100*(AREA['c2w4t16.sg4'][0]-AREA['c2w4t16.base'][0])/AREA['c2w4t16.base'][0]:.1f}%)")
 print(f"ChaCha S2 dALM / S3-16 dALM: "
       f"{(AREA['c2w4t16.chacha-s2p'][0]-ZERO)/(AREA['c2w4t16'][0]-ZERO):.2f}x")
-print(f"arx16/dr16 slowdown (mem) : "
-      f"{FIT[('ChaCha-Poly','ARX16')]['mem_cb']/FIT[('ChaCha-Poly','S3/16')]['mem_cb']:.2f}x"
-      f"  instrs {FIT[('ChaCha-Poly','ARX16')]['mem_ib']/FIT[('ChaCha-Poly','S3/16')]['mem_ib']:.2f}x")
-print(f"sg16 vs s2 (mem, cache)   : "
-      f"{FIT[('ChaCha-Poly','S2')]['mem_cb']/FIT[('ChaCha-Poly','S3/16')]['mem_cb']:.2f}x, "
-      f"{FIT[('ChaCha-Poly','S2')]['cache_cb']/FIT[('ChaCha-Poly','S3/16')]['cache_cb']:.2f}x")
-print(f"MB/s at 200 MHz (mem)     : AES S3 {200/FIT[('AES-GCM','S3/4')]['mem_cb']:.0f}"
-      f"  ChaCha S3/16 {200/FIT[('ChaCha-Poly','S3/16')]['mem_cb']:.0f}"
-      f"  AES sw {200/FIT[('AES-GCM','S0')]['mem_cb']:.1f}"
-      f"  ChaCha S0 {200/FIT[('ChaCha-Poly','S0')]['mem_cb']:.1f}")
+print(f"arx16/dr16 slowdown (large): "
+      f"{FIT[('ChaCha-Poly','ARX16')]['large_cb']/FIT[('ChaCha-Poly','S3/16')]['large_cb']:.2f}x"
+      f"  instrs {FIT[('ChaCha-Poly','ARX16')]['large_ib']/FIT[('ChaCha-Poly','S3/16')]['large_ib']:.2f}x")
+print(f"sg16 vs s2 (large, small) : "
+      f"{FIT[('ChaCha-Poly','S2')]['large_cb']/FIT[('ChaCha-Poly','S3/16')]['large_cb']:.2f}x, "
+      f"{FIT[('ChaCha-Poly','S2')]['small_cb']/FIT[('ChaCha-Poly','S3/16')]['small_cb']:.2f}x")
+print(f"MB/s at 200 MHz (large)   : AES S3 {200/FIT[('AES-GCM','S3/4')]['large_cb']:.0f}"
+      f"  ChaCha S3/16 {200/FIT[('ChaCha-Poly','S3/16')]['large_cb']:.0f}"
+      f"  AES sw {200/FIT[('AES-GCM','S0')]['large_cb']:.1f}"
+      f"  ChaCha S0 {200/FIT[('ChaCha-Poly','S0')]['large_cb']:.1f}")
+for k, b in [(("AES-GCM", "S3/4"), 8), (("AES-GCM", "S3/4"), 64),
+             (("ChaCha-Poly", "S3/16"), 4), (("ChaCha-Poly", "S3/16"), 32),
+             (("AES-GCM", "S1"), 64), (("ChaCha-Poly", "S1@16"), 32)]:
+    c, _, d = PTS[k][b]
+    print(f"whole-run {k} b={b}: {d} B in {c} cycles = {d/c:.3f} B/c "
+          f"({d/c*200:.0f} MB/s at 200 MHz)")
 for k in SPEC:
     f = FIT[k]
-    print(f"{k}: mem {f['mem_cb']:.3f} c/B  {f['mem_ib']:.3f} i/B   cache {f['cache_cb']:.3f} c/B")
+    print(f"{k}: large {f['large_cb']:.3f} c/B  {f['large_ib']:.3f} i/B   "
+          f"small {f['small_cb']:.3f} c/B")

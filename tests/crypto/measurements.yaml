@@ -10,8 +10,13 @@
 # One build per algorithm; the tier is chosen with -i. At n=128 the
 # small-footprint fit reads b=1,2,4 for chacha_poly (8-32 KiB total) and
 # b=2,4,8 for aes_gcm (4-16 KiB); the large-footprint fit reads b=16,32,64
-# (128-512 KiB) and b=32,64,128 (64-256 KiB) -- the block being 64 bytes for
-# one algorithm and 16 for the other, and every fit point a power of two.
+# for chacha_poly and b=64,128,256 for aes_gcm -- 128-512 KiB of payload for
+# BOTH algorithms, the block being 64 bytes for one and 16 for the other,
+# and every fit point a power of two. The aes b=32/48/64-as-endpoint span
+# (64-128 KiB) turned out to sit inside the footprint transition -- the
+# marginal cost still grows ~24% per doubling there -- so the aes large fit
+# moved up to the byte range where chacha's marginal had already settled;
+# b=32 and b=48 stay as transition and stride diagnostics.
 # Three points per regime for the mainline tiers (S1, S2, and each
 # algorithm's subgroup form); the S0 and SG4 rows keep two. Two kinds of
 # diagnostic rows no fit reads: chacha b=8 / aes b=16 sit between the
@@ -623,3 +628,30 @@ tests:
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
   vars:
     OPTS: -n128 -b128 -i8
+- id: hw_s1-aes0-b256
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/aes_gcm
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
+  vars:
+    OPTS: -n128 -b256 -i1
+- id: hw_s2-aes0-b256
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/aes_gcm
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
+  vars:
+    OPTS: -n128 -b256 -i10
+- id: hw_s3g-aes0-b256
+  via: make-run
+  drivers:
+  - rtlsim
+  dir: tests/crypto/aes_gcm
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_S2_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_SYM_S2_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE
+  vars:
+    OPTS: -n128 -b256 -i8

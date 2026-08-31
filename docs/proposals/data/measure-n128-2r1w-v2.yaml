@@ -1,0 +1,27 @@
+# Frozen dataset v2: v1's 48 rows plus the 19 third-point and knee cases
+# (b=2/24 chacha, b=4/48 aes, knees b=8/b=16) run at commit 9fa5a0079 with a
+# clean tree. Supersedes measure-n128-2r1w-v1 (kept as history); the v1
+# provenance note about the 519a948b6-dirty stamps still applies: that dirty
+# tree was committed unchanged as 27b10997a.
+#
+# Every row passed the bench.py gate: exit 0, PASSED! (or the declared
+# expect-fail for the four s3f_norp diagnostic rows), exactly one PERF line,
+# and an even per-core MINSTRET split. The 3040d0c4e-dirty stamps are the
+# seven power-of-two large points; the dirt was this dataset's own
+# then-untracked csv/yaml under docs/, not anything a measurement reads.
+dataset_id: measure-n128-2r1w-v2
+schema_version: 2
+operand_format: 2R1W
+shape: c2w4t16
+num_cores: 2
+n: 128
+driver: rtlsim
+git_commit: 3040d0c4e
+git_tag: hare-dac-measure-n128-v1
+git_dirty: false
+recorded_git_stamps: 519a948b6-dirty 27b10997a 9fa5a0079 3040d0c4e-dirty
+config_hash: sha256:f46e01c9cd42b30c0c5dca167c8cf15c75dd10a5417614a7a1d7e11b86d36ad8
+build_id: hare-dac-measure-n128-v1
+gate_passed: true
+core_balance_min: 1.00
+rows: 74
