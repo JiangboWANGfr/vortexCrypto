@@ -1,19 +1,29 @@
 #!/usr/bin/env python3
-"""Regenerate the paper's data tables from the committed measurement record.
+"""Regenerate the paper's data tables from the frozen measurement dataset.
 
 Every number in tables/*.tex traces to one of two sources:
 
-  1. docs/proposals/data/crypto_measurements.csv   (cycles, instructions)
-  2. the archived Quartus reports under $RESULTS    (ALMs, registers, slack)
+  1. docs/proposals/data/measure-n128-2r1w-v1.csv  (cycles, instructions),
+     the gated n=128 dataset described by its .yaml sidecar
+  2. the archived Quartus reports under $RESULTS   (ALMs, registers, slack)
+
+The performance dataset is loaded through hard gates: schema version 2, the
+recorded c2w4t16 shape, 128 messages, a git stamp the sidecar declares, an
+even per-core instruction split (balance >= 0.90) in every row, and a config
+hash matching the sidecar. The S3/16 rows take their S1 denominator from the
+s1 anchor measured in the same build, never across builds. Rows from the
+historical crypto_measurements.csv (n=64, mixed core utilisation, pre-2R1W
+revisions) are not read at all.
 
 Run from anywhere; writes docs/paper/tables/*.tex.  If a results directory is
 missing, the script falls back to the values read from those same reports on
 2026-08-29 and says so, so the tables never silently change meaning.
 """
-import csv, io, os, sys
+import csv, hashlib, io, os, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CSV = os.path.join(HERE, "..", "proposals", "data", "crypto_measurements.csv")
+DATA = os.path.join(HERE, "..", "proposals", "data")
+DATASET = "measure-n128-2r1w-v1"
 RESULTS = os.environ.get(
     "RESULTS",
     os.path.join(HERE, "..", "..", "..", "fpga_proj",
@@ -57,47 +67,99 @@ for b, fb in FALLBACK.items():
 
 ZERO = AREA["c2w4t16.nocrypto"][0]
 
-# ---------------------------------------------------------------- fits ----
-R = list(csv.DictReader(io.open(CSV, encoding="utf-8")))
+# -------------------------------------------------------------- dataset ----
+SCHEMA_V2 = ["app", "impl", "driver", "cores", "warps", "threads", "msgs",
+             "blocks_per_msg", "blocks", "bytes", "cycles", "instrs",
+             "core_instrs", "opts", "extensions", "git", "configs", "log"]
 
-def marginal(app, impl, batch, extmark, lo, hi):
-    """Two-point marginal fit between blocks_per_msg lo and hi."""
+def read_meta(path):
+    meta = {}
+    for line in io.open(path, encoding="utf-8"):
+        line = line.strip()
+        if line and not line.startswith("#") and ":" in line:
+            k, v = line.split(":", 1)
+            meta[k.strip()] = v.strip()
+    return meta
+
+def gate(cond, why):
+    if not cond:
+        raise SystemExit(f"dataset gate failed: {why}")
+
+def load_dataset():
+    meta = read_meta(os.path.join(DATA, DATASET + ".yaml"))
+    gate(meta.get("dataset_id") == DATASET, "sidecar dataset_id mismatch")
+    gate(meta.get("schema_version") == "2", "schema_version must be 2")
+    gate(meta.get("operand_format") == "2R1W", "operand_format must be 2R1W")
+    gate(meta.get("gate_passed") == "true", "sidecar says gate_passed != true")
+    stamps = set(meta["recorded_git_stamps"].split())
+    with io.open(os.path.join(DATA, DATASET + ".csv"), encoding="utf-8") as fh:
+        reader = csv.DictReader(fh)
+        gate(reader.fieldnames == SCHEMA_V2, "CSV columns are not schema v2")
+        rows = list(reader)
+    digest = hashlib.sha256(
+        "\n".join(sorted({r["configs"] for r in rows})).encode()).hexdigest()
+    gate("sha256:" + digest == meta["config_hash"], "config hash mismatch")
+    for r in rows:
+        gate(r["driver"] == "rtlsim", f"non-rtlsim row {r['log']}")
+        gate((r["cores"], r["warps"], r["threads"]) == ("2", "4", "16"),
+             f"off-shape row {r['log']}")
+        gate(r["msgs"] == meta["n"], f"row at n={r['msgs']}, not {meta['n']}")
+        gate(r["git"] in stamps, f"undeclared git stamp {r['git']}")
+        parts = [int(p) for p in r["core_instrs"].split(":")]
+        gate(min(parts) / max(parts) >= 0.90,
+             f"core imbalance {parts} in {r['log']}")
+    return rows
+
+R = load_dataset()
+
+def marginal(app, impl, extmark, lo, hi):
+    """Two-point marginal fit between blocks_per_msg lo and hi, within the
+    single build the extension marker selects."""
     g = {}
     for r in R:
-        if (r["app"], r["impl"], r["driver"]) != (app, impl, "rtlsim"):
+        if (r["app"], r["impl"]) != (app, impl):
             continue
-        if not r["log"].startswith(batch):
-            continue
-        if extmark and extmark not in r["extensions"]:
+        if extmark not in r["extensions"].split():
             continue
         g[int(r["blocks_per_msg"])] = (int(r["cycles"]), int(r["instrs"]),
-                                       int(r["bytes"]))
+                                       int(r["bytes"]), r["extensions"])
     if lo not in g or hi not in g:
-        raise SystemExit(f"missing rows for {app}/{impl} b={lo},{hi} in {batch}")
+        raise SystemExit(f"missing rows for {app}/{impl}/{extmark} b={lo},{hi}")
+    gate(g[lo][3] == g[hi][3], f"{app}/{impl} fit would mix builds")
     dc = g[hi][0] - g[lo][0]
     di = g[hi][1] - g[lo][1]
     db = g[hi][2] - g[lo][2]
-    return dc / db, di / db, dc, db   # c/B, i/B (and raw deltas for checks)
+    return dc / db, di / db, g[lo][3]
 
-# app, impl, batch, extension marker, (cache pair), (mem pair)
+# app, impl, build-selecting extension, (cache pair), (mem pair)
 SPEC = {
-  ("AES-GCM", "S0"):        ("aes_gcm", "sw_ttable", "paper16/", "SG4",  2,  8, 32, 64),
-  ("AES-GCM", "S1"):        ("aes_gcm", "hw_s1",     "paper16/", "SG4",  2,  8, 32, 64),
-  ("AES-GCM", "S2"):        ("aes_gcm", "hw_s2",     "paper16/", "SG4",  2,  8, 32, 64),
-  ("AES-GCM", "S3/4"):      ("aes_gcm", "hw_s3g",    "paper16/", "SG4",  2,  8, 32, 64),
-  ("ChaCha-Poly", "S0"):    ("chacha_poly", "rori",  "paper16/", "SG4",  1,  4, 16, 32),
-  ("ChaCha-Poly", "S1"):    ("chacha_poly", "s1",    "paper16/", "SG4",  1,  4, 16, 32),
-  ("ChaCha-Poly", "S2"):    ("chacha_poly", "s2",    "paper16/", "SG4",  1,  4, 16, 32),
-  ("ChaCha-Poly", "S3/4"):  ("chacha_poly", "s3f",   "paper16/", "SG4",  1,  4, 16, 32),
-  ("ChaCha-Poly", "S3/16"): ("chacha_poly", "sg16",  "paper16/", "SG16", 1,  4, 16, 32),
-  ("ChaCha-Poly", "ARX16"): ("chacha_poly", "sg16",  "arx16/",   "ARX16",1,  4, 16, 32),
+  ("AES-GCM", "S0"):        ("aes_gcm", "sw_ttable", "SYM_SG4",  2,  8, 32, 64),
+  ("AES-GCM", "S1"):        ("aes_gcm", "hw_s1",     "SYM_SG4",  2,  8, 32, 64),
+  ("AES-GCM", "S2"):        ("aes_gcm", "hw_s2",     "SYM_SG4",  2,  8, 32, 64),
+  ("AES-GCM", "S3/4"):      ("aes_gcm", "hw_s3g",    "SYM_SG4",  2,  8, 32, 64),
+  ("ChaCha-Poly", "S0"):    ("chacha_poly", "rori",  "SYM_CHACHA_SG4",  1, 4, 16, 32),
+  ("ChaCha-Poly", "S1"):    ("chacha_poly", "s1",    "SYM_CHACHA_SG4",  1, 4, 16, 32),
+  ("ChaCha-Poly", "S2"):    ("chacha_poly", "s2",    "SYM_CHACHA_SG4",  1, 4, 16, 32),
+  ("ChaCha-Poly", "S3/4"):  ("chacha_poly", "s3f",   "SYM_CHACHA_SG4",  1, 4, 16, 32),
+  ("ChaCha-Poly", "S1@16"): ("chacha_poly", "s1",    "SYM_CHACHA_SG16", 1, 4, 16, 32),
+  ("ChaCha-Poly", "S3/16"): ("chacha_poly", "sg16",  "SYM_CHACHA_SG16", 1, 4, 16, 32),
+  ("ChaCha-Poly", "ARX16"): ("chacha_poly", "sg16",  "SYM_CHACHA_ARX16",1, 4, 16, 32),
 }
 
 FIT = {}
-for k, (app, impl, batch, mark, cl, ch, ml, mh) in SPEC.items():
-    cb, ib, _, _ = marginal(app, impl, batch, mark, ml, mh)
-    ccb, cib, _, _ = marginal(app, impl, batch, mark, cl, ch)
-    FIT[k] = dict(mem_cb=cb, mem_ib=ib, cache_cb=ccb)
+for k, (app, impl, mark, cl, ch, ml, mh) in SPEC.items():
+    cb, ib, build = marginal(app, impl, mark, ml, mh)
+    ccb, cib, _ = marginal(app, impl, mark, cl, ch)
+    FIT[k] = dict(mem_cb=cb, mem_ib=ib, cache_cb=ccb, build=build)
+
+# The S3/16 speedups divide by the s1 measured in the same build, never the
+# all-on s1: the gate is that anchor and subject share one extensions string.
+gate(FIT[("ChaCha-Poly", "S1@16")]["build"] == FIT[("ChaCha-Poly", "S3/16")]["build"],
+     "S3/16 and its S1 anchor come from different builds")
+
+def s1_for(algo, tier):
+    a = "S1@16" if (algo, tier) == ("ChaCha-Poly", "S3/16") else "S1"
+    return FIT[(algo, a)]
 
 # area attached to each tier row: build carrying that tier (cumulative).
 ROW_BUILD = {
@@ -115,14 +177,13 @@ def com(n):        return f"{n:,}"
 # ------------------------------------------------------------- table 2 ----
 rows = []
 for algo in ("AES-GCM", "ChaCha-Poly"):
-    s0 = FIT[(algo, "S0")]["mem_cb"]
-    s1 = FIT[(algo, "S1")]["mem_cb"]
     tiers = ["S0", "S1", "S2", "S3/4"] + (["S3/16"] if algo == "ChaCha-Poly" else [])
     names = {"S0": "S0 software", "S1": "S1 lane-local",
              "S2": "S2 stateful engine", "S3/4": "S3 subgroup\\,/\\,4",
              "S3/16": "S3 subgroup\\,/\\,16"}
     for i, t in enumerate(tiers):
         f = FIT[(algo, t)]
+        s1 = s1_for(algo, t)
         b = ROW_BUILD[(algo, t)]
         d = "0" if b is None else f"+{com(AREA[b][0]-ZERO)}"
         best = (algo == "AES-GCM" and t == "S3/4") or t == "S3/16"
@@ -130,15 +191,17 @@ for algo in ("AES-GCM", "ChaCha-Poly"):
         rows.append(" & ".join([
             algo if i == 0 else "",
             bb(names[t]),
-            bb(fmt(f["mem_cb"])), fmt(f["mem_ib"]),
-            bb(fmt(s0 / f["mem_cb"], 2)), bb(fmt(s1 / f["mem_cb"], 2)),
+            bb(fmt(f["cache_cb"])), bb(fmt(f["mem_cb"])), fmt(f["mem_ib"]),
+            bb(fmt(s1["cache_cb"] / f["cache_cb"], 2)),
+            bb(fmt(s1["mem_cb"] / f["mem_cb"], 2)),
             d]) + r" \\")
     rows.append(r"\midrule" if algo == "AES-GCM" else "")
 
 tab2 = r"""%% generated by gen_tables.py -- do not edit
-\begin{tabular}{@{}llrrrrr@{}}
+\begin{tabular}{@{}llrrrrrr@{}}
 \toprule
- & Tier & c/B & instr/B & $\times$S0 & $\times$S1 & $\Delta$ALM \\
+ & Tier & \multicolumn{2}{c}{c/B} & instr/B & \multicolumn{2}{c}{$\times$S1} & $\Delta$ALM \\
+ &      & cache & mem &          & cache & mem & \\
 \midrule
 """ + "\n".join(r for r in rows if r) + "\n" + r"""\bottomrule
 \end{tabular}
@@ -188,10 +251,36 @@ Build & ALMs & Registers & $\Delta$ALM \\
 \end{tabular}
 """
 
+# ------------------------------------------------------------- table 5 ----
+def step(algo, a, b, side):
+    return fmt(FIT[(algo, a)][side] / FIT[(algo, b)][side], 2) + r"$\times$"
+
+def s3(algo):  # each algorithm's best subgroup tier
+    return "S3/4" if algo == "AES-GCM" else "S3/16"
+
+t5rows = []
+for label, a, b in [("S0 $\\to$ S1", "S0", "S1"), ("S1 $\\to$ S2", "S1", "S2"),
+                    ("S2 $\\to$ S3", "S2", None), ("S0 $\\to$ S3", "S0", None)]:
+    cells = [label]
+    for algo in ("AES-GCM", "ChaCha-Poly"):
+        bb = b or s3(algo)
+        cells += [step(algo, a, bb, "mem_cb"), step(algo, a, bb, "cache_cb")]
+    t5rows.append(" & ".join(cells) + r" \\")
+tab5 = r"""%% generated by gen_tables.py -- do not edit
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+ & \multicolumn{2}{c}{AES-GCM} & \multicolumn{2}{c}{ChaCha-Poly} \\
+Step & mem & cache & mem & cache \\
+\midrule
+""" + "\n".join(t5rows) + "\n" + r"""\bottomrule
+\end{tabular}
+"""
+
 # ------------------------------------------------------------- fig 2 -----
-sp = lambda k: FIT[("ChaCha-Poly","S1")]["mem_cb"]/FIT[("ChaCha-Poly",k)]["mem_cb"]
+def sp16(k):
+    return s1_for("ChaCha-Poly", k)["mem_cb"] / FIT[("ChaCha-Poly", k)]["mem_cb"]
 spa = FIT[("AES-GCM","S1")]["mem_cb"]/FIT[("AES-GCM","S3/4")]["mem_cb"]
-c4, c16 = sp("S3/4"), sp("S3/16")
+c4, c16 = sp16("S3/4"), sp16("S3/16")
 SC = 0.62   # cm per 1x speedup
 fig = rf"""%% generated by gen_tables.py -- do not edit
 \begin{{tikzpicture}}[x=1cm,y={SC}cm, font=\footnotesize]
@@ -221,7 +310,8 @@ fig = rf"""%% generated by gen_tables.py -- do not edit
 
 os.makedirs(OUT, exist_ok=True)
 for name, s in [("tab_tiers.tex", tab2), ("tab_state.tex", tab3),
-                ("tab_area.tex", tab4), ("fig_width.tex", fig)]:
+                ("tab_area.tex", tab4), ("tab_steps.tex", tab5),
+                ("fig_width.tex", fig)]:
     io.open(os.path.join(OUT, name), "w", encoding="utf-8", newline="\n").write(s)
     print("wrote tables/" + name)
 
@@ -235,6 +325,16 @@ print(f"SG4 pair over AES S1      : +{com(AREA['c2w4t16.sg4'][0]-AREA['c2w4t16.b
       f"  ({100*(AREA['c2w4t16.sg4'][0]-AREA['c2w4t16.base'][0])/AREA['c2w4t16.base'][0]:.1f}%)")
 print(f"ChaCha S2 dALM / S3-16 dALM: "
       f"{(AREA['c2w4t16.chacha-s2p'][0]-ZERO)/(AREA['c2w4t16'][0]-ZERO):.2f}x")
+print(f"arx16/dr16 slowdown (mem) : "
+      f"{FIT[('ChaCha-Poly','ARX16')]['mem_cb']/FIT[('ChaCha-Poly','S3/16')]['mem_cb']:.2f}x"
+      f"  instrs {FIT[('ChaCha-Poly','ARX16')]['mem_ib']/FIT[('ChaCha-Poly','S3/16')]['mem_ib']:.2f}x")
+print(f"sg16 vs s2 (mem, cache)   : "
+      f"{FIT[('ChaCha-Poly','S2')]['mem_cb']/FIT[('ChaCha-Poly','S3/16')]['mem_cb']:.2f}x, "
+      f"{FIT[('ChaCha-Poly','S2')]['cache_cb']/FIT[('ChaCha-Poly','S3/16')]['cache_cb']:.2f}x")
+print(f"MB/s at 200 MHz (mem)     : AES S3 {200/FIT[('AES-GCM','S3/4')]['mem_cb']:.0f}"
+      f"  ChaCha S3/16 {200/FIT[('ChaCha-Poly','S3/16')]['mem_cb']:.0f}"
+      f"  AES sw {200/FIT[('AES-GCM','S0')]['mem_cb']:.1f}"
+      f"  ChaCha S0 {200/FIT[('ChaCha-Poly','S0')]['mem_cb']:.1f}")
 for k in SPEC:
     f = FIT[k]
     print(f"{k}: mem {f['mem_cb']:.3f} c/B  {f['mem_ib']:.3f} i/B   cache {f['cache_cb']:.3f} c/B")

@@ -1,0 +1,27 @@
+# Frozen dataset for the paper's performance tables. 48 gated rtlsim rows:
+# the 40-case matrix (tests/crypto/measurements.yaml at n=128), the 4-point
+# chacha.arx.sg16 stateless ablation, and the 4-point s3f_norp diagnostic
+# (recorded through --expect-fail; its tag is wrong by design).
+#
+# Every row passed the bench.py gate: exit 0, PASSED! (or the declared
+# expect-fail), exactly one PERF line, and an even per-core MINSTRET split.
+# The 519a948b6-dirty stamps are the 40 matrix rows, run just before the
+# freeze commit; the dirty tree they ran under was committed unchanged as
+# 27b10997a, so that commit reproduces them. The 27b10997a stamps are the
+# 8 ablation rows run after it.
+dataset_id: measure-n128-2r1w-v1
+schema_version: 2
+operand_format: 2R1W
+shape: c2w4t16
+num_cores: 2
+n: 128
+driver: rtlsim
+git_commit: 27b10997a
+git_tag: hare-dac-measure-n128-v1
+git_dirty: false
+recorded_git_stamps: 519a948b6-dirty 27b10997a
+config_hash: sha256:f46e01c9cd42b30c0c5dca167c8cf15c75dd10a5417614a7a1d7e11b86d36ad8
+build_id: hare-dac-measure-n128-v1
+gate_passed: true
+core_balance_min: 1.00
+rows: 48

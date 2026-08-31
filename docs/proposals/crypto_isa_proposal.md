@@ -1,5 +1,18 @@
 # Cryptographic ISA extensions: software baseline
 
+> **Superseded for lane-vs-subgroup comparisons (2026-08-31).** Every such
+> ratio in this document was measured at `-n64` under c2w4t16, where a
+> lane-mapped kernel (S0/S1/S2) leaves core 1 without a single message while
+> a subgroup kernel fills both cores -- those ratios compare one active core
+> against two. The gated n=128 dataset
+> (`docs/proposals/data/measure-n128-2r1w-v1.csv`, tag
+> `hare-dac-measure-n128-v1`) replaces them: ChaCha SG16 is **4.08x** over
+> its same-build S1 memory-bound (8.41x cache-resident), not 4.98x -- an
+> 18.1% reduction from the previously reported figure -- and S2 stands at
+> 1.835 against SG16's 1.756 c/B memory-bound. Lane-vs-lane and
+> subgroup-vs-subgroup ratios below are internally fair, and every row
+> remains an accurate record of the run it describes.
+
 This document fixes the measurement contract for comparing software
 cryptography against the instruction-set extensions that will replace it. The
 numbers a later hardware variant is compared against are only meaningful if the

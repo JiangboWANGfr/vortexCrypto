@@ -1,5 +1,14 @@
 # 加密 ISA 扩展参考：AES-GCM 与 ChaCha20-Poly1305
 
+> **2026-08-31 起，lane 对 subgroup 的比值以冻结数据集为准。**本文引用的该类
+> 比值全部测于 `-n64`：lane 映射的核（S0/S1/S2）在 c2w4t16 下让 core 1 完全
+> 空转，而 subgroup 映射填满两核，等于拿一个核比两个核。经 gate 的 n=128 数据
+> 集（`docs/proposals/data/measure-n128-2r1w-v1.csv`，标签
+> `hare-dac-measure-n128-v1`）给出的公平数字是：ChaCha SG16 对同 build S1 在
+> memory-bound 侧 **4.08x**（cache-resident 侧 8.41x），不是 4.98x —— 较此前
+> 报告值下降 18.1%；S2 对 SG16 为 1.835 对 1.756 c/B。lane 对 lane、subgroup
+> 对 subgroup 的内部比值不受影响。
+
 本文件是 `docs/proposals/crypto_isa_proposal.md`（3343 行实验日志）的**结论性提炼**：
 现在到底加了哪些指令、每条怎么实现、以及各自测到了什么数。日志里的推导过程、被
 推翻的中间结论和逐节的自我修正不在这里重复，只在第 6 节列出「已撤回的结论」，因为
