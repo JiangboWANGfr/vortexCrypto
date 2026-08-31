@@ -458,9 +458,13 @@ rows keep two-point pairs (both are flat across the span, so their ratios
 mix ranges by at most a few percent), and the S3/16 small-footprint fit
 keeps its endpoint pair: with 8.6k cycles of per-message start-up, payload
 is about 2\% of a small run, and a third point adds estimator noise, not
-information. We label the two operating points by their working-set
-footprint rather than by mechanism, pending counter-level
-characterization; fits never mix builds, and the subgroup rows take their
+information. We label the two operating points by working-set footprint
+rather than cache residency because counters say residency is the wrong
+axis: even at the small point the tiers move 36--320 DRAM bytes per
+payload byte and average 260--740 cycles per DRAM request (write-through,
+no write-allocate, 64-byte lines), so both points are DRAM-dominated and
+differ in amplification and start-up share, not in fitting a cache.
+Fits never mix builds, and the subgroup rows take their
 S1 denominator from an anchor measured in the same build. Because a
 marginal fit cancels per-message start-up, Sec.~\ref{sec:eval} also
 reports whole-run figures at fixed record lengths, where start-up is paid.
@@ -551,7 +555,10 @@ returns $4.92\times$ because its block state \emph{is} four lanes wide: one
 \texttt{aesrm.sg4} holds the whole state, and ShiftRows becomes wiring. The
 same four-lane structure applied to ChaCha returns $1.29\times$: a 512-bit
 state spans four quads, every quarter-round reads words a \emph{different}
-quad holds, and the cross-quad traffic stays in software. Widening the
+quad holds, and the cross-quad traffic stays in software---its per-byte
+DRAM traffic is the worst in the design (140 bytes moved per payload byte
+at the small point, against S1's 97), which is why, uniquely, its
+small-footprint cost exceeds its large-footprint one. Widening the
 subgroup to sixteen lanes---the state's own width---turns the diagonal
 permutation into fixed routing inside one instruction, and the same
 algorithm returns $4.32\times$ ($8.41\times$ small-footprint). Width is not
@@ -559,7 +566,13 @@ acting alone: the sixteen-lane form also raises what one instruction
 advances from one ARX line to a full double round, and
 Table~\ref{tab:state}'s stateless row isolates that granularity half at
 fixed width---the same sixteen-lane layout with line-granular instructions
-runs $1.78\times$ slower. Stated as a rule: \emph{a
+runs $1.78\times$ slower. Counters add a memory leg to the rule: a
+lane-mapped kernel walks sixteen unrelated messages per warp and
+scatters---ChaCha S1 moves 79 DRAM bytes per payload byte at the large
+point, with a 1.7\% write-hit rate---where the matched-width form walks
+one message's contiguous block and coalesces (49\,B/B at 39\% write hits;
+48 against 9 for AES). Matching the subgroup to the block state is also
+what turns sixteen scattered streams into one coalesced one. Stated as a rule: \emph{a
 subgroup-cooperative form pays when the subgroup and the instruction's
 granularity together span the cipher's block state; narrower or
 finer-grained forms leave the state movement in the instruction stream, and
@@ -584,9 +597,9 @@ combinational, single-cycle, nothing held anywhere---and $1.78\times$ slower
 than the ten-cycle macro, despite executing on the same machine. The
 mechanism is issue bandwidth, not latency: it needs $2.88\times$ the
 instructions (eighty round instructions per block against ten), and although
-the machine runs that stream \emph{better} per instruction (CPI 1.43
-against 1.89; scoreboard stall falls from 88\% to 74\%), the CPI gain
-cannot pay for a $2.88\times$ instruction count. The latency the macro exposes is nearly
+the machine runs that stream \emph{better} per instruction (instruction
+throughput rises $1.40\times$; scoreboard stall falls from 92\% to 76\%),
+the throughput gain cannot pay for a $2.88\times$ instruction count. The latency the macro exposes is nearly
 free---doubling the warp count recovers only 12\%, so ten cycles of blocking
 were costing at most that---and pipelining the macro to accept one
 instruction per cycle is $1.1\%$ \emph{slower} (the unit is 13\% occupied;

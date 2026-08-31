@@ -62,5 +62,5 @@ Decisions of record:
 - bib entries marked TODO-verify need checking before submission.
 
 Open items: the draft is 7 pages against DAC's 6 -- needs a compression
-pass; counter runs (U3) to justify mechanism language; same-version PPA
+pass; same-version PPA
 (U5); correctness/boundary audit + gate self-test (U6); board (U7).
