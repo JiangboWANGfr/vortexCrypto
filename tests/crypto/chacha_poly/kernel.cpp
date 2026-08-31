@@ -939,7 +939,13 @@ inline void chacha_poly_sg16_body(kernel_arg_t* __UNIFORM__ arg) {
   const uint32_t blocks     = arg->blocks_per_msg;
   const uint32_t tail       = arg->tail_bytes;
   const uint32_t aad_bytes  = arg->aad_bytes;
-  const uint32_t words      = blocks * 16 + ((tail + 3) / 4);
+  // The host lays messages out at a stride rounded UP to a whole ChaCha20
+  // block (see main.cpp), not to a whole word. This body's first version
+  // rounded to words -- 65 against the host's 80 at b=4,t=4 -- so with any
+  // tail under 61 bytes every message after the first was read from the
+  // wrong offset. t=0 (the whole performance matrix) and t>=61 agree by
+  // arithmetic accident, which is how it survived until a tail case existed.
+  const uint32_t words      = (blocks + (tail != 0u ? 1u : 0u)) * 16;
   const uint32_t msg_bytes  = blocks * CHACHA_BLOCK_BYTES + tail;
 
   for (uint32_t msg = sgid; msg < arg->num_msgs; msg += nsg) {

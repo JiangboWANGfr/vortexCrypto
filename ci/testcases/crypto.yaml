@@ -386,3 +386,68 @@ tests:
   via: script
   run: "./ci/crypto_torn_quad.sh"
   tier: full
+# The sixteen-lane tier had perf coverage (tests/crypto/measurements.yaml) but
+# no correctness regression at all -- the CI default shape's 4-thread warp
+# cannot host it, which is how the paper's headline instructions ended up
+# unguarded. These carry their sixteen-thread shape in configs. The first is
+# the full seal path: AAD, whole blocks, and a partial tail through
+# chacha.dr.sg16 + poly4.step.sg16; the second distributes five messages over
+# four subgroups, so one subgroup takes a second trip and three finish early.
+- id: crypto-chacha-poly-sg16
+  via: make-run
+  drivers:
+  - simx
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG16_ENABLE -DVX_CFG_NUM_THREADS=16
+  vars:
+    OPTS: -n8 -b4 -t37 -a20 -i12
+- id: crypto-chacha-poly-sg16-odd
+  via: make-run
+  drivers:
+  - simx
+  - rtlsim
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG16_ENABLE -DVX_CFG_NUM_THREADS=16
+  vars:
+    OPTS: -n5 -b1 -i12
+# Boundary points the AAD/tail cases above do not reach: the largest legal
+# tail with a one-byte AAD (both pad16 paths exercised at their extremes),
+# and for AES the block-boundary AAD (a=16 is exactly one Poly-free GHASH
+# block) under the largest legal tail, plus the just-past-boundary a=17 on
+# the subgroup path, which refuses tails and so runs whole blocks only.
+- id: crypto-chacha-poly-tail-edge
+  via: make-run
+  drivers:
+  - simx
+  dir: tests/crypto/chacha_poly
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE
+  vars:
+    OPTS: -n16 -b1 -t63 -a1 -i7
+- id: crypto-aes-gcm-aad-edge
+  via: make-run
+  drivers:
+  - simx
+  dir: tests/crypto/aes_gcm
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE
+  vars:
+    OPTS: -n16 -b2 -t15 -a16 -i1
+- id: crypto-aes-gcm-s3-aad-edge
+  via: make-run
+  drivers:
+  - simx
+  dir: tests/crypto/aes_gcm
+  target: run-{driver}
+  configs: -DVX_CFG_EXT_SYM_ENABLE -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_SYM_SG4_ENABLE -DVX_CFG_EXT_AUTH_SG4_ENABLE
+  vars:
+    OPTS: -n16 -b2 -a17 -i8
+# The sixteen-lane twin of the torn-quad guard: chacha.dr.sg16 on subgroups
+# masked 0x7fff must be rejected by both models, and for the right reason.
+- id: crypto-torn-sg16-guard
+  via: script
+  run: "./ci/crypto_torn_sg16.sh"
+  tier: full
