@@ -2,11 +2,11 @@
 \begin{tabular}{@{}lrrrr@{}}
 \toprule
  & \multicolumn{2}{c}{AES-GCM} & \multicolumn{2}{c}{ChaCha-Poly} \\
-Step & mem & cache & mem & cache \\
+Step & large & small & large & small \\
 \midrule
-S0 $\to$ S1 & 18.35$\times$ & 18.28$\times$ & 1.60$\times$ & 1.55$\times$ \\
-S1 $\to$ S2 & 2.23$\times$ & 3.91$\times$ & 3.88$\times$ & 5.33$\times$ \\
-S2 $\to$ S3 & 1.86$\times$ & 1.41$\times$ & 1.05$\times$ & 1.60$\times$ \\
-S0 $\to$ S3 & 76.08$\times$ & 100.72$\times$ & 6.51$\times$ & 13.23$\times$ \\
+S0 $\to$ S1 & 14.60$\times$ & 18.22$\times$ & 1.55$\times$ & 1.55$\times$ \\
+S1 $\to$ S2 & 1.81$\times$ & 3.90$\times$ & 4.09$\times$ & 5.30$\times$ \\
+S2 $\to$ S3 & 2.71$\times$ & 1.49$\times$ & 1.05$\times$ & 1.61$\times$ \\
+S0 $\to$ S3 & 71.81$\times$ & 105.86$\times$ & 6.61$\times$ & 13.23$\times$ \\
 \bottomrule
 \end{tabular}

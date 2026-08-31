@@ -15,15 +15,22 @@ s1 anchor measured in the same build, never across builds.
 
 Mainline tiers (S1, S2, and each algorithm's subgroup form) fit three points
 per regime with an intercept, every point at a power-of-two blocks count
-(small b=1,2,4 / 2,4,8; large b=16,32,64 / 32,64,128) -- a non-power-of-two
+(small b=1,2,4 / 2,4,8; large b=16,32,64 chacha / 64,128,256 aes,
+both 128-512 KiB of payload) -- a non-power-of-two
 count gives every message a non-power-of-two stride and lands in a different
 cache/DRAM conflict family (the b=24/48 rows in the dataset measure exactly
 that, and no fit reads them). Each three-point slope must agree with the
-original two-point pair (16,32)/(32,64) within 5%, and the middle point must
+original/local two-point pair (16,32)/(64,128) within 5%, and the middle point must
 sit within 5% of the triplet's endpoint chord, or generation aborts. S0, the
 ChaCha SG4 row, and the ARX16 ablation keep two-point fits on the original
-pairs. Rows from the historical crypto_measurements.csv (n=64, mixed core
-utilisation) are not read at all.
+pairs. One measured exception: the S3/16 small fit keeps its endpoint pair
+(1,4) -- sg16's per-message setup (~8.6k cycles) makes payload about 2% of a
+small-footprint run, so a three-point slope there is estimator noise (LSQ
+and chord differ 9% while the middle point sits 0.8% off the chord); the
+chord is the conservative choice, and the whole-run figures printed below
+carry the setup story explicitly. Rows from the historical
+crypto_measurements.csv (n=64, mixed core utilisation) are not read at
+all.
 
 Run from anywhere; writes docs/paper/tables/*.tex.  If a results directory is
 missing, the script falls back to the values read from those same reports on
@@ -169,8 +176,8 @@ def fit_regime(g, bs, who, orig=None):
 
 # app, impl, build-selecting extension, small-regime b list, large-regime b list
 CH3, CH2 = ([1, 2, 4], [16, 32, 64]), ([1, 4], [16, 32])
-AE3, AE2 = ([2, 4, 8], [32, 64, 128]), ([2, 8], [32, 64])
-ORIG = {"chacha_poly": (16, 32), "aes_gcm": (32, 64)}
+AE3, AE2 = ([2, 4, 8], [64, 128, 256]), ([2, 8], [32, 64])
+ORIG = {"chacha_poly": (16, 32), "aes_gcm": (64, 128)}
 SPEC = {
   ("AES-GCM", "S0"):        ("aes_gcm", "sw_ttable", "SYM_SG4") + AE2,
   ("AES-GCM", "S1"):        ("aes_gcm", "hw_s1",     "SYM_SG4") + AE3,
@@ -181,7 +188,8 @@ SPEC = {
   ("ChaCha-Poly", "S2"):    ("chacha_poly", "s2",    "SYM_CHACHA_SG4") + CH3,
   ("ChaCha-Poly", "S3/4"):  ("chacha_poly", "s3f",   "SYM_CHACHA_SG4") + CH2,
   ("ChaCha-Poly", "S1@16"): ("chacha_poly", "s1",    "SYM_CHACHA_SG16") + CH3,
-  ("ChaCha-Poly", "S3/16"): ("chacha_poly", "sg16",  "SYM_CHACHA_SG16") + CH3,
+  # sg16 small keeps the endpoint pair; see the docstring exception.
+  ("ChaCha-Poly", "S3/16"): ("chacha_poly", "sg16",  "SYM_CHACHA_SG16", [1, 4], [16, 32, 64]),
   ("ChaCha-Poly", "ARX16"): ("chacha_poly", "sg16",  "SYM_CHACHA_ARX16") + CH2,
 }
 
@@ -377,9 +385,9 @@ print(f"MB/s at 200 MHz (large)   : AES S3 {200/FIT[('AES-GCM','S3/4')]['large_c
       f"  ChaCha S3/16 {200/FIT[('ChaCha-Poly','S3/16')]['large_cb']:.0f}"
       f"  AES sw {200/FIT[('AES-GCM','S0')]['large_cb']:.1f}"
       f"  ChaCha S0 {200/FIT[('ChaCha-Poly','S0')]['large_cb']:.1f}")
-for k, b in [(("AES-GCM", "S3/4"), 8), (("AES-GCM", "S3/4"), 64),
+for k, b in [(("AES-GCM", "S3/4"), 8), (("AES-GCM", "S3/4"), 128),
              (("ChaCha-Poly", "S3/16"), 4), (("ChaCha-Poly", "S3/16"), 32),
-             (("AES-GCM", "S1"), 64), (("ChaCha-Poly", "S1@16"), 32)]:
+             (("AES-GCM", "S1"), 128), (("ChaCha-Poly", "S1@16"), 32)]:
     c, _, d = PTS[k][b]
     print(f"whole-run {k} b={b}: {d} B in {c} cycles = {d/c:.3f} B/c "
           f"({d/c*200:.0f} MB/s at 200 MHz)")

@@ -36,22 +36,24 @@ implement AES-GCM and ChaCha20-Poly1305 at every tier in the RTL of an
 open-source RISC-V GPGPU. Measurement under balanced two-core execution
 yields three results. First, the two algorithms harvest at different tiers:
 lane-local instructions, the SIMT analogue of the ratified scalar
-cryptography extensions, deliver $18.4\times$ for AES-GCM but only
-$1.60\times$ for ChaCha20-Poly1305. Second, subgroup-cooperative
-instructions are the lowest-cost tier for both algorithms once the subgroup
-and the instruction's granularity span the cipher's block state: four lanes
-for AES's 128-bit state ($4.15\times$ over lane-local), sixteen for ChaCha's
-512-bit state ($4.08\times$ large-footprint and $8.41\times$ small-footprint,
-where a four-lane form returns $1.24\times$); the sixteen-lane form is
-essentially tied with the stateful engine in the large-footprint regime,
-$1.60\times$ ahead small-footprint, and carries no persistent cryptographic
-context. Third, state \emph{inside one instruction's execution} occupies an
+cryptography extensions, deliver $14.6$--$18.2\times$ for AES-GCM but only
+$1.55\times$ for ChaCha20-Poly1305. Second, subgroup-cooperative
+instructions carry the lowest marginal cost for both algorithms once the
+subgroup and the instruction's granularity span the cipher's block state:
+four lanes for AES's 128-bit state ($4.92\times$ over lane-local), sixteen
+for ChaCha's 512-bit state ($4.32\times$ large-footprint and $8.41\times$
+small-footprint, where a four-lane form returns $1.29\times$); the
+sixteen-lane form is essentially tied with the stateful engine in the
+large-footprint regime, $1.61\times$ ahead small-footprint, and carries no
+persistent cryptographic context---at the price of per-message start-up
+that the engine's context exists to amortize. Third, state \emph{inside one
+instruction's execution} occupies an
 interior optimum between stateless instructions, which bottleneck on issue
-bandwidth ($1.75\times$ slower), and architectural context, which costs
+bandwidth ($1.78\times$ slower), and architectural context, which costs
 $2.7\times$ the area plus key-lifetime semantics. All designs close timing
 at 200\,MHz on a Stratix~10 FPGA; the recommended ChaCha pair adds 2.8\% to
-the core it extends. End to end, HARE reaches $76\times$ (AES-GCM) and
-$6.5\times$ (ChaCha20-Poly1305) over software.
+the core it extends. End to end, HARE reaches $72\times$ (AES-GCM) and
+$6.6\times$ (ChaCha20-Poly1305) over software.
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
@@ -79,12 +81,13 @@ space is essentially unexplored.
 
 Exploring it produces two surprises. The obvious first step is to port the
 scalar extensions into every lane. This helps unevenly: it buys AES-GCM
-$18.35\times$, because it deletes the table lookups, but ChaCha20-Poly1305
-only $1.60\times$, because ARX rounds were never table-bound---the
+$18.2\times$ at the small-footprint point ($14.6\times$ large-footprint),
+because it deletes the table lookups, but ChaCha20-Poly1305
+only $1.55\times$, because ARX rounds were never table-bound---the
 correct-by-construction port of the ratified extensions leaves the second
 cipher almost untouched. The obvious second step is a stateful engine: write
 the key once into hardware context, then stream blocks through it. It
-works---$2.23\times$ and $3.88\times$ over the lane-local tier---but it is
+works---$1.81\times$ and $4.09\times$ over the lane-local tier---but it is
 the most expensive point in the space (+115{,}936 ALMs on a 183{,}971-ALM
 core for AES-GCM), and it plants per-(warp,\,lane) key material in the
 pipeline, with the zeroize-on-ownership-change and save-or-destroy-on-%
@@ -99,12 +102,12 @@ fixed routing and advances an entire round---or absorbs an entire block.
 No architectural state exists anywhere. The first rule is that the
 subgroup---and the granularity of what one instruction advances---must span
 the cipher's block state: AES's 128-bit state is four lanes wide and a
-four-lane form returns $4.15\times$; ChaCha's 512-bit state is sixteen
+four-lane form returns $4.92\times$; ChaCha's 512-bit state is sixteen
 lanes wide, and the same four-lane structure that serves AES returns
-$1.24\times$ where a sixteen-lane, round-granular form returns $4.08\times$
+$1.29\times$ where a sixteen-lane, round-granular form returns $4.32\times$
 ($8.41\times$ small-footprint). The second rule
 concerns the state a multi-cycle instruction holds \emph{while it executes}:
-none at all bottlenecks on issue bandwidth ($1.75\times$ slower), and full
+none at all bottlenecks on issue bandwidth ($1.78\times$ slower), and full
 architectural context pays $2.7\times$ the area and the lifetime semantics;
 1{,}154 bits of instruction-internal working registers---the interior
 point---beats both ends.
@@ -116,13 +119,13 @@ This paper contributes:
   implemented for two AEADs in the RTL of an open-source RISC-V GPGPU and
   verified against NIST and RFC test vectors in two independent models;
 \item the measurement that the two AEADs harvest at different tiers, and
-  that the subgroup-cooperative tier has the lowest cost for
-  both---$4.15\times$ and $4.08\times$ over lane-local at the large-footprint
-  point, $5.51\times$ and $8.41\times$ small-footprint, $76\times$ and
-  $6.5\times$ over software---while, for ChaCha, staying essentially tied
-  with the stateful engine large-footprint and $1.60\times$ ahead
+  that the subgroup-cooperative tier has the lowest marginal cost for
+  both---$4.92\times$ and $4.32\times$ over lane-local at the large-footprint
+  point, $5.81\times$ and $8.41\times$ small-footprint, $72\times$ and
+  $6.6\times$ over software---while, for ChaCha, staying essentially tied
+  with the stateful engine large-footprint and $1.61\times$ ahead
   small-footprint with no persistent context;
-\item the width-and-granularity rule, with the $1.24\times{\to}4.08\times$
+\item the width-and-granularity rule, with the $1.29\times{\to}4.32\times$
   inversion that follows from matching the subgroup and the instruction's
   granularity to the block state; and
 \item the state-placement result: an interior optimum between stateless
@@ -348,7 +351,7 @@ round step, and \texttt{clmul}/\texttt{clmulh} (Zbkc) with \texttt{brev8}
 (Zbkb) build GHASH in the reflected domain, the accumulator and hash subkey
 living in ordinary registers. We additionally built a custom reduction pair
 (\texttt{ghred32l/h}) and measured it: it raises load traffic and does not
-pay, so the row does not use it. The tier's $18.35\times$ is therefore
+pay, so the row does not use it. The tier's $18.2\times$ is therefore
 available to any RV32 SIMT machine that simply adopts the existing scalar
 extensions in its lanes---which is precisely why we treat S1 as the
 baseline for novelty, not as a contribution.
@@ -440,15 +443,27 @@ evenly busy (min/max instruction split $\ge 0.99$ in every recorded row).
 This matters because the two mappings fill the machine differently: a
 lane-mapped kernel given fewer messages than the 128 hardware threads
 leaves the second core idle, so any lane-vs-subgroup ratio taken there
-compares one active core against two. Per-byte figures are two-point
-marginal fits between 128\,KiB and 256\,KiB total payloads (and 8--32\,KiB
-for small-footprint figures), which cancels per-message setup; fits never
-mix builds, and the subgroup rows take their S1 denominator from an anchor
-measured in the same build. We label the two operating points by their
-working-set footprint---small (8--32\,KiB total payload) and large
-(128--256\,KiB)---rather than by mechanism, pending counter-level
-characterization. Each regime currently rests on a two-point
-fit, so we report these as balanced preliminary RTL results.
+compares one active core against two. Per-byte figures are marginal fits
+with an intercept, three points per regime for the mainline tiers: the
+small-footprint fit spans 4--32\,KiB of total payload and the
+large-footprint fit 128--512\,KiB for \emph{both} algorithms, every point
+at a power-of-two blocks count. That last condition is measured, not
+stylistic: a non-power-of-two count gives every message a non-power-of-two
+stride and lands in a different cache/DRAM conflict family---diagnostic
+rows retained in the dataset put lane and engine tiers 7--25\% off the
+power-of-two line there, subgroup tiers about 1\%. Table generation aborts
+unless each three-point slope agrees with its two-point pair within 5\%
+and the middle point sits within 5\% of the endpoint chord. The S0 and SG4
+rows keep two-point pairs (both are flat across the span, so their ratios
+mix ranges by at most a few percent), and the S3/16 small-footprint fit
+keeps its endpoint pair: with 8.6k cycles of per-message start-up, payload
+is about 2\% of a small run, and a third point adds estimator noise, not
+information. We label the two operating points by their working-set
+footprint rather than by mechanism, pending counter-level
+characterization; fits never mix builds, and the subgroup rows take their
+S1 denominator from an anchor measured in the same build. Because a
+marginal fit cancels per-message start-up, Sec.~\ref{sec:eval} also
+reports whole-run figures at fixed record lengths, where start-up is paid.
 All kernels implement the AEAD \emph{sealing} path---plaintext in,
 ciphertext and tag out; device-side opening and tag verification are not
 implemented, and no claim in this paper covers them.
@@ -483,10 +498,10 @@ ALMs); each build includes its lane-local parent units.}
 \subsection{Different algorithms harvest at different tiers}
 Table~\ref{tab:tiers} is the paper's central measurement. Reading the
 large-footprint $\times$S1 column: AES-GCM's big step is S0${\to}$S1
-($18.35\times$)---the
+(up to $18.2\times$)---the
 tier that deletes its table lookups---after which the stateful engine adds
-$2.23\times$ and the subgroup form $4.15\times$. ChaCha's S1 buys only
-$1.60\times$: ARX was never table-bound, and its costs sit in the sheer
+$1.81\times$ and the subgroup form $4.92\times$. ChaCha's S1 buys only
+$1.55\times$: ARX was never table-bound, and its costs sit in the sheer
 count of round operations, which only round-level instructions (S2/S3)
 remove. The design consequence: a GPGPU that stops at the ported scalar
 extensions has solved AES and left ChaCha almost untouched; one that stops
@@ -499,23 +514,26 @@ The per-step ratios make the harvest pattern explicit:
 \end{center}
 
 \noindent AES-GCM's largest step is the first; ChaCha's is the second. The
-subgroup step multiplies both at the small-footprint point ($1.41\times$,
-$1.60\times$); at the large-footprint point it is decisive for AES-GCM
-($1.86\times$) and, for ChaCha, a narrow win ($1.05\times$) whose real
+subgroup step multiplies both at the small-footprint point ($1.49\times$,
+$1.61\times$); at the large-footprint point it is decisive for AES-GCM
+($2.71\times$) and, for ChaCha, a narrow win ($1.05\times$) whose real
 argument is what it does \emph{not} cost---S2's context and its lifetime.
 HARE-SG16 achieves the lowest observed marginal cost in both regimes:
-essentially tied with S2 in the large-footprint regime (1.756 against
-1.835\,\cB) and $1.60\times$ ahead small-footprint, while avoiding
+essentially tied with S2 in the large-footprint regime (1.728 against
+1.807\,\cB) and $1.61\times$ ahead small-footprint, while avoiding
 persistent architectural crypto context.
 One definitional note: the ChaCha S0 row
 assumes rotate instructions (Zbb semantics); without them the large-footprint
 figure moves only 2.4\%---both variants are bound by the same memory
 system---so the ladder does not hinge on that choice.
-At both operating points the subgroup tier has the lowest cost for both
-AEADs ($5.51\times$ and $8.41\times$ over S1 small-footprint). At 200\,MHz
-the two-core prototype sustains 215\,MB/s AES-GCM and 114\,MB/s
-ChaCha20-Poly1305 at S3---0.86 and 0.46\,Gb/s per core---against
-2.8 and 17.5\,MB/s in software.
+At both operating points the subgroup tier has the lowest marginal cost for
+both AEADs ($5.81\times$ and $8.41\times$ over S1 small-footprint). At
+200\,MHz the two-core prototype sustains 203\,MB/s AES-GCM and 116\,MB/s
+ChaCha20-Poly1305 at S3---0.81 and 0.46\,Gb/s per core---against
+2.8 and 17.5\,MB/s in software. Marginal figures cancel per-message
+start-up; whole-run throughput at fixed record lengths, which pays it,
+appears with the state-placement analysis below, where start-up is
+precisely what separates the engine from the macro.
 
 \subsection{The subgroup must span the block state}
 \begin{figure}[t]
@@ -524,24 +542,24 @@ ChaCha20-Poly1305 at S3---0.86 and 0.46\,Gb/s per core---against
 \caption{Large-footprint speedup over each algorithm's own S1 for
 subgroup-cooperative forms. Four lanes is the right width for AES's 128-bit
 state and the wrong width for ChaCha's 512-bit state; at sixteen lanes the
-ChaCha result inverts, $1.24\times{\to}4.08\times$ ($8.41\times$
+ChaCha result inverts, $1.29\times{\to}4.32\times$ ($8.41\times$
 small-footprint).}
 \label{fig:width}
 \end{figure}
 Fig.~\ref{fig:width} isolates the rule. AES-GCM's four-lane form
-returns $4.15\times$ because its block state \emph{is} four lanes wide: one
+returns $4.92\times$ because its block state \emph{is} four lanes wide: one
 \texttt{aesrm.sg4} holds the whole state, and ShiftRows becomes wiring. The
-same four-lane structure applied to ChaCha returns $1.24\times$: a 512-bit
+same four-lane structure applied to ChaCha returns $1.29\times$: a 512-bit
 state spans four quads, every quarter-round reads words a \emph{different}
 quad holds, and the cross-quad traffic stays in software. Widening the
 subgroup to sixteen lanes---the state's own width---turns the diagonal
 permutation into fixed routing inside one instruction, and the same
-algorithm returns $4.08\times$ ($8.41\times$ small-footprint). Width is not
+algorithm returns $4.32\times$ ($8.41\times$ small-footprint). Width is not
 acting alone: the sixteen-lane form also raises what one instruction
 advances from one ARX line to a full double round, and
 Table~\ref{tab:state}'s stateless row isolates that granularity half at
 fixed width---the same sixteen-lane layout with line-granular instructions
-runs $1.75\times$ slower. Stated as a rule: \emph{a
+runs $1.78\times$ slower. Stated as a rule: \emph{a
 subgroup-cooperative form pays when the subgroup and the instruction's
 granularity together span the cipher's block state; narrower or
 finer-grained forms leave the state movement in the instruction stream, and
@@ -562,7 +580,7 @@ same kernel, same machine. The middle wins both axes' trade.}
 Table~\ref{tab:state} fixes the algorithm and the sixteen-lane structure and
 varies only where the round's state lives. At one end, a stateless
 quarter-round-line instruction (the direct analogue of the AES form):
-combinational, single-cycle, nothing held anywhere---and $1.75\times$ slower
+combinational, single-cycle, nothing held anywhere---and $1.78\times$ slower
 than the ten-cycle macro, despite executing on the same machine. The
 mechanism is issue bandwidth, not latency: it needs $2.88\times$ the
 instructions (eighty round instructions per block against ten), and although
@@ -574,8 +592,8 @@ were costing at most that---and pipelining the macro to accept one
 instruction per cycle is $1.1\%$ \emph{slower} (the unit is 13\% occupied;
 the chain is serially dependent). At the other end, the S2 engine holds the
 smallest instruction stream in the table (28.9 per block) and still loses to
-the macro on cycles---117.4 against 112.4 per 64-byte block large-footprint,
-and 90.4 against 56.4 small-footprint---while adding
+the macro on cycles---115.6 against 110.6 per 64-byte block large-footprint,
+and 90.9 against 56.4 small-footprint---while adding
 $2.67\times$ the area and the only resident secrets in the design.
 We implement the engines but not preemption save-or-destroy; that
 specification burden is itself part of the tier's price, and the middle
@@ -583,11 +601,28 @@ point simply does not owe it. \emph{A macro instruction wins by moving work
 out of the instruction stream, not by being fast; its working state should
 live exactly as long as one instruction.}
 
+The slope is only half the trade; per-message start-up is the other half,
+and the tiers pay it very differently. Nonce setup, the Poly1305 key
+block, and tag finalisation cost the engine about 0.8k cycles per record,
+S1 about 1.2k, and the sixteen-lane macro about 8.6k---partly software it
+runs sixteen-wide-redundant, partly mapping: one record per subgroup
+leaves eight records in flight against S1's 128, so per-record costs
+serialise sixteen times deeper. The engine's persistent context is,
+mechanically, a device for amortising start-up across a session, and the
+macro repays that amortisation with statelessness. Whole-run, the macro
+overtakes S1 near 1.3\,KiB records; against the engine, whose marginal it
+only ties (1.807 against 1.728\,\cB), the crossover sits near 100\,KiB,
+and at 2\,KiB records the engine is $2.9\times$ faster whole-run
+(0.51 against 0.18\,B/cycle). The macro's constituency is therefore long
+records and streams---or any deployment that will not pay S2's context
+lifetime; for short records the engine's amortisation is real, and it is
+bought with exactly the resident secrets this section prices.
+
 One inversion in Table~\ref{tab:tiers} now has its explanation: at S3
 \emph{both} algorithms retire more instructions than at S2
-($2.7\times$ for AES, $1.7\times$ for ChaCha) and both are faster
-($1.86\times$ for AES; $1.05\times$ large-footprint and $1.60\times$
-small-footprint for ChaCha). S2 spends area and lifetime semantics to
+($2.7\times$ for AES, $1.7\times$ for ChaCha) and both are faster on the
+marginal ($2.71\times$ for AES; $1.05\times$ large-footprint and
+$1.61\times$ small-footprint for ChaCha). S2 spends area and lifetime semantics to
 shrink the instruction stream; S3 spends issue slots to avoid the context
 --- and issue slots, unlike resident secrets, are a renewable resource.
 
@@ -605,7 +640,7 @@ $+0.000$\,ns).}
 Table~\ref{tab:area} prices the ladder against a crypto-free build of the
 same core. The lane-local tier costs +24{,}542 ALMs (13.3\%). On top of an
 S1 build, the two ChaCha subgroup instructions add
-\textbf{+6{,}044 ALMs (2.8\%)} and return $4.08\times$ large-footprint
+\textbf{+6{,}044 ALMs (2.8\%)} and return $4.32\times$ large-footprint
 ($8.41\times$ small-footprint); the AES pair adds
 +52{,}425 (its GF($2^{128}$) multiplier dominates). The engines cost
 +105{,}382 to +115{,}936---for ChaCha, $2.67\times$ the entire
@@ -636,7 +671,7 @@ recommended tier; it is one of its arguments.
 \textbf{CPU cryptography ISEs.} AES-NI~\cite{gueron2010aesni} and RISC-V's
 scalar extensions~\cite{riscv-scalar-crypto} define the lane-local
 vocabulary; HARE's S1 is their SIMT port, and our measurements quantify
-exactly how far that port carries ($18.35\times$ for AES, $1.60\times$ for
+exactly how far that port carries ($14.6$--$18.2\times$ for AES, $1.55\times$ for
 ChaCha). The vector extensions~\cite{riscv-vector-crypto} already encode the
 width rule for AES in vector form: \texttt{vaes*} operates on four-element
 groups, 128 bits. No ratified vector form exists for ChaCha, and no
@@ -659,8 +694,10 @@ Four tiers, two AEADs, one machine, everything measured under balanced
 two-core execution: lane-local
 instructions solve AES-GCM's tables and barely touch ChaCha; stateful
 engines cost the most and win neither algorithm; subgroup-cooperative
-instructions carry the lowest cost for both---decisively small-footprint,
-narrowly over the engine at the large-footprint point for ChaCha---provided
+instructions carry the lowest marginal cost for both---decisively
+small-footprint, narrowly over the engine at the large-footprint point for
+ChaCha, and only past kilobyte-scale records once their start-up has
+amortised---provided
 the subgroup and the instruction's granularity span the block state---four
 lanes for a 128-bit state, sixteen for a 512-bit one---and provided their
 state lives exactly as long as one instruction. The rules are properties of

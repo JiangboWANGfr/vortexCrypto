@@ -16,12 +16,12 @@ shape: c2w4t16
 num_cores: 2
 n: 128
 driver: rtlsim
-git_commit: 3040d0c4e
+git_commit: 7e3786d47
 git_tag: hare-dac-measure-n128-v1
 git_dirty: false
-recorded_git_stamps: 519a948b6-dirty 27b10997a 9fa5a0079 3040d0c4e-dirty
+recorded_git_stamps: 519a948b6-dirty 27b10997a 9fa5a0079 3040d0c4e-dirty 7e3786d47
 config_hash: sha256:f46e01c9cd42b30c0c5dca167c8cf15c75dd10a5417614a7a1d7e11b86d36ad8
 build_id: hare-dac-measure-n128-v1
 gate_passed: true
 core_balance_min: 1.00
-rows: 74
+rows: 77
