@@ -61,6 +61,13 @@ Decisions of record:
   the intro; the two arXiv papers appear once in related work, no numbers.
 - bib entries marked TODO-verify need checking before submission.
 
+- Combined-build cross-check (U4, data/measure-n128-combined-v1.csv):
+  anchors and subgroup forms re-measured in the deployable Combined build
+  reproduce v2 to <= 1.5% (three of four bit-identical). Headlines stay
+  sourced from v2; the PPA's Combined configuration is
+  SYM+AUTH + SYM_SG4/AUTH_SG4 + SYM_CHACHA/AUTH_POLY +
+  SYM_CHACHA_SG16/AUTH_POLY_STEP16.
+
 Open items: the draft is 7 pages against DAC's 6 -- needs a compression
 pass; same-version PPA
 (U5); correctness/boundary audit + gate self-test (U6); board (U7).

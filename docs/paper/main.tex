@@ -465,7 +465,12 @@ payload byte and average 260--740 cycles per DRAM request (write-through,
 no write-allocate, 64-byte lines), so both points are DRAM-dominated and
 differ in amplification and start-up share, not in fitting a cache.
 Fits never mix builds, and the subgroup rows take their
-S1 denominator from an anchor measured in the same build. Because a
+S1 denominator from an anchor measured in the same build. The anchors and
+both subgroup forms were also re-measured in the single combined build
+that carries the whole extension: three of the four slopes are
+bit-identical to their per-algorithm-build values and the fourth moves
+under 1.5\%, so the reported figures describe the deployable
+configuration, not a trimmed one. Because a
 marginal fit cancels per-message start-up, Sec.~\ref{sec:eval} also
 reports whole-run figures at fixed record lengths, where start-up is paid.
 All kernels implement the AEAD \emph{sealing} path---plaintext in,
