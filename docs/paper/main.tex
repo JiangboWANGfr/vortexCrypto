@@ -116,8 +116,10 @@ This paper contributes:
   follows from matching the subgroup to the block state; and
 \item the state-placement result: an interior optimum between stateless
   and stateful designs, with the issue-bandwidth mechanism that explains
-  it---plus the engineering result that the entire extension fits standard
-  two-read-one-write operand delivery.
+  it---plus the engineering result that every subgroup instruction fits
+  standard two-read-one-write operand delivery, and the extension's one
+  three-source instruction rides an operand path the base machine already
+  had.
 \end{itemize}
 
 All measurements derive from a committed, per-run measurement record and
@@ -233,77 +235,180 @@ instruction read it across lanes.}
 
 \section{The HARE instructions}\label{sec:ise}
 
-Table~\ref{tab:isa} lists the extension. Every instruction is R-type with at
-most two source reads and one write; no tier requires a third register-file
-read port or any operand path the base machine lacks.
+Table~\ref{tab:isa} lists every instruction in the extension. Three format
+facts frame it. The only three-source instruction is the S1
+multiply-accumulate family, which is R4-type and rides the operand path the
+base machine already provides for its gather instruction---no read port is
+added anywhere. Every subgroup-cooperative instruction is plain 2R1W. And
+the engines' streaming operations write \texttt{x0}, so they produce no
+scoreboard entry at all: ordering comes from the unit itself, which stalls
+issue while busy.
 
-\begin{table}[t]
+\begin{table*}[t]
 \centering
-\caption{The HARE ISEs. All are 2R1W R-type; subgroup forms read their
-operands across an aligned quad (\texttt{.sg4}) or sixteen lanes
-(\texttt{.sg16}).}
+\caption{Every instruction in HARE. \emph{sel} and \emph{rot} ride funct7;
+\emph{bs} is the Zkn byte select. The S2 engines hold per-(warp,\,lane)
+context; every other instruction is stateless between retirements.}
 \label{tab:isa}
 \scriptsize
-\setlength{\tabcolsep}{2.5pt}
-\begin{tabular}{@{}lll@{}}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}l p{11.6cm}@{}}
 \toprule
-Tier & AES-GCM & ChaCha20-Poly1305 \\
+Instruction & One instruction does \\
 \midrule
-S1 & \texttt{aes32esi/esmi} round steps & \texttt{chacha32.xr} xor-rotate \\
-   & \texttt{clmul/h}, \texttt{ghred32/h} & \texttt{poly26.mac} \\
-\addlinespace
-S2 & \texttt{aes.cwr/begin/rndm/rndf/crd} & \texttt{cha.cwr/dr/crd} \\
-   & \texttt{ghash.cwr/init/block/crd} & \\
-\addlinespace
-S3 & \texttt{aesrm.sg4} full round & \texttt{chacha.dr.sg16} double round \\
-   & \texttt{ghmul.sg4} GF mul & \texttt{poly4.step.sg16} 64-B absorb \\
+\multicolumn{2}{@{}l}{\textbf{S1 --- lane-local.} AES-GCM's row is the
+ratified vocabulary, verbatim.}\\
+\addlinespace[2pt]
+\texttt{aes32esi rd,rs1,rs2,bs} & one byte's SubBytes step, rotated and
+XORed into \texttt{rs1} (Zkne, ratified) \\
+\texttt{aes32esmi rd,rs1,rs2,bs} & the same step through MixColumns (Zkne) \\
+\texttt{clmul / clmulh rd,rs1,rs2} & low / high word of the carry-less
+product (Zbkc) \\
+\texttt{brev8 rd,rs1} & bit-reverse each byte: GHASH's reflected domain
+(Zbkb) \\
+\texttt{ghred32l / ghred32h rd,rs1,rs2} & custom GF($2^{128}$) reduction
+fold; measured unprofitable---the S1 row does not use it \\
+\texttt{rori rd,rs1,imm} & rotate right (Zbb semantics); defines the ChaCha
+S0 baseline \\
+\texttt{chacha32.xr rd,rs1,rs2} & $rd \leftarrow \mathrm{rol}(rs1 \oplus
+rs2,\,\mathit{rot})$: the tail of one ARX line; \emph{rot} in funct7[4:0] \\
+\texttt{poly26.mac\{l,h\}\{,5\} rd,rs1,rs2,rs3} & \textbf{R4:}\ $rd
+\leftarrow rs1 + \mathrm{part}\!\left(rs2 \cdot (rs3 \bmod 2^{26})\right)$,
+optional $\times 5$; the low form sums products mod $2^{26}$, the high form
+their quotients---exact as a pair \\
+\addlinespace[3pt]
+\multicolumn{2}{@{}l}{\textbf{S2 --- stateful engines.} Streaming ops write
+\texttt{x0}; the unit orders itself.}\\
+\addlinespace[2pt]
+\texttt{aes.cwr rs1,sel} & context write: state $S_{0..3}$ (sel 0--3),
+round key $K_{0..3}$ (sel 4--7) \\
+\texttt{aes.begin} & $S \mathrel{\oplus}= K$; round counter $\leftarrow$ 1 \\
+\texttt{aes.rndm} & $K \leftarrow \mathrm{NextKey}(K,\mathit{rnd})$;\ \ $S
+\leftarrow \mathrm{Round}(S,K)$: the key schedule runs on the fly \\
+\texttt{aes.rndf} & the final round (no MixColumns) \\
+\texttt{aes.crd rd,sel} & $rd \leftarrow S_{\mathit{sel}}$ \\
+\texttt{ghash.cwr rs1,sel} & $Y_{\mathit{sel}} \mathrel{\oplus}= rs1$ (sel
+0--3: the absorb XOR folded into the write); $H_{\mathit{sel}-4} \leftarrow
+rs1$ (4--7) \\
+\texttt{ghash.init} & $Y \leftarrow 0$ \\
+\texttt{ghash.block} & $Y \leftarrow Y \cdot H \bmod P$: one 128-bit GHASH
+step \\
+\texttt{ghash.crd rd,sel} & $rd \leftarrow Y_{\mathit{sel}}$ \\
+\texttt{chacha.cwr rs1,sel} & key (sel 0--7), nonce (8--10); once per
+message \\
+\texttt{chacha.begin rs1} & rebuild the initial state from block counter
+\texttt{rs1}: a block costs no context writes at all \\
+\texttt{chacha.dr} & one double round; eight cycles, one quarter-round per
+cycle \\
+\texttt{chacha.crd rd,sel} & $rd \leftarrow x_{\mathit{sel}} +
+\mathit{init}_{\mathit{sel}}$: the feed-forward folded into the read \\
+\addlinespace[3pt]
+\multicolumn{2}{@{}l}{\textbf{S3 --- subgroup-cooperative.} Operands read
+across an aligned quad (\texttt{.sg4}) or sixteen lanes (\texttt{.sg16});
+fixed routing, nothing survives the instruction.}\\
+\addlinespace[2pt]
+\texttt{aesrm.sg4 rd,rs1,rs2} & one full middle round of the 128-bit state,
+lane $i$ holding column $i$; ShiftRows is wiring \\
+\texttt{aesrf.sg4 rd,rs1,rs2} & the final round \\
+\texttt{ghmul.sg4 rd,rs1,rs2} & GF($2^{128}$) multiply, one limb per lane:
+four carry-less multiplies per lane where S1 needs one \\
+\texttt{chacha32.xr} + route bit & funct7[5] reads \texttt{rs2} from the
+next lane of the quad \\
+\texttt{chadd.sg4 rd,rs1,rs2} & $rd \leftarrow rs1 +
+rs2^{(\mathrm{next\ lane})}$ \\
+\texttt{poly26.rsum.sg4 rd,rs1} & sum of \texttt{rs1} across the quad, into
+every lane: no broadcast needed afterwards \\
+\texttt{chacha.dr.sg16 rd,rs1} & one double round of the 512-bit state,
+lane $i$ holding word $i$; a ten-cycle sequence over 1{,}154\,b of
+owner-locked working registers \\
+\texttt{poly4.step.sg16 rd,rs1,rs2} & absorb 64\,B---four Poly1305
+blocks---in one instruction; $h$ in lanes 0--4 and $r$ in 5--9 of one
+register, $rd$ returns $h'$ with $r$ untouched; 52 cycles \\
+\texttt{chacha.arx.sg16 rd,rs1} & ablation: one of the eight ARX lines
+(funct7[2:0]), combinational, stateless \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{table*}
 
-\subsection{S1: the scalar extensions, in every lane}
-The AES path follows the ratified 32-bit constructions: \texttt{aes32esi}
-and \texttt{aes32esmi} compute one table-free round step per lane, and GHASH
-is built from carry-less multiplies (\texttt{clmul/clmulh}) plus two
-reduction helpers (\texttt{ghred32/ghred32h}). ChaCha gets a fused
-xor-rotate and Poly1305 a 26-bit limb multiply-accumulate. These
-instructions define the tier every later number is normalized to.
+\subsection{S1: the ratified vocabulary, in every lane}
+The measured AES-GCM S1 row uses five \emph{ratified} instructions and
+nothing else: \texttt{aes32esi}/\texttt{aes32esmi} (Zkne) compute one byte's
+round step, and \texttt{clmul}/\texttt{clmulh} (Zbkc) with \texttt{brev8}
+(Zbkb) build GHASH in the reflected domain, the accumulator and hash subkey
+living in ordinary registers. We additionally built a custom reduction pair
+(\texttt{ghred32l/h}) and measured it: it raises load traffic and does not
+pay, so the row does not use it. The tier's $18.35\times$ is therefore
+available to any RV32 SIMT machine that simply adopts the existing scalar
+extensions in its lanes---which is precisely why we treat S1 as the
+baseline for novelty, not as a contribution.
+
+ChaCha20-Poly1305 has no ratified equivalent, so its S1 is two custom
+instructions. \texttt{chacha32.xr} fuses the XOR and left-rotate that end
+every ARX line, turning a three-instruction line into two---and buys almost
+nothing ($1.09\times$ alone), because the line's add remains and the round
+count is untouched. \texttt{poly26.mac} is the instruction that matters: a
+26-bit limb multiply-accumulate whose low/high split is exact rather than
+approximate (the low form accumulates products mod $2^{26}$, the high form
+their quotients), R4-type on the machine's existing three-source path.
 
 \subsection{S2: stateful engines}
-Context-write instructions (\texttt{.cwr}) load key, nonce and counter into
-unit-private storage; streaming instructions then advance whole blocks.
-The ChaCha context is 896 bits per (warp,\,lane)---512 state, 256 key, 96
-nonce, 32 counter---which at four warps and sixteen lanes is 57{,}344 bits
-per core, and the register cost of an S2 engine is predictable from its
-context definition to within 2.4\%. The engines are fixed-latency and
-per-lane; their cost is evaluated in Section~\ref{sec:eval}.
+Context-write instructions (\texttt{.cwr}) load key material into
+unit-private storage addressed by (warp,\,lane); streaming instructions then
+advance whole rounds or blocks against it. Three folds keep the streams
+short. The AES engine runs its key schedule \emph{on the fly}
+(\texttt{aes.rndm} computes $\mathrm{NextKey}$ as it rounds, so no expanded
+schedule is ever stored or loaded); \texttt{ghash.cwr} XORs the incoming
+block into the accumulator as it writes, absorbing for free; and
+\texttt{chacha.begin} rebuilds the whole 512-bit initial state from one
+counter operand, so after the once-per-message key write \emph{a ChaCha
+block costs no context writes at all}, and \texttt{chacha.crd} folds the
+feed-forward add into the read. The ChaCha context is 896 bits per
+(warp,\,lane)---512 state, 256 key, 96 nonce, 32 counter---which at four
+warps and sixteen lanes is 57{,}344 bits per core; its register cost is
+predictable from that definition to within 2.4\%. Context is per lane, not
+per warp, by design: sharing one key per warp was rejected because batching
+records from \emph{different} sessions---different keys in the same
+warp---is the case that makes a GPU worth using for AEAD at all.
 
 \subsection{S3: subgroup-cooperative instructions}
 For AES-GCM the subgroup is an aligned quad: lane $i$ holds column $i$ of
-the 128-bit state, \texttt{aesrm.sg4} performs a complete round (the
-ShiftRows lane exchange is fixed wiring), and \texttt{ghmul.sg4} a
-GF($2^{128}$) multiply. For ChaCha the subgroup is sixteen lanes: lane $i$
-holds word $i$ of the 512-bit state and \texttt{chacha.dr.sg16} advances one
-full double round per instruction---ten instructions per block. It executes
+the 128-bit state, \texttt{aesrm.sg4}/\texttt{aesrf.sg4} perform a complete
+round each (the ShiftRows lane exchange is fixed wiring), and
+\texttt{ghmul.sg4} a full GF($2^{128}$) multiply, at the price of four
+carry-less multipliers per lane where the lane-local path needs one---the
+area consequence appears in Table~\ref{tab:area}.
+
+ChaCha gets the same four-lane treatment as a control:
+\texttt{chacha32.xr}'s route bit reads \texttt{rs2} from the next lane,
+\texttt{chadd.sg4} adds across the quad, and \texttt{poly26.rsum.sg4} folds
+the four per-lane Poly1305 partial sums into every lane at once. These are
+real instructions that win real cycles over S1---and
+Fig.~\ref{fig:width} shows the whole four-lane package is the wrong width
+for a 512-bit state.
+
+At sixteen lanes, lane $i$ holds word $i$ and \texttt{chacha.dr.sg16}
+advances one full double round per instruction---ten per block. It executes
 as a fixed ten-cycle sequence over 1{,}154 bits of working registers,
 owner-locked while in flight; nothing survives the instruction.
 \texttt{poly4.step.sg16} absorbs a whole 64-byte ChaCha block---four
 Poly1305 blocks---in one instruction: the accumulator $h$ travels in lanes
 0--4, the key $r$ in lanes 5--9 of the \emph{same} source register, and the
-result returns $h'$ with $r$ untouched, so the output feeds the next
-absorb directly. The $r^2,r^3,r^4$ schedule that block-parallel software
-Poly1305 must hold in registers (we measure it at 36\% of kernel cycles)
-exists only inside the unit, and never becomes architectural.
+result returns $h'$ with $r$ untouched, so the output feeds the next absorb
+directly. The $r^2,r^3,r^4$ schedule that block-parallel software Poly1305
+must hold in registers (we measure it at 20 loads per block and 36\% of
+kernel cycles) exists only inside the unit, and never becomes architectural.
 
 \subsection{Encoding}
-Packing $h$ and $r$ into one operand is what keeps the tier 2R1W: the first
-version of \texttt{poly4.step.sg16} read them from two registers and needed
-an R4-type third read port. Ten of sixteen lanes carry both values with six
-to spare; the repack costs +218 ALMs and 17 instructions per message
-(${<}2\%$ of cycles), and returns a seven-bit funct7 where R4 offers two
+Packing $h$ and $r$ into one operand is what keeps the sixteen-lane tier
+2R1W: the first version of \texttt{poly4.step.sg16} read them from two
+registers---five lanes used, eleven dead, in each---and needed an R4-type
+third source for the message. Ten of sixteen lanes carry both values with
+six to spare; the repack costs +218 ALMs and 17 instructions per message
+(under 2\% of cycles), and returns a seven-bit funct7 where R4 offers two
 bits. One caution generalizes: our four-bit sub-opcode space filled
-completely---the sixteen-lane double round shares a slot with the S2 engine
-op, and the build system refuses the combination---so an extension of this
+completely---all sixteen SYM values are taken, and the sixteen-lane double
+round, its stateless ablation, and the S2 engine's round op share one slot,
+with the build system refusing any two together---so an extension of this
 size should budget opcode space as deliberately as it budgets area.
 
 \section{Methodology}\label{sec:method}
@@ -317,7 +422,13 @@ deterministic---repeated runs are byte-identical---so every difference we
 report is a design difference, not noise. Per-byte figures are two-point
 marginal fits between 64\,KiB and 128\,KiB total payloads (and 4--16\,KiB
 for cache-resident figures), which cancels per-message setup;
-fits never mix builds. Area and timing come from Quartus place-and-route for
+fits never mix builds. Operating points deserve the same care as
+baselines: at the 64-message grid, three quarters of a short run is
+per-message setup, so a change whose cost is per-message reads four times
+larger than it is---the operand repack of Sec.~\ref{sec:ise}-D measured
+3--6\% there and under 2\% at a setup-light point. We price per-message
+changes at setup-light points and per-byte changes by marginal fit.
+Area and timing come from Quartus place-and-route for
 a DE10-Pro (Stratix~10 1SG280HU1F50E1VG) with a 200\,MHz GPU clock; we
 report a build only if its GPU clock domain closes in every one of the 30
 timing-model/corner entries. The per-run measurement record (444 rows), the
@@ -347,6 +458,27 @@ count of round operations, which only round-level instructions (S2/S3)
 remove. The design consequence: a GPGPU that stops at the ported scalar
 extensions has solved AES and left ChaCha almost untouched; one that stops
 at stateful engines has paid the most area for neither algorithm's best row.
+The per-step ratios make the harvest pattern explicit:
+
+\begin{center}
+\scriptsize
+\begin{tabular}{@{}lrr@{}}
+\toprule
+Step & AES-GCM & ChaCha-Poly \\
+\midrule
+S0 $\to$ S1 & $18.35\times$ & $1.67\times$ \\
+S1 $\to$ S2 & $2.23\times$ & $3.78\times$ \\
+S2 $\to$ S3 & $1.86\times$ & $1.32\times$ \\
+S0 $\to$ S3 & $76.1\times$ & $8.31\times$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent AES-GCM's largest step is the first; ChaCha's is the second; the
+subgroup step multiplies both. One definitional note: the ChaCha S0 row
+assumes rotate instructions (Zbb semantics); without them the memory-bound
+figure moves only 2.4\%---both variants are bound by the same memory
+system---so the ladder does not hinge on that choice.
 At both operating points the subgroup tier wins for both AEADs
 ($5.51\times$/$5.74\times$ over S1 cache-resident). At 200\,MHz the
 two-core prototype sustains 215\,MB/s AES-GCM and 138\,MB/s
@@ -443,6 +575,20 @@ as the difference. Every figure is from a build whose GPU domain closes at
 independently of our logic (across nine builds it shows no relationship to
 area), and is reported with the artifact.
 
+\subsection{Security properties}
+Every tier from S1 up is constant-time by construction: fixed,
+data-independent latency and no data-dependent memory access---the T-tables
+whose cache footprint makes software AES the canonical timing victim are
+exactly what S1 deletes. Convergence is a precondition, not a channel:
+subgroup instructions require their group fully active, and both models
+assert it. Where the tiers differ is in what they leave resident. S1 and S3
+leave nothing---on a context switch there is nothing to save and nothing to
+zeroize---while S2 keeps key material in per-(warp,\,lane) context and
+therefore owes ownership, validity, and zeroize-on-release rules
+(Sec.~\ref{sec:eval}-C). For a machine whose deployments include
+confidential computing, ``no resident secrets'' is not a side effect of the
+recommended tier; it is one of its arguments.
+
 \section{Related work}\label{sec:related}
 \textbf{CPU cryptography ISEs.} AES-NI~\cite{gueron2010aesni} and RISC-V's
 scalar extensions~\cite{riscv-scalar-crypto} define the lane-local
@@ -473,7 +619,8 @@ instructions win both, provided the subgroup spans the block state---four
 lanes for a 128-bit state, sixteen for a 512-bit one---and provided their
 state lives exactly as long as one instruction. The rules are properties of
 block-state extent and issue bandwidth, not of these two ciphers, and the
-entire extension fits ordinary 2R1W operand delivery. What ran out first
+subgroup tier fits ordinary 2R1W operand delivery---the one three-source
+instruction in the extension rides a path the machine already had. What ran out first
 was not area, timing, or read ports, but opcode space---a budget the next
 extension should set aside as deliberately as its ALMs.
 
