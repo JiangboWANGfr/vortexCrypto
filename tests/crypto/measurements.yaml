@@ -174,7 +174,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b1 -i1
+    OPTS: -n128 -b1 -i1
 - id: rori-chacha1-b4
   via: make-run
   drivers:
@@ -183,7 +183,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b4 -i1
+    OPTS: -n128 -b4 -i1
 - id: rori-chacha1-b16
   via: make-run
   drivers:
@@ -192,7 +192,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b16 -i1
+    OPTS: -n128 -b16 -i1
 - id: rori-chacha1-b32
   via: make-run
   drivers:
@@ -201,7 +201,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b32 -i1
+    OPTS: -n128 -b32 -i1
 - id: s1-chacha1-b1
   via: make-run
   drivers:
@@ -210,7 +210,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b1 -i7
+    OPTS: -n128 -b1 -i7
 - id: s1-chacha1-b4
   via: make-run
   drivers:
@@ -219,7 +219,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b4 -i7
+    OPTS: -n128 -b4 -i7
 - id: s1-chacha1-b16
   via: make-run
   drivers:
@@ -228,7 +228,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b16 -i7
+    OPTS: -n128 -b16 -i7
 - id: s1-chacha1-b32
   via: make-run
   drivers:
@@ -237,7 +237,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b32 -i7
+    OPTS: -n128 -b32 -i7
 - id: s2-chacha1-b1
   via: make-run
   drivers:
@@ -246,7 +246,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b1 -i10
+    OPTS: -n128 -b1 -i10
 - id: s2-chacha1-b4
   via: make-run
   drivers:
@@ -255,7 +255,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b4 -i10
+    OPTS: -n128 -b4 -i10
 - id: s2-chacha1-b16
   via: make-run
   drivers:
@@ -264,7 +264,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b16 -i10
+    OPTS: -n128 -b16 -i10
 - id: s2-chacha1-b32
   via: make-run
   drivers:
@@ -273,7 +273,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b32 -i10
+    OPTS: -n128 -b32 -i10
 - id: s3f-chacha1-b1
   via: make-run
   drivers:
@@ -282,7 +282,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b1 -i9
+    OPTS: -n128 -b1 -i9
 - id: s3f-chacha1-b4
   via: make-run
   drivers:
@@ -291,7 +291,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b4 -i9
+    OPTS: -n128 -b4 -i9
 - id: s3f-chacha1-b16
   via: make-run
   drivers:
@@ -300,7 +300,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b16 -i9
+    OPTS: -n128 -b16 -i9
 - id: s3f-chacha1-b32
   via: make-run
   drivers:
@@ -309,7 +309,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_SG4_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_S2_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG4_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b32 -i9
+    OPTS: -n128 -b32 -i9
 - id: s1-chacha2-b1
   via: make-run
   drivers:
@@ -318,7 +318,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG16_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b1 -i7
+    OPTS: -n128 -b1 -i7
 - id: s1-chacha2-b4
   via: make-run
   drivers:
@@ -327,7 +327,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG16_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b4 -i7
+    OPTS: -n128 -b4 -i7
 - id: s1-chacha2-b16
   via: make-run
   drivers:
@@ -336,7 +336,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG16_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b16 -i7
+    OPTS: -n128 -b16 -i7
 - id: s1-chacha2-b32
   via: make-run
   drivers:
@@ -345,7 +345,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG16_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b32 -i7
+    OPTS: -n128 -b32 -i7
 - id: sg16-chacha2-b1
   via: make-run
   drivers:
@@ -354,7 +354,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG16_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b1 -i12
+    OPTS: -n128 -b1 -i12
 - id: sg16-chacha2-b4
   via: make-run
   drivers:
@@ -363,7 +363,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG16_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b4 -i12
+    OPTS: -n128 -b4 -i12
 - id: sg16-chacha2-b16
   via: make-run
   drivers:
@@ -372,7 +372,7 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG16_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b16 -i12
+    OPTS: -n128 -b16 -i12
 - id: sg16-chacha2-b32
   via: make-run
   drivers:
@@ -381,4 +381,4 @@ tests:
   target: run-{driver}
   configs: -DVX_CFG_EXT_AUTH_ENABLE -DVX_CFG_EXT_AUTH_POLY_ENABLE -DVX_CFG_EXT_AUTH_POLY_STEP16_ENABLE -DVX_CFG_EXT_SYM_CHACHA_ENABLE -DVX_CFG_EXT_SYM_CHACHA_SG16_ENABLE -DVX_CFG_EXT_SYM_ENABLE
   vars:
-    OPTS: -n64 -b32 -i12
+    OPTS: -n128 -b32 -i12

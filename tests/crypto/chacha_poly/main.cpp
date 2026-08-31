@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <vector>
 #include <unistd.h>
 #include "common.h"
@@ -513,9 +514,12 @@ int main(int argc, char** argv) {
 
   // MCYCLE is per-core elapsed time, so reduce it with max; MINSTRET counts
   // retired instructions, so sum it. Passing the broadcast core id would sum
-  // both, which is silently wrong for cycles.
+  // both, which is silently wrong for cycles. The per-core MINSTRET split is
+  // kept as well: the sum cannot show an idle core, and a lane-mapped kernel
+  // given fewer messages than there are threads idles core 1 entirely.
   uint64_t cycles = 0;
   uint64_t instrs = 0;
+  std::string core_instrs;
   for (uint64_t core = 0; core < num_cores; ++core) {
     uint64_t v = 0;
     CHECK(vx_device_mpm_query(dev, VX_DCR_MPM_CLASS_BASE, VX_CSR_MCYCLE,
@@ -526,6 +530,10 @@ int main(int argc, char** argv) {
     CHECK(vx_device_mpm_query(dev, VX_DCR_MPM_CLASS_BASE, VX_CSR_MINSTRET,
                               (uint32_t)core, &v));
     instrs += v;
+    if (core != 0) {
+      core_instrs += ':';
+    }
+    core_instrs += std::to_string(v);
   }
 
   int errors = 0;
@@ -545,11 +553,13 @@ int main(int argc, char** argv) {
   const uint64_t total_blocks = (uint64_t)g_num_msgs * g_blocks_per_msg;
   std::printf("CHACHA_POLY_PERF: impl=%s key_bits=256 mode=aead msgs=%u "
               "blocks_per_msg=%u blocks=%llu bytes=%zu cycles=%llu "
-              "instrs=%llu cycles_per_block=%.2f instrs_per_block=%.2f "
-              "bytes_per_cycle=%.4f cores=%lu warps=%lu threads=%lu\n",
+              "instrs=%llu core_instrs=%s cycles_per_block=%.2f "
+              "instrs_per_block=%.2f bytes_per_cycle=%.4f cores=%lu "
+              "warps=%lu threads=%lu\n",
               kImpls[g_impl].label, g_num_msgs, g_blocks_per_msg,
               (unsigned long long)total_blocks, data_bytes,
               (unsigned long long)cycles, (unsigned long long)instrs,
+              core_instrs.c_str(),
               (double)cycles / (double)total_blocks,
               (double)instrs / (double)total_blocks,
               (double)data_bytes / (double)cycles,

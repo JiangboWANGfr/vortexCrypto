@@ -35,9 +35,15 @@ reproduce a recorded row from its own `extensions` and `opts` columns:
 and use `--case` for a quick, named, repeatable run of a case as CI defines it.
 
 The full stdout goes to RUNS/logs/ under a timestamped name, and the
-application's own <APP>_PERF: line is appended to RUNS/records.csv in the same
-columns as docs/proposals/data/crypto_measurements.csv. RUNS defaults to
-build32/crypto_runs.
+application's own <APP>_PERF: line is appended to RUNS/records.csv in the
+columns of docs/proposals/data/crypto_measurements.csv plus provenance
+(core_instrs, git, configs). RUNS defaults to build32/crypto_runs.
+
+A row is recorded only for a run that exited 0, printed PASSED!, and produced
+exactly one PERF line. The applications print PERF before they verify, so an
+ungated PERF line can belong to a wrong answer. --expect-fail flips the check
+for the one diagnostic that measures a deliberately wrong answer
+(chacha_poly -i11).
 """
 
 import argparse
@@ -54,7 +60,7 @@ import testcase as tc  # noqa: E402  (needs ROOT/ci on the path first)
 
 COLUMNS = ["app", "impl", "driver", "cores", "warps", "threads", "msgs",
            "blocks_per_msg", "blocks", "bytes", "cycles", "instrs",
-           "opts", "extensions", "log"]
+           "core_instrs", "opts", "extensions", "git", "configs", "log"]
 
 PERF_RE = re.compile(r"^[A-Z_]+_PERF: (.*)$", re.M)
 SHAPE_RE = re.compile(r"^c(\d+)w(\d+)t(\d+)$")
@@ -202,6 +208,13 @@ def perf_records(output):
 
 def append_records(csv_path, rows):
     new = not os.path.exists(csv_path)
+    if not new:
+        with open(csv_path) as fh:
+            header = fh.readline().strip().split(",")
+        if header != COLUMNS:
+            sys.exit("{} was written with different columns; appending would "
+                     "misalign it.\nPoint --runs at a fresh directory."
+                     .format(csv_path))
     with open(csv_path, "a", newline="\n") as fh:
         writer = csv.DictWriter(fh, fieldnames=COLUMNS, lineterminator="\n")
         if new:
@@ -228,20 +241,35 @@ def execute(case_name, app, opts, configs, args, echo=True):
     rc, output = execute_run(directory, args.driver, opts, configs, log_path,
                              echo=echo)
 
-    rows = []
-    for rec in perf_records(output):
-        row = {c: rec.get(c, "") for c in COLUMNS}
-        row.update(app=app, driver=args.driver, opts=opts or "",
-                   extensions=enabled_extensions(directory),
-                   log=os.path.join("logs", name))
-        rows.append(row)
-    if rows:
-        append_records(os.path.join(runs, "records.csv"), rows)
-        return rows, None
+    records = perf_records(output)
+    if not records:
+        skipped = [l for l in output.splitlines() if l.startswith("SKIPPED:")]
+        return [], (skipped[0] if skipped else
+                    "no <APP>_PERF: line (exit {}); see {}".format(rc, log_path))
+    note = run_verdict(rc, output, records, args.expect_fail)
+    if note:
+        return [], "{}; see {}".format(note, log_path)
 
-    skipped = [l for l in output.splitlines() if l.startswith("SKIPPED:")]
-    return [], (skipped[0] if skipped else
-                "no <APP>_PERF: line (exit {}); see {}".format(rc, log_path))
+    row = {c: records[0].get(c, "") for c in COLUMNS}
+    row.update(app=app, driver=args.driver, opts=opts or "",
+               extensions=enabled_extensions(directory),
+               git=git_describe(), configs=configs,
+               log=os.path.join("logs", name))
+    append_records(os.path.join(runs, "records.csv"), [row])
+    return [row], None
+
+
+def run_verdict(rc, output, records, expect_fail):
+    """None when the run is admissible evidence, else why it is not."""
+    if len(records) != 1:
+        return "{} PERF lines, need exactly 1".format(len(records))
+    if expect_fail:
+        return None if "FAILED!" in output else "expected FAILED!, saw none"
+    if rc != 0:
+        return "exit {}".format(rc)
+    if "PASSED!" not in output:
+        return "no PASSED! line"
+    return None
 
 
 def resolve_configs(case_configs, shape):
@@ -268,6 +296,9 @@ def main():
                    help="where logs and records go (default: <build>/crypto_runs)")
     p.add_argument("--build", default=os.path.join(ROOT, "build32"))
     p.add_argument("--list", action="store_true", help="list the cases and exit")
+    p.add_argument("--expect-fail", action="store_true",
+                   help="record a run that prints FAILED! -- only for the "
+                        "diagnostics measured on a deliberately wrong answer")
     # The application's own options, passed straight through. A value given
     # here replaces the one the case carries; anything omitted keeps the
     # case's. Both apps take the same five.
