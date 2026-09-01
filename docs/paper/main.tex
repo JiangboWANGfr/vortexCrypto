@@ -462,9 +462,11 @@ lane-mapped kernel given fewer messages than the 128 hardware threads
 leaves the second core idle, so any lane-vs-subgroup ratio taken there
 compares one active core against two. Per-byte figures are marginal fits
 with an intercept, three points per regime for the mainline tiers: the
-small-footprint fit spans 4--32\,KiB of total payload and the
-large-footprint fit 128--512\,KiB for \emph{both} algorithms, every point
-at a power-of-two blocks count. That last condition is measured, not
+small-footprint fit spans 4--16\,KiB of total payload for AES-GCM and
+8--32\,KiB for ChaCha-Poly, while the large-footprint fit covers the
+\emph{same} 128--512\,KiB---and the same 1--4\,KiB record lengths---for
+both algorithms, so large-footprint figures compare across algorithms
+byte for byte; every point sits at a power-of-two blocks count. That last condition is measured, not
 stylistic: a non-power-of-two count gives every message a non-power-of-two
 stride and lands in a different cache/DRAM conflict family---diagnostic
 rows retained in the dataset put lane and engine tiers 7--25\% off the
