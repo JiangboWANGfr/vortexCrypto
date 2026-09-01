@@ -204,46 +204,57 @@ the pipeline for a context switch to leak.
 \begin{figure}[t]
 \centering
 \begin{tikzpicture}[font=\scriptsize, x=1mm, y=1mm]
-\foreach \px/\name/\mode in {0/S0\,S1/rf, 44/S2/ctx} {
-  \begin{scope}[shift={(\px,0)}]
-    \foreach \i in {0,1,2,3}
-      \draw (\i*5,8) rectangle +(4,4);
-    \node[anchor=west] at (-1,15) {\textbf{\name}};
-    \ifx\mode\relax\fi
-  \end{scope}
+% Top row of each panel: the lanes. Second row: their RF cells; grey fill
+% marks where the cipher's block state lives. All three panels share one
+% 6\,mm pitch and one label baseline.
+% --- S0/S1: state in each lane's private RF, each lane reads its own ---
+\node[anchor=west] at (0,23) {\textbf{S0\,/\,S1}};
+\foreach \i in {0,...,3} {
+  \draw (\i*6,16) rectangle +(4,4);
+  \fill[black!25] (\i*6,9) rectangle +(4,4);
+  \draw (\i*6,9) rectangle +(4,4);
+  \draw[->] (\i*6+2,16) -- (\i*6+2,13.6);
 }
-% S0/S1: state in per-lane RF
-\foreach \i in {0,1,2,3} \fill[black!25] (\i*5,2) rectangle +(4,3);
-\draw (0,2) node[anchor=north west, yshift=-3.5mm] {state in per-lane RF};
-\foreach \i in {0,1,2,3} \draw (\i*5,2) rectangle +(4,3);
-\foreach \i in {0,1,2,3} \draw[->] (\i*5+2,8) -- (\i*5+2,5.4);
-% S2: state in unit context
-\begin{scope}[shift={(44,0)}]
-  \foreach \i in {0,1,2,3} \draw (\i*5,2) rectangle +(4,3);
-  \fill[black!55] (2,-6) rectangle +(15,4);
-  \draw (2,-6) rectangle +(15,4);
-  \node[white] at (9.5,-4) {context};
-  \foreach \i in {0,1,2,3} \draw[->] (\i*5+2,8) -- (\i*5+2,5.4);
-  \draw[->] (9.5,2) -- (9.5,-1.6);
-  \node[anchor=north west] at (-1,-7) {state in unit; survives};
+\node[anchor=north west, text width=32mm, align=left] at (0,-1)
+  {state in per-lane RF; each lane reads its own};
+% --- S2: state migrates through the RF into unit context ---
+\begin{scope}[shift={(40,0)}]
+\node[anchor=west] at (0,23) {\textbf{S2}};
+\foreach \i in {0,...,3} {
+  \draw (\i*6,16) rectangle +(4,4);
+  \draw (\i*6,9) rectangle +(4,4);
+  \draw[->] (\i*6+2,16) -- (\i*6+2,13.6);
+  \draw[->] (\i*6+2,9) -- (\i*6+2,5.6);
+}
+\fill[black!55] (0,1) rectangle +(22,4);
+\draw (0,1) rectangle +(22,4);
+\node[white] at (11,3) {context};
+\node[anchor=north west, text width=32mm, align=left] at (0,-1)
+  {state in unit context; survives};
 \end{scope}
-% S3 panel below, spanning
-\begin{scope}[shift={(0,-22)}]
-  \node[anchor=west] at (-1,15) {\textbf{S3}};
-  \foreach \i in {0,...,7} \draw (\i*5,8) rectangle +(4,4);
-  \foreach \i in {0,...,7} \fill[black!25] (\i*5,2) rectangle +(4,3);
-  \foreach \i in {0,...,7} \draw (\i*5,2) rectangle +(4,3);
-  \draw[->] (2,5) .. controls (7,-1) and (12,-1) .. (17,4.6);
-  \draw[->] (22,5) .. controls (27,-1) and (32,-1) .. (37,4.6);
-  \draw[->] (12,5) .. controls (17,-2.5) and (27,-2.5) .. (32,4.6);
-  \node[anchor=north west, text width=72mm, align=left] at (-1,-3)
-    {state across the subgroup's RF; one instruction reads all lanes,
-     fixed routing, nothing survives};
+% --- S3: state stays in the RF, spread across the subgroup, and ONE
+% instruction reads every lane of it with fixed routing ---
+\begin{scope}[shift={(0,-32)}]
+\node[anchor=west] at (0,23) {\textbf{S3}};
+\foreach \i in {0,...,7} {
+  \draw (\i*6,16) rectangle +(4,4);
+  \fill[black!25] (\i*6,9) rectangle +(4,4);
+  \draw (\i*6,9) rectangle +(4,4);
+  \draw[->] (\i*6+2,16) -- (\i*6+2,13.6);
+  \draw[->] (\i*6+2,9) .. controls (\i*6+2,6.2) and (13.2+\i*2.8,6.8)
+            .. (13.2+\i*2.8,4.2);
+}
+\draw[rounded corners=1mm] (12,0) rectangle +(22,4);
+\node at (23,2) {one instruction};
+\node[anchor=north west, text width=70mm, align=left] at (0,-2)
+  {state across the subgroup's per-lane RF, one word per lane; a single
+   instruction reads every lane with fixed routing and writes one result
+   per lane; nothing survives it};
 \end{scope}
 \end{tikzpicture}
-\caption{The four tiers, by where the block state lives. S2 moves state into
-hidden context; S3 leaves it architectural in the register file and lets one
-instruction read it across lanes.}
+\caption{The four tiers, by where the block state lives (grey). S2 moves
+state into hidden context; S3 leaves it architectural in the register file,
+and a single instruction reads all of it across the subgroup.}
 \label{fig:tiers}
 \end{figure}
 
