@@ -48,6 +48,13 @@ Decisions of record:
   beats S2 outright".
 - The width story is width-AND-granularity matching; the ARX16 ablation
   (1.78x slower at fixed width) isolates the granularity half.
+- Asymmetry of record: there is NO Poly1305 S2 engine -- the ChaCha S2 row
+  is cipher engine + lane-local poly26.mac (AES S2 is a dual engine).
+  Counters put 42% of the S2 row's instructions in the authenticator, so
+  the S2-vs-SG16 marginal tie is against a partially-engined S2; the paper
+  discloses this in IV-B and V-A. Rationale: Poly's 5-limb state fits ten
+  GPRs and its block step is ten R4 MACs (no GHASH-class engine win), and
+  a poly engine would add a second per-(warp,lane) context class.
 - All ratios are computed by the generator from unrounded slopes; tables
   display three decimals. Do not hand-derive ratios from displayed values.
 - No absolute Gb/s in abstract/intro/tables; cycles-per-byte and relative

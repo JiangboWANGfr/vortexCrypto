@@ -394,6 +394,12 @@ predictable from that definition. Context is per lane, not
 per warp, by design: sharing one key per warp was rejected because batching
 records from \emph{different} sessions---different keys in the same
 warp---is the case that makes a GPU worth using for AEAD at all.
+There is deliberately no Poly1305 engine: the authenticator's five-limb
+state lives comfortably in ten registers and its block step is ten
+three-source MACs, so the ChaCha-Poly S2 row pairs the cipher engine with
+the lane-local \texttt{poly26.mac}. GHASH, whose block step is a full
+GF($2^{128}$) multiply, is where a stateful authenticator pays---which is
+why the AES-GCM S2 row is a dual engine and the ChaCha-Poly one is not.
 
 \subsection{S3: subgroup-cooperative instructions}
 For AES-GCM the subgroup is an aligned quad: lane $i$ holds column $i$ of
@@ -541,7 +547,13 @@ argument is what it does \emph{not} cost---S2's context and its lifetime.
 HARE-SG16 achieves the lowest observed marginal cost in both regimes:
 essentially tied with S2 in the large-footprint regime (1.728 against
 1.807\,\cB) and $1.61\times$ ahead small-footprint, while avoiding
-persistent architectural crypto context.
+persistent architectural crypto context. One asymmetry scopes that tie:
+the ChaCha S2 row has no Poly1305 engine (Sec.~\ref{sec:ise}-B), and the
+counters put 42\% of its retired instructions in the lane-local
+authenticator, so a fully-engined S2 could plausibly take the marginal
+outright---at the price of a second per-(warp,\,lane) context class with
+the same lifetime obligations. The macro form reaches authenticator
+granularity inside the same 2R1W budget and no context at all.
 One definitional note: the ChaCha S0 row
 assumes rotate instructions (Zbb semantics); without them the large-footprint
 figure moves only 2.4\%---both variants are bound by the same memory
