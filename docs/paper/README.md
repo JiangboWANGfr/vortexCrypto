@@ -55,6 +55,21 @@ Decisions of record:
   whole-run MB/s at fixed record lengths where start-up is discussed.
 - dALM is measured against the crypto-free build (183,971 ALMs), not the
   tree's "base" build -- base already contains the AES lane-local units.
+- U5 same-version PPA (2026-09-01, data/fits-2026-09-01/): all ten fits at
+  one clean commit (af28f), one constraint set, Quartus 19.2, seed 6. The
+  seven stale fits were replaced -- AES S2 shrank 10.8k ALMs (its old fit
+  predated the context slimming), ChaCha S2 grew 7.6k (QR pipelining), so
+  ChaCha S2 is now the most expensive point (+112,951) and the S2/SG16
+  area ratio is 2.86x. SG16-over-ChaCha-S1 is +7,388 (3.4%, was 2.8%).
+  Combined HARE, fitted for the first time: +94,524 (51.4%), cheaper than
+  the ChaCha engines alone. The arx16-below-sg16 gap narrowed to 1,386
+  ALMs on same-version fits (5,573 had mixed revisions).
+- Combined's one hold corner misses by 2 ps at seed 6 (setup all
+  non-negative everywhere); a seed-7 re-fit is pending, both seeds to be
+  reported. Single-seed (6) throughout otherwise; a 3-seed pass is a
+  pre-submission nice-to-have.
+- The S2 register-predictability sentence dropped its "within 2.4%" figure
+  pending re-derivation from the new fits' entity tables.
 - The sg16 area figure is the 2R1W build (223,427); the R4 predecessor
   (223,209) is preserved as results/c2w4t16.sg16-r4.
 - The GPU-TEE overhead numbers (12.69x etc.) are deliberately NOT cited in
@@ -74,5 +89,6 @@ Decisions of record:
   SYM_CHACHA_SG16/AUTH_POLY_STEP16.
 
 Open items: the draft is 7 pages against DAC's 6 -- needs a compression
-pass; same-version PPA (U5); board (U7); final re-baseline of the
-performance dataset at the submission commit.
+pass; combined seed-7 re-fit; re-derive the S2 register-predictability
+figure; board (U7); final re-baseline of the performance dataset at the
+submission commit.

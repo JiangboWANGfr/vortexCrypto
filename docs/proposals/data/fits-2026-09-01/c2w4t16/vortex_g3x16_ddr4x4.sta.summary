@@ -1,0 +1,4388 @@
+------------------------------------------------------------
+Timing Analyzer Summary
+------------------------------------------------------------
+
+Type  : Slow 900mV 100C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_2'
+Slack : 0.025
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_1'
+Slack : 0.071
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Setup 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 0.192
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Setup 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 0.205
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.208
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Setup 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.219
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_0'
+Slack : 0.517
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_0'
+Slack : 1.108
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Setup 'altera_int_osc_clk'
+Slack : 3.586
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Setup 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 6.488
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Setup 'CLK_50_B2C'
+Slack : 14.010
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Hold 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 0.005
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.010
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Hold 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 0.013
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Hold 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.039
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Hold 'CLK_50_B2C'
+Slack : 0.076
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Hold 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 0.147
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_2'
+Slack : 0.170
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_1'
+Slack : 0.176
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Hold 'altera_int_osc_clk'
+Slack : 0.186
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_0'
+Slack : 0.212
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_0'
+Slack : 0.500
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.354
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.448
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 1.136
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 1.961
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 7.243
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'CLK_50_B2C'
+Slack : 17.950
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch13'
+Slack : 100.813
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch15'
+Slack : 101.695
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch11'
+Slack : 101.763
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch14'
+Slack : 101.947
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch13'
+Slack : 102.217
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch15'
+Slack : 102.227
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch12'
+Slack : 102.471
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch14'
+Slack : 102.606
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch9'
+Slack : 102.658
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch11'
+Slack : 102.751
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch10'
+Slack : 102.988
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch12'
+Slack : 103.058
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch9'
+Slack : 103.271
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch10'
+Slack : 103.542
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch7'
+Slack : 103.584
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch7'
+Slack : 103.796
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch8'
+Slack : 104.003
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch6'
+Slack : 104.064
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch5'
+Slack : 104.341
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch6'
+Slack : 104.472
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch5'
+Slack : 104.568
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch0'
+Slack : 104.831
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch4'
+Slack : 104.907
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch4'
+Slack : 104.966
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch1'
+Slack : 105.087
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch3'
+Slack : 105.284
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch2'
+Slack : 105.346
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch8'
+Slack : 188.138
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.330
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 0.335
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'CLK_50_B2C'
+Slack : 0.370
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 0.371
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.569
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch2'
+Slack : 11.201
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch3'
+Slack : 11.262
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch1'
+Slack : 11.423
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch4'
+Slack : 11.462
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch4'
+Slack : 11.507
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch0'
+Slack : 11.640
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch8'
+Slack : 11.695
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch5'
+Slack : 11.820
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch5'
+Slack : 11.888
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch6'
+Slack : 11.915
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch6'
+Slack : 12.125
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch8'
+Slack : 12.298
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch7'
+Slack : 12.343
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch7'
+Slack : 12.566
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch10'
+Slack : 12.698
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch9'
+Slack : 12.793
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch10'
+Slack : 13.033
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch12'
+Slack : 13.117
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch11'
+Slack : 13.239
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch9'
+Slack : 13.262
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch12'
+Slack : 13.476
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch14'
+Slack : 13.510
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch13'
+Slack : 13.696
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch15'
+Slack : 13.829
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch14'
+Slack : 13.926
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch11'
+Slack : 13.942
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch15'
+Slack : 14.143
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch13'
+Slack : 14.670
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_vco_clk_1'
+Slack : 0.051
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_vco_clk_2'
+Slack : 0.051
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'DDR4A_DQS[0]_IN'
+Slack : 0.054
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'DDR4A_DQS[1]_IN'
+Slack : 0.054
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'DDR4A_DQS[3]_IN'
+Slack : 0.054
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'DDR4A_DQS[4]_IN'
+Slack : 0.054
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'DDR4A_DQS[5]_IN'
+Slack : 0.054
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'DDR4A_DQS[7]_IN'
+Slack : 0.054
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'DDR4A_DQS[2]_IN'
+Slack : 0.055
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'DDR4A_DQS[6]_IN'
+Slack : 0.055
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_vco_clk'
+Slack : 0.095
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_10'
+Slack : 0.149
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_2'
+Slack : 0.149
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_3'
+Slack : 0.149
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_4'
+Slack : 0.149
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_5'
+Slack : 0.149
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_0'
+Slack : 0.150
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_1'
+Slack : 0.150
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_6'
+Slack : 0.150
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_7'
+Slack : 0.150
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_8'
+Slack : 0.150
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_9'
+Slack : 0.150
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.254
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch10'
+Slack : 0.328
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch11'
+Slack : 0.328
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch12'
+Slack : 0.328
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch13'
+Slack : 0.328
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch14'
+Slack : 0.328
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch15'
+Slack : 0.328
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch4'
+Slack : 0.328
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch5'
+Slack : 0.328
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch6'
+Slack : 0.328
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch7'
+Slack : 0.328
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch9'
+Slack : 0.328
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch0'
+Slack : 0.329
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch1'
+Slack : 0.329
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch10'
+Slack : 0.329
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch11'
+Slack : 0.329
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch12'
+Slack : 0.329
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch13'
+Slack : 0.329
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch14'
+Slack : 0.329
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch15'
+Slack : 0.329
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch2'
+Slack : 0.329
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch3'
+Slack : 0.329
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch4'
+Slack : 0.329
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch5'
+Slack : 0.329
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch6'
+Slack : 0.329
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch7'
+Slack : 0.329
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch8'
+Slack : 0.329
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch9'
+Slack : 0.329
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_1'
+Slack : 0.374
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_2'
+Slack : 0.374
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_0'
+Slack : 0.375
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch8'
+Slack : 0.797
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.962
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_0'
+Slack : 1.128
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_1'
+Slack : 1.128
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_2'
+Slack : 1.128
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'altera_int_osc_clk'
+Slack : 1.139
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 1.333
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_n_cnt_clk'
+Slack : 1.792
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 1.867
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'DDR4A_REFCLK_p'
+Slack : 2.601
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 3.291
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'PCIE_REFCLK_p'
+Slack : 5.000
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'CLK_50_B2C'
+Slack : 9.445
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'CLK_50_B3I'
+Slack : 9.681
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch1'
+Slack : 90.500
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch2'
+Slack : 90.500
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch3'
+Slack : 90.500
+TNS   : 0.000
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 1.186
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 1.207
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 1.247
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 1.940
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 1.944
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 2.223
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 2.661
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 2.669
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 2.707
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 2.721
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 2.762
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 2.786
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 2.798
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 2.832
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 3.391
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 3.442
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 3.538
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 3.573
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 3.612
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 15.596
+
+Type  : Slow 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 15.640
+
+Type  : Slow 900mV 100C Model Net Delay 'set_net_delay'
+Slack : 1.165
+
+Type  : Slow 900mV 100C Model Net Delay 'set_net_delay'
+Slack : 2.026
+
+Type  : Slow 900mV 100C Model Net Delay 'set_net_delay'
+Slack : 2.094
+
+Type  : Slow 900mV 100C Model Net Delay 'set_net_delay'
+Slack : 2.596
+
+Type  : Slow 900mV 100C Model Net Delay 'set_net_delay'
+Slack : 2.791
+
+Type  : Slow 900mV 100C Model Net Delay 'set_net_delay'
+Slack : 2.861
+
+Type  : Slow 900mV 100C Model Net Delay 'set_net_delay'
+Slack : 2.863
+
+Type  : Slow 900mV 100C Model Net Delay 'set_net_delay'
+Slack : 2.898
+
+Type  : Slow 900mV 100C Model Net Delay 'set_net_delay'
+Slack : 15.227
+
+Type  : 1 Slow vid1 100C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_2'
+Slack : 0.036
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_1'
+Slack : 0.091
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Setup 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 0.187
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Setup 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 0.191
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.219
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Setup 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.245
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_0'
+Slack : 0.566
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_0'
+Slack : 1.116
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Setup 'altera_int_osc_clk'
+Slack : 3.597
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Setup 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 6.541
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Setup 'CLK_50_B2C'
+Slack : 13.981
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Hold 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 0.001
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Hold 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 0.008
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.023
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Hold 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.029
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Hold 'CLK_50_B2C'
+Slack : 0.078
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_1'
+Slack : 0.133
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_2'
+Slack : 0.141
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Hold 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 0.143
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_0'
+Slack : 0.164
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Hold 'altera_int_osc_clk'
+Slack : 0.186
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_0'
+Slack : 0.461
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.371
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.458
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 1.119
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 1.962
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 7.275
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'CLK_50_B2C'
+Slack : 17.961
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch13'
+Slack : 100.898
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch15'
+Slack : 101.792
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch11'
+Slack : 101.836
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch14'
+Slack : 102.039
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch15'
+Slack : 102.297
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch13'
+Slack : 102.303
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch12'
+Slack : 102.553
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch14'
+Slack : 102.669
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch9'
+Slack : 102.721
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch11'
+Slack : 102.827
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch10'
+Slack : 103.062
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch12'
+Slack : 103.115
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch9'
+Slack : 103.337
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch10'
+Slack : 103.592
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch7'
+Slack : 103.636
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch7'
+Slack : 103.852
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch8'
+Slack : 104.049
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch6'
+Slack : 104.116
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch5'
+Slack : 104.387
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch6'
+Slack : 104.511
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch5'
+Slack : 104.608
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch0'
+Slack : 104.867
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch4'
+Slack : 104.945
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch4'
+Slack : 104.999
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch1'
+Slack : 105.121
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch3'
+Slack : 105.312
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch2'
+Slack : 105.375
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch8'
+Slack : 188.231
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 0.317
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.319
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 0.328
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'CLK_50_B2C'
+Slack : 0.360
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 0.370
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.547
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch2'
+Slack : 11.169
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch3'
+Slack : 11.231
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch1'
+Slack : 11.387
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch4'
+Slack : 11.415
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch4'
+Slack : 11.472
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch0'
+Slack : 11.602
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch8'
+Slack : 11.642
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch5'
+Slack : 11.780
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch5'
+Slack : 11.834
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch6'
+Slack : 11.875
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch6'
+Slack : 12.067
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch8'
+Slack : 12.253
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch7'
+Slack : 12.281
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch7'
+Slack : 12.515
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch10'
+Slack : 12.649
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch9'
+Slack : 12.723
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch10'
+Slack : 12.957
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch12'
+Slack : 13.062
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch11'
+Slack : 13.161
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch9'
+Slack : 13.203
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch12'
+Slack : 13.392
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch14'
+Slack : 13.451
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch13'
+Slack : 13.608
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch15'
+Slack : 13.763
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch14'
+Slack : 13.832
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch11'
+Slack : 13.873
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch15'
+Slack : 14.048
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch13'
+Slack : 14.592
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'DDR4A_DQS[3]_IN'
+Slack : 0.060
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'DDR4A_DQS[7]_IN'
+Slack : 0.060
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'DDR4A_DQS[1]_IN'
+Slack : 0.061
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'DDR4A_DQS[2]_IN'
+Slack : 0.061
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'DDR4A_DQS[5]_IN'
+Slack : 0.061
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'DDR4A_DQS[6]_IN'
+Slack : 0.061
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'DDR4A_DQS[0]_IN'
+Slack : 0.062
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'DDR4A_DQS[4]_IN'
+Slack : 0.062
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_vco_clk_1'
+Slack : 0.063
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_vco_clk_2'
+Slack : 0.063
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_vco_clk'
+Slack : 0.102
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_10'
+Slack : 0.153
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_2'
+Slack : 0.153
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_3'
+Slack : 0.153
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_4'
+Slack : 0.153
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_5'
+Slack : 0.153
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_0'
+Slack : 0.154
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_1'
+Slack : 0.154
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_6'
+Slack : 0.154
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_7'
+Slack : 0.154
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_8'
+Slack : 0.154
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_9'
+Slack : 0.154
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.307
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch10'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch11'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch12'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch13'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch14'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch15'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch4'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch5'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch6'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch7'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch9'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch0'
+Slack : 0.338
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch1'
+Slack : 0.338
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch10'
+Slack : 0.338
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch11'
+Slack : 0.338
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch12'
+Slack : 0.338
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch13'
+Slack : 0.338
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch14'
+Slack : 0.338
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch15'
+Slack : 0.338
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch2'
+Slack : 0.338
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch3'
+Slack : 0.338
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch4'
+Slack : 0.338
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch5'
+Slack : 0.338
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch6'
+Slack : 0.338
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch7'
+Slack : 0.338
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch8'
+Slack : 0.338
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch9'
+Slack : 0.338
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_0'
+Slack : 0.381
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_1'
+Slack : 0.381
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_2'
+Slack : 0.381
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch8'
+Slack : 0.806
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.962
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_0'
+Slack : 1.135
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_1'
+Slack : 1.136
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_2'
+Slack : 1.136
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'altera_int_osc_clk'
+Slack : 1.160
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 1.398
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_n_cnt_clk'
+Slack : 1.799
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 1.935
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'DDR4A_REFCLK_p'
+Slack : 2.606
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 3.301
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'PCIE_REFCLK_p'
+Slack : 5.000
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'CLK_50_B2C'
+Slack : 9.456
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'CLK_50_B3I'
+Slack : 9.682
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch1'
+Slack : 90.500
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch2'
+Slack : 90.500
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch3'
+Slack : 90.500
+TNS   : 0.000
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 1.212
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 1.225
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 1.270
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 1.969
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 1.969
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 2.231
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 2.692
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 2.695
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 2.731
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 2.744
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 2.784
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 2.809
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 2.824
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 2.857
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 3.408
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 3.472
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 3.564
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 3.603
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 3.639
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 15.614
+
+Type  : 1 Slow vid1 100C Model Max Skew 'set_max_skew'
+Slack : 15.668
+
+Type  : 1 Slow vid1 100C Model Net Delay 'set_net_delay'
+Slack : 1.178
+
+Type  : 1 Slow vid1 100C Model Net Delay 'set_net_delay'
+Slack : 2.014
+
+Type  : 1 Slow vid1 100C Model Net Delay 'set_net_delay'
+Slack : 2.077
+
+Type  : 1 Slow vid1 100C Model Net Delay 'set_net_delay'
+Slack : 2.610
+
+Type  : 1 Slow vid1 100C Model Net Delay 'set_net_delay'
+Slack : 2.803
+
+Type  : 1 Slow vid1 100C Model Net Delay 'set_net_delay'
+Slack : 2.874
+
+Type  : 1 Slow vid1 100C Model Net Delay 'set_net_delay'
+Slack : 2.876
+
+Type  : 1 Slow vid1 100C Model Net Delay 'set_net_delay'
+Slack : 2.912
+
+Type  : 1 Slow vid1 100C Model Net Delay 'set_net_delay'
+Slack : 15.233
+
+Type  : 1 Slow vid1 0C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_2'
+Slack : 0.200
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.234
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Setup 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.250
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Setup 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 0.287
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Setup 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 0.292
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_1'
+Slack : 0.294
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_0'
+Slack : 0.764
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_0'
+Slack : 1.345
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Setup 'altera_int_osc_clk'
+Slack : 3.579
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Setup 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 6.436
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Setup 'CLK_50_B2C'
+Slack : 14.154
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Hold 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 0.004
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Hold 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 0.012
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.026
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Hold 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.034
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_2'
+Slack : 0.036
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_1'
+Slack : 0.047
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_0'
+Slack : 0.060
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Hold 'CLK_50_B2C'
+Slack : 0.091
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Hold 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 0.174
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Hold 'altera_int_osc_clk'
+Slack : 0.198
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_0'
+Slack : 0.296
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.473
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.520
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 1.189
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 2.127
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 7.219
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'CLK_50_B2C'
+Slack : 17.986
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch13'
+Slack : 101.686
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch15'
+Slack : 102.291
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch14'
+Slack : 102.527
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch11'
+Slack : 102.568
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch13'
+Slack : 102.782
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch15'
+Slack : 103.020
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch12'
+Slack : 103.021
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch11'
+Slack : 103.285
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch14'
+Slack : 103.374
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch9'
+Slack : 103.398
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch10'
+Slack : 103.492
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch9'
+Slack : 103.774
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch12'
+Slack : 103.793
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch10'
+Slack : 104.238
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch7'
+Slack : 104.256
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch7'
+Slack : 104.270
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch6'
+Slack : 104.526
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch8'
+Slack : 104.660
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch5'
+Slack : 104.786
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch6'
+Slack : 105.092
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch5'
+Slack : 105.167
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch4'
+Slack : 105.315
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch0'
+Slack : 105.421
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch4'
+Slack : 105.542
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch1'
+Slack : 105.646
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch3'
+Slack : 105.841
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch2'
+Slack : 105.891
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch8'
+Slack : 188.959
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 0.369
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.370
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 0.373
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'CLK_50_B2C'
+Slack : 0.410
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 0.412
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.611
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch2'
+Slack : 10.713
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch3'
+Slack : 10.764
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch1'
+Slack : 10.920
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch4'
+Slack : 10.999
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch0'
+Slack : 11.112
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch4'
+Slack : 11.184
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch8'
+Slack : 11.193
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch5'
+Slack : 11.299
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch6'
+Slack : 11.374
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch5'
+Slack : 11.593
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch8'
+Slack : 11.731
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch6'
+Slack : 11.813
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch7'
+Slack : 11.999
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch7'
+Slack : 12.016
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch10'
+Slack : 12.097
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch9'
+Slack : 12.435
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch12'
+Slack : 12.481
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch9'
+Slack : 12.663
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch10'
+Slack : 12.674
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch14'
+Slack : 12.844
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch11'
+Slack : 12.851
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch12'
+Slack : 13.074
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch15'
+Slack : 13.145
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch13'
+Slack : 13.276
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch11'
+Slack : 13.308
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch14'
+Slack : 13.493
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch15'
+Slack : 13.694
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch13'
+Slack : 13.992
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'DDR4A_DQS[1]_IN'
+Slack : 0.068
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'DDR4A_DQS[3]_IN'
+Slack : 0.068
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'DDR4A_DQS[5]_IN'
+Slack : 0.068
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'DDR4A_DQS[7]_IN'
+Slack : 0.068
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'DDR4A_DQS[0]_IN'
+Slack : 0.069
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'DDR4A_DQS[2]_IN'
+Slack : 0.069
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'DDR4A_DQS[4]_IN'
+Slack : 0.069
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'DDR4A_DQS[6]_IN'
+Slack : 0.069
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_vco_clk_1'
+Slack : 0.104
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_vco_clk_2'
+Slack : 0.104
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_vco_clk'
+Slack : 0.113
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_10'
+Slack : 0.162
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_2'
+Slack : 0.162
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_3'
+Slack : 0.162
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_4'
+Slack : 0.162
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_5'
+Slack : 0.162
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_0'
+Slack : 0.163
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_1'
+Slack : 0.163
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_6'
+Slack : 0.163
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_7'
+Slack : 0.163
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_8'
+Slack : 0.163
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_9'
+Slack : 0.163
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch0'
+Slack : 0.306
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch1'
+Slack : 0.306
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch10'
+Slack : 0.306
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch11'
+Slack : 0.306
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch12'
+Slack : 0.306
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch13'
+Slack : 0.306
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch14'
+Slack : 0.306
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch15'
+Slack : 0.306
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch2'
+Slack : 0.306
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch3'
+Slack : 0.306
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch4'
+Slack : 0.306
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch5'
+Slack : 0.306
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch6'
+Slack : 0.306
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch7'
+Slack : 0.306
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch8'
+Slack : 0.306
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch9'
+Slack : 0.306
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch10'
+Slack : 0.336
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch11'
+Slack : 0.336
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch12'
+Slack : 0.336
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch13'
+Slack : 0.336
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch14'
+Slack : 0.336
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch15'
+Slack : 0.336
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch4'
+Slack : 0.336
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch5'
+Slack : 0.336
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch6'
+Slack : 0.336
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch7'
+Slack : 0.336
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch9'
+Slack : 0.336
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.343
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_0'
+Slack : 0.389
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_1'
+Slack : 0.389
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_2'
+Slack : 0.389
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch8'
+Slack : 0.795
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.985
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_0'
+Slack : 1.150
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_1'
+Slack : 1.150
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_2'
+Slack : 1.150
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'altera_int_osc_clk'
+Slack : 1.231
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 1.453
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_n_cnt_clk'
+Slack : 1.801
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 1.964
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'DDR4A_REFCLK_p'
+Slack : 2.617
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 3.287
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'PCIE_REFCLK_p'
+Slack : 5.000
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'CLK_50_B2C'
+Slack : 9.427
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'CLK_50_B3I'
+Slack : 9.715
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch1'
+Slack : 90.500
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch2'
+Slack : 90.500
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch3'
+Slack : 90.500
+TNS   : 0.000
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 1.182
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 1.196
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 1.234
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 1.940
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 1.953
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 2.219
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 2.661
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 2.694
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 2.695
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 2.718
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 2.771
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 2.797
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 2.800
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 2.827
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 3.409
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 3.470
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 3.547
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 3.572
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 3.613
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 15.596
+
+Type  : 1 Slow vid1 0C Model Max Skew 'set_max_skew'
+Slack : 15.635
+
+Type  : 1 Slow vid1 0C Model Net Delay 'set_net_delay'
+Slack : 1.144
+
+Type  : 1 Slow vid1 0C Model Net Delay 'set_net_delay'
+Slack : 2.026
+
+Type  : 1 Slow vid1 0C Model Net Delay 'set_net_delay'
+Slack : 2.100
+
+Type  : 1 Slow vid1 0C Model Net Delay 'set_net_delay'
+Slack : 2.601
+
+Type  : 1 Slow vid1 0C Model Net Delay 'set_net_delay'
+Slack : 2.781
+
+Type  : 1 Slow vid1 0C Model Net Delay 'set_net_delay'
+Slack : 2.839
+
+Type  : 1 Slow vid1 0C Model Net Delay 'set_net_delay'
+Slack : 2.841
+
+Type  : 1 Slow vid1 0C Model Net Delay 'set_net_delay'
+Slack : 2.875
+
+Type  : 1 Slow vid1 0C Model Net Delay 'set_net_delay'
+Slack : 15.219
+
+Type  : Slow 900mV 0C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_2'
+Slack : 0.219
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.255
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Setup 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.269
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_1'
+Slack : 0.284
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Setup 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 0.372
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Setup 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 0.415
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_0'
+Slack : 0.749
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_0'
+Slack : 1.361
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Setup 'altera_int_osc_clk'
+Slack : 3.588
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Setup 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 6.466
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Setup 'CLK_50_B2C'
+Slack : 14.103
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Hold 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 0.000
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Hold 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 0.000
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.002
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_2'
+Slack : 0.007
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Hold 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.009
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_1'
+Slack : 0.011
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_0'
+Slack : 0.057
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Hold 'CLK_50_B2C'
+Slack : 0.073
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Hold 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 0.158
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Hold 'altera_int_osc_clk'
+Slack : 0.184
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_0'
+Slack : 0.257
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.459
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.493
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 1.195
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 2.122
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 7.220
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'CLK_50_B2C'
+Slack : 18.032
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch13'
+Slack : 101.714
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch15'
+Slack : 102.342
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch14'
+Slack : 102.570
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch11'
+Slack : 102.585
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch13'
+Slack : 102.820
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch15'
+Slack : 103.043
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch12'
+Slack : 103.052
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch11'
+Slack : 103.310
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch14'
+Slack : 103.394
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch9'
+Slack : 103.406
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch10'
+Slack : 103.512
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch9'
+Slack : 103.786
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch12'
+Slack : 103.804
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch10'
+Slack : 104.240
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch7'
+Slack : 104.254
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch7'
+Slack : 104.266
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch6'
+Slack : 104.512
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch8'
+Slack : 104.656
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch5'
+Slack : 104.764
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch6'
+Slack : 105.080
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch5'
+Slack : 105.155
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch4'
+Slack : 105.286
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch0'
+Slack : 105.410
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch4'
+Slack : 105.523
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch1'
+Slack : 105.629
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch3'
+Slack : 105.816
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch2'
+Slack : 105.867
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch8'
+Slack : 188.977
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.359
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 0.360
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 0.365
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 0.396
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'CLK_50_B2C'
+Slack : 0.404
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.573
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch2'
+Slack : 10.720
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch3'
+Slack : 10.772
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch1'
+Slack : 10.924
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch4'
+Slack : 10.997
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch0'
+Slack : 11.111
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch8'
+Slack : 11.180
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch4'
+Slack : 11.187
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch5'
+Slack : 11.287
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch6'
+Slack : 11.363
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch5'
+Slack : 11.580
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch8'
+Slack : 11.708
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch6'
+Slack : 11.796
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch7'
+Slack : 11.971
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch7'
+Slack : 11.994
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch10'
+Slack : 12.067
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch9'
+Slack : 12.405
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch12'
+Slack : 12.444
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch9'
+Slack : 12.614
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch10'
+Slack : 12.636
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch14'
+Slack : 12.800
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch11'
+Slack : 12.811
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch12'
+Slack : 13.029
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch15'
+Slack : 13.094
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch13'
+Slack : 13.228
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch11'
+Slack : 13.241
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch14'
+Slack : 13.439
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch15'
+Slack : 13.637
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch13'
+Slack : 13.910
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'DDR4A_DQS[0]_IN'
+Slack : 0.067
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'DDR4A_DQS[1]_IN'
+Slack : 0.067
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'DDR4A_DQS[2]_IN'
+Slack : 0.067
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'DDR4A_DQS[3]_IN'
+Slack : 0.067
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'DDR4A_DQS[4]_IN'
+Slack : 0.067
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'DDR4A_DQS[5]_IN'
+Slack : 0.067
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'DDR4A_DQS[6]_IN'
+Slack : 0.067
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'DDR4A_DQS[7]_IN'
+Slack : 0.067
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_vco_clk_1'
+Slack : 0.100
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_vco_clk_2'
+Slack : 0.100
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_vco_clk'
+Slack : 0.110
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_10'
+Slack : 0.160
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_2'
+Slack : 0.160
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_3'
+Slack : 0.160
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_4'
+Slack : 0.160
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_5'
+Slack : 0.160
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_0'
+Slack : 0.161
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_1'
+Slack : 0.161
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_6'
+Slack : 0.161
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_7'
+Slack : 0.161
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_8'
+Slack : 0.161
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_9'
+Slack : 0.161
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.299
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch0'
+Slack : 0.303
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch1'
+Slack : 0.303
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch10'
+Slack : 0.303
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch11'
+Slack : 0.303
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch12'
+Slack : 0.303
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch13'
+Slack : 0.303
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch14'
+Slack : 0.303
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch15'
+Slack : 0.303
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch2'
+Slack : 0.303
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch3'
+Slack : 0.303
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch4'
+Slack : 0.303
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch5'
+Slack : 0.303
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch6'
+Slack : 0.303
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch7'
+Slack : 0.303
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch8'
+Slack : 0.303
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch9'
+Slack : 0.303
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch10'
+Slack : 0.333
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch11'
+Slack : 0.333
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch12'
+Slack : 0.333
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch13'
+Slack : 0.333
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch14'
+Slack : 0.333
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch15'
+Slack : 0.333
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch4'
+Slack : 0.333
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch5'
+Slack : 0.333
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch6'
+Slack : 0.333
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch7'
+Slack : 0.333
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch9'
+Slack : 0.333
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_0'
+Slack : 0.381
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_1'
+Slack : 0.381
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_2'
+Slack : 0.381
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch8'
+Slack : 0.784
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.953
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_0'
+Slack : 1.143
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_1'
+Slack : 1.143
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_2'
+Slack : 1.143
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'altera_int_osc_clk'
+Slack : 1.176
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 1.388
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_n_cnt_clk'
+Slack : 1.797
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 1.926
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'DDR4A_REFCLK_p'
+Slack : 2.608
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 3.291
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'PCIE_REFCLK_p'
+Slack : 5.000
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'CLK_50_B2C'
+Slack : 9.414
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'CLK_50_B3I'
+Slack : 9.708
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch1'
+Slack : 90.500
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch2'
+Slack : 90.500
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch3'
+Slack : 90.500
+TNS   : 0.000
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 1.172
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 1.183
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 1.226
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 1.930
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 1.945
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.221
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.650
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.679
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.691
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.707
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.756
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.784
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.797
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.816
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 3.414
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 3.444
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 3.534
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 3.561
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 3.604
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 15.579
+
+Type  : Slow 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 15.629
+
+Type  : Slow 900mV 0C Model Net Delay 'set_net_delay'
+Slack : 1.164
+
+Type  : Slow 900mV 0C Model Net Delay 'set_net_delay'
+Slack : 2.057
+
+Type  : Slow 900mV 0C Model Net Delay 'set_net_delay'
+Slack : 2.121
+
+Type  : Slow 900mV 0C Model Net Delay 'set_net_delay'
+Slack : 2.607
+
+Type  : Slow 900mV 0C Model Net Delay 'set_net_delay'
+Slack : 2.785
+
+Type  : Slow 900mV 0C Model Net Delay 'set_net_delay'
+Slack : 2.852
+
+Type  : Slow 900mV 0C Model Net Delay 'set_net_delay'
+Slack : 2.855
+
+Type  : Slow 900mV 0C Model Net Delay 'set_net_delay'
+Slack : 2.888
+
+Type  : Slow 900mV 0C Model Net Delay 'set_net_delay'
+Slack : 15.248
+
+Type  : Fast 900mV 100C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_1'
+Slack : 0.130
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_2'
+Slack : 0.155
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Setup 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.308
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Setup 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 0.347
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.358
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Setup 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 0.370
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_0'
+Slack : 0.609
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_0'
+Slack : 1.294
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Setup 'altera_int_osc_clk'
+Slack : 3.640
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Setup 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 6.670
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Setup 'CLK_50_B2C'
+Slack : 14.281
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.000
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Hold 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 0.014
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Hold 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 0.026
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Hold 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.033
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Hold 'CLK_50_B2C'
+Slack : 0.099
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Hold 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 0.114
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_2'
+Slack : 0.146
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_1'
+Slack : 0.149
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Hold 'altera_int_osc_clk'
+Slack : 0.171
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_0'
+Slack : 0.216
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_0'
+Slack : 0.454
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.615
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.663
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 1.330
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 2.164
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 7.359
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'CLK_50_B2C'
+Slack : 18.137
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch13'
+Slack : 101.677
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch11'
+Slack : 102.725
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch15'
+Slack : 103.318
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch14'
+Slack : 103.541
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch15'
+Slack : 103.679
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch9'
+Slack : 103.716
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch13'
+Slack : 103.771
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch12'
+Slack : 103.990
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch14'
+Slack : 104.040
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch11'
+Slack : 104.233
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch10'
+Slack : 104.442
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch12'
+Slack : 104.451
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch9'
+Slack : 104.685
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch7'
+Slack : 104.741
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch10'
+Slack : 104.886
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch7'
+Slack : 105.139
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch8'
+Slack : 105.306
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch6'
+Slack : 105.374
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch5'
+Slack : 105.618
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch6'
+Slack : 105.735
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch5'
+Slack : 105.827
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch0'
+Slack : 106.086
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch4'
+Slack : 106.184
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch4'
+Slack : 106.184
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch1'
+Slack : 106.316
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch3'
+Slack : 106.477
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch2'
+Slack : 106.540
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch8'
+Slack : 188.848
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 0.270
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.275
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 0.282
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'CLK_50_B2C'
+Slack : 0.306
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 0.321
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.519
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch2'
+Slack : 10.187
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch3'
+Slack : 10.245
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch4'
+Slack : 10.339
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch1'
+Slack : 10.379
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch4'
+Slack : 10.463
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch0'
+Slack : 10.573
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch8'
+Slack : 10.718
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch5'
+Slack : 10.737
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch5'
+Slack : 10.738
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch6'
+Slack : 10.824
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch6'
+Slack : 10.946
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch7'
+Slack : 11.135
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch8'
+Slack : 11.164
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch7'
+Slack : 11.474
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch10'
+Slack : 11.521
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch9'
+Slack : 11.525
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch10'
+Slack : 11.730
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch12'
+Slack : 11.892
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch11'
+Slack : 11.911
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch12'
+Slack : 12.117
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch9'
+Slack : 12.160
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch14'
+Slack : 12.243
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch13'
+Slack : 12.308
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch14'
+Slack : 12.502
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch15'
+Slack : 12.537
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch15'
+Slack : 12.696
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch11'
+Slack : 12.831
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch13'
+Slack : 13.550
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'DDR4A_DQS[0]_IN'
+Slack : 0.061
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'DDR4A_DQS[1]_IN'
+Slack : 0.061
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'DDR4A_DQS[2]_IN'
+Slack : 0.061
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'DDR4A_DQS[3]_IN'
+Slack : 0.061
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'DDR4A_DQS[4]_IN'
+Slack : 0.061
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'DDR4A_DQS[5]_IN'
+Slack : 0.061
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'DDR4A_DQS[6]_IN'
+Slack : 0.061
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'DDR4A_DQS[7]_IN'
+Slack : 0.061
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_vco_clk_1'
+Slack : 0.086
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_vco_clk_2'
+Slack : 0.086
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_vco_clk'
+Slack : 0.129
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_10'
+Slack : 0.175
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_2'
+Slack : 0.175
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_3'
+Slack : 0.175
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_4'
+Slack : 0.175
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_5'
+Slack : 0.175
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_0'
+Slack : 0.176
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_1'
+Slack : 0.176
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_6'
+Slack : 0.176
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_7'
+Slack : 0.176
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_8'
+Slack : 0.176
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_9'
+Slack : 0.176
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch10'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch11'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch12'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch13'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch14'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch15'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch4'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch5'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch6'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch7'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch9'
+Slack : 0.332
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch0'
+Slack : 0.348
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch1'
+Slack : 0.348
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch10'
+Slack : 0.348
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch11'
+Slack : 0.348
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch12'
+Slack : 0.348
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch13'
+Slack : 0.348
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch14'
+Slack : 0.348
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch15'
+Slack : 0.348
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch2'
+Slack : 0.348
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch3'
+Slack : 0.348
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch4'
+Slack : 0.348
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch5'
+Slack : 0.348
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch6'
+Slack : 0.348
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch7'
+Slack : 0.348
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch8'
+Slack : 0.348
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch9'
+Slack : 0.348
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_0'
+Slack : 0.394
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_1'
+Slack : 0.394
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_2'
+Slack : 0.394
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.409
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch8'
+Slack : 0.836
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 1.073
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_0'
+Slack : 1.146
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_1'
+Slack : 1.147
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_2'
+Slack : 1.147
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'altera_int_osc_clk'
+Slack : 1.301
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 1.478
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_n_cnt_clk'
+Slack : 1.817
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 2.011
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'DDR4A_REFCLK_p'
+Slack : 2.586
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 3.334
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'PCIE_REFCLK_p'
+Slack : 5.000
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'CLK_50_B2C'
+Slack : 9.523
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'CLK_50_B3I'
+Slack : 9.636
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch1'
+Slack : 90.500
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch2'
+Slack : 90.500
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch3'
+Slack : 90.500
+TNS   : 0.000
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 1.244
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 1.260
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 1.287
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 1.996
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 2.002
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 2.380
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 2.702
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 2.737
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 2.762
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 2.778
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 2.806
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 2.829
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 2.853
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 2.881
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 3.445
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 3.518
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 3.588
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 3.645
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 3.661
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 15.644
+
+Type  : Fast 900mV 100C Model Max Skew 'set_max_skew'
+Slack : 15.693
+
+Type  : Fast 900mV 100C Model Net Delay 'set_net_delay'
+Slack : 1.213
+
+Type  : Fast 900mV 100C Model Net Delay 'set_net_delay'
+Slack : 2.009
+
+Type  : Fast 900mV 100C Model Net Delay 'set_net_delay'
+Slack : 2.054
+
+Type  : Fast 900mV 100C Model Net Delay 'set_net_delay'
+Slack : 2.620
+
+Type  : Fast 900mV 100C Model Net Delay 'set_net_delay'
+Slack : 2.830
+
+Type  : Fast 900mV 100C Model Net Delay 'set_net_delay'
+Slack : 2.902
+
+Type  : Fast 900mV 100C Model Net Delay 'set_net_delay'
+Slack : 2.913
+
+Type  : Fast 900mV 100C Model Net Delay 'set_net_delay'
+Slack : 2.936
+
+Type  : Fast 900mV 100C Model Net Delay 'set_net_delay'
+Slack : 15.274
+
+Type  : Fast 900mV 0C Model Setup 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.441
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_1'
+Slack : 0.531
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_2'
+Slack : 0.572
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.685
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Setup 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 0.792
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Setup 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 0.987
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_0'
+Slack : 1.122
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Setup 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_0'
+Slack : 1.693
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Setup 'altera_int_osc_clk'
+Slack : 3.666
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Setup 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 6.764
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Setup 'CLK_50_B2C'
+Slack : 15.004
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Hold 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 0.000
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Hold 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 0.003
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_2'
+Slack : 0.017
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_1'
+Slack : 0.021
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Hold 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.027
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.027
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_0'
+Slack : 0.075
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Hold 'CLK_50_B2C'
+Slack : 0.080
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Hold 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 0.124
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Hold 'altera_int_osc_clk'
+Slack : 0.152
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Hold 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_0'
+Slack : 0.209
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.860
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 1.016
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 1.758
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 2.638
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 7.422
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'CLK_50_B2C'
+Slack : 18.414
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch13'
+Slack : 103.325
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch11'
+Slack : 104.322
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch15'
+Slack : 104.865
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch14'
+Slack : 105.060
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch9'
+Slack : 105.259
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch13'
+Slack : 105.264
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch15'
+Slack : 105.342
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch12'
+Slack : 105.458
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch14'
+Slack : 105.661
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch11'
+Slack : 105.673
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch10'
+Slack : 105.846
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch12'
+Slack : 106.027
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch9'
+Slack : 106.068
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch7'
+Slack : 106.226
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch10'
+Slack : 106.416
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch7'
+Slack : 106.469
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch6'
+Slack : 106.675
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch8'
+Slack : 106.786
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch5'
+Slack : 106.885
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch6'
+Slack : 107.164
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch5'
+Slack : 107.250
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch4'
+Slack : 107.400
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch0'
+Slack : 107.492
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch4'
+Slack : 107.559
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch1'
+Slack : 107.675
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch3'
+Slack : 107.825
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch2'
+Slack : 107.873
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Recovery 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch8'
+Slack : 190.412
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 0.267
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.269
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 0.273
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'CLK_50_B2C'
+Slack : 0.301
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 0.303
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 0.445
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch2'
+Slack : 9.119
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch3'
+Slack : 9.165
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch1'
+Slack : 9.289
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch4'
+Slack : 9.366
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch0'
+Slack : 9.446
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch4'
+Slack : 9.487
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch5'
+Slack : 9.608
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch8'
+Slack : 9.635
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch6'
+Slack : 9.686
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch5'
+Slack : 9.857
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch8'
+Slack : 9.990
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch6'
+Slack : 10.037
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch7'
+Slack : 10.202
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch10'
+Slack : 10.306
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch7'
+Slack : 10.311
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch9'
+Slack : 10.544
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch12'
+Slack : 10.635
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch10'
+Slack : 10.734
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch11'
+Slack : 10.884
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch14'
+Slack : 10.947
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch9'
+Slack : 10.976
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch12'
+Slack : 11.066
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch15'
+Slack : 11.207
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch13'
+Slack : 11.233
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch14'
+Slack : 11.406
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch15'
+Slack : 11.574
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch11'
+Slack : 11.624
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Removal 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch13'
+Slack : 12.316
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'DDR4A_DQS[0]_IN'
+Slack : 0.081
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'DDR4A_DQS[2]_IN'
+Slack : 0.081
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'DDR4A_DQS[3]_IN'
+Slack : 0.081
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'DDR4A_DQS[4]_IN'
+Slack : 0.081
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'DDR4A_DQS[6]_IN'
+Slack : 0.081
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'DDR4A_DQS[7]_IN'
+Slack : 0.081
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'DDR4A_DQS[1]_IN'
+Slack : 0.082
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'DDR4A_DQS[5]_IN'
+Slack : 0.082
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_vco_clk_1'
+Slack : 0.171
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_vco_clk_2'
+Slack : 0.171
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_vco_clk'
+Slack : 0.178
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_0'
+Slack : 0.218
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_1'
+Slack : 0.218
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_10'
+Slack : 0.218
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_2'
+Slack : 0.218
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_3'
+Slack : 0.218
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_4'
+Slack : 0.218
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_5'
+Slack : 0.218
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_6'
+Slack : 0.218
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_7'
+Slack : 0.218
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_8'
+Slack : 0.218
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_wf_clk_9'
+Slack : 0.218
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch0'
+Slack : 0.363
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch1'
+Slack : 0.363
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch10'
+Slack : 0.363
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch11'
+Slack : 0.363
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch12'
+Slack : 0.363
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch13'
+Slack : 0.363
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch14'
+Slack : 0.363
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch15'
+Slack : 0.363
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch2'
+Slack : 0.363
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch3'
+Slack : 0.363
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch4'
+Slack : 0.363
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch5'
+Slack : 0.363
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch6'
+Slack : 0.363
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch7'
+Slack : 0.363
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch8'
+Slack : 0.363
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|rx_pcs_x2_clk|ch9'
+Slack : 0.363
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch10'
+Slack : 0.378
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch11'
+Slack : 0.378
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch12'
+Slack : 0.378
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch13'
+Slack : 0.378
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch14'
+Slack : 0.378
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch15'
+Slack : 0.378
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch4'
+Slack : 0.378
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch5'
+Slack : 0.378
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch6'
+Slack : 0.378
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch7'
+Slack : 0.378
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch9'
+Slack : 0.378
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_0'
+Slack : 0.433
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_1'
+Slack : 0.434
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_2'
+Slack : 0.434
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch0'
+Slack : 0.499
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|xcvr_hip_native|ch8'
+Slack : 0.852
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_core_usr_clk'
+Slack : 1.109
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_0'
+Slack : 1.191
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_1'
+Slack : 1.191
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|emif_s10_ddr4a|emif_s10_ddr4a_phy_clk_l_2'
+Slack : 1.191
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'altera_int_osc_clk'
+Slack : 1.393
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_outclk0'
+Slack : 1.555
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_avst512_iopll|altera_ep_g3x16_avst512_io_pll_s10_n_cnt_clk'
+Slack : 1.851
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|vortex_iopll|vortex_iopll_outclk0'
+Slack : 2.062
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'DDR4A_REFCLK_p'
+Slack : 2.702
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'ALTERA_INSERTED_INTOSC_FOR_TRS|divided_osc_clk'
+Slack : 3.374
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'PCIE_REFCLK_p'
+Slack : 5.000
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'CLK_50_B2C'
+Slack : 9.566
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'CLK_50_B3I'
+Slack : 9.722
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch1'
+Slack : 90.500
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch2'
+Slack : 90.500
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Minimum Pulse Width 'u_pcie_ddr4_system|dut|dut|hip|altera_pcie_s10_hip_ast_pipen1b_inst|altera_pcie_s10_hip_ast_pllnphy_inst|g_phy_g3x16.phy_g3x16|phy_g3x16|tx_pcs_x2_clk|ch3'
+Slack : 90.500
+TNS   : 0.000
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 1.267
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 1.287
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 1.302
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.018
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.025
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.461
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.739
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.747
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.789
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.796
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.833
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.847
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.864
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 2.894
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 3.476
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 3.541
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 3.614
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 3.649
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 3.682
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 15.663
+
+Type  : Fast 900mV 0C Model Max Skew 'set_max_skew'
+Slack : 15.706
+
+Type  : Fast 900mV 0C Model Net Delay 'set_net_delay'
+Slack : 1.258
+
+Type  : Fast 900mV 0C Model Net Delay 'set_net_delay'
+Slack : 2.054
+
+Type  : Fast 900mV 0C Model Net Delay 'set_net_delay'
+Slack : 2.112
+
+Type  : Fast 900mV 0C Model Net Delay 'set_net_delay'
+Slack : 2.662
+
+Type  : Fast 900mV 0C Model Net Delay 'set_net_delay'
+Slack : 2.862
+
+Type  : Fast 900mV 0C Model Net Delay 'set_net_delay'
+Slack : 2.950
+
+Type  : Fast 900mV 0C Model Net Delay 'set_net_delay'
+Slack : 2.960
+
+Type  : Fast 900mV 0C Model Net Delay 'set_net_delay'
+Slack : 2.976
+
+Type  : Fast 900mV 0C Model Net Delay 'set_net_delay'
+Slack : 15.335
+
+------------------------------------------------------------
+Info: see the "DDR report" for DDR timing results
+------------------------------------------------------------
+------------------------------------------------------------

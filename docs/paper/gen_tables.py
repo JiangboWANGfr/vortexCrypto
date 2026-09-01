@@ -48,18 +48,23 @@ RESULTS = os.environ.get(
 OUT = os.path.join(HERE, "tables")
 
 # ---------------------------------------------------------------- area ----
-# build-dir -> (ALMs, registers) read 2026-08-29; autofilled from RESULTS when
-# present.  Worst Vortex-domain slack was >= 0.000 for every one of these.
+# build-dir -> (ALMs, registers) read 2026-09-01 from the U5 same-version
+# queue (one clean commit, one constraint set, seed 6; see
+# run_hare_fits_u5.sh in the FPGA project). Autofilled from RESULTS when
+# present. Worst Vortex-domain SETUP slack >= 0.000 in every build; the
+# combined build's single 2 ps hold miss at seed 6 is disclosed in the
+# paper and a re-seed is pending.
 FALLBACK = {
     "c2w4t16.nocrypto":   (183971, 358776),
-    "c2w4t16.base":       (208513, 377741),
-    "c2w4t16.chacha-s1":  (217383, 398476),
-    "c2w4t16.chacha-s3f": (219921, 403240),
+    "c2w4t16.base":       (208881, 378290),
+    "c2w4t16.chacha-s1":  (216039, 389618),
+    "c2w4t16.chacha-s3f": (219348, 407580),
     "c2w4t16":            (223427, 417219),   # sg16, 2R1W poly
-    "c2w4t16.arx16":      (217854, 413656),
-    "c2w4t16.sg4":        (260938, 452906),
-    "c2w4t16.chacha-s2p": (289353, 548422),
-    "c2w4t16.s2p":        (299907, 562705),
+    "c2w4t16.arx16":      (222041, 412859),
+    "c2w4t16.sg4":        (263295, 464386),
+    "c2w4t16.chacha-s2p": (296922, 556078),
+    "c2w4t16.s2p":        (289089, 519409),
+    "c2w4t16.combined":   (278495, 553795),
 }
 
 def read_fit(build):
@@ -286,7 +291,8 @@ t4 = [("crypto-free core",             "c2w4t16.nocrypto"),
       ("\\quad stateless ablation",    "c2w4t16.arx16"),
       ("+ AES S3\\,/\\,4 pair",        "c2w4t16.sg4"),
       ("+ ChaCha S2 engines",          "c2w4t16.chacha-s2p"),
-      ("+ AES S2 engines",             "c2w4t16.s2p")]
+      ("+ AES S2 engines",             "c2w4t16.s2p"),
+      ("Combined HARE (deployable)",   "c2w4t16.combined")]
 t4rows = []
 for name, b in t4:
     a, r = AREA[b]
@@ -375,6 +381,10 @@ print(f"SG4 pair over AES S1      : +{com(AREA['c2w4t16.sg4'][0]-AREA['c2w4t16.b
       f"  ({100*(AREA['c2w4t16.sg4'][0]-AREA['c2w4t16.base'][0])/AREA['c2w4t16.base'][0]:.1f}%)")
 print(f"ChaCha S2 dALM / S3-16 dALM: "
       f"{(AREA['c2w4t16.chacha-s2p'][0]-ZERO)/(AREA['c2w4t16'][0]-ZERO):.2f}x")
+print(f"Combined HARE dALM        : +{com(AREA['c2w4t16.combined'][0]-ZERO)}"
+      f"  ({100*(AREA['c2w4t16.combined'][0]-ZERO)/ZERO:.1f}% of the crypto-free core;"
+      f" {AREA['c2w4t16.combined'][0]-AREA['c2w4t16.chacha-s2p'][0]:+,} vs ChaCha S2 engines)")
+print(f"arx16 vs sg16 ALMs        : {AREA['c2w4t16.arx16'][0]-AREA['c2w4t16'][0]:+,}")
 print(f"arx16/dr16 slowdown (large): "
       f"{FIT[('ChaCha-Poly','ARX16')]['large_cb']/FIT[('ChaCha-Poly','S3/16')]['large_cb']:.2f}x"
       f"  instrs {FIT[('ChaCha-Poly','ARX16')]['large_ib']/FIT[('ChaCha-Poly','S3/16')]['large_ib']:.2f}x")
