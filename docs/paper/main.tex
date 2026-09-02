@@ -679,8 +679,9 @@ shrink the instruction stream; S3 spends issue slots to avoid the context
 \centering
 \caption{Place-and-route on Stratix~10. Every build closes the 200-MHz GPU
 clock domain in all 30 timing-model/corner entries with non-negative
-setup slack; the combined build's one hold corner misses by 2\,ps at the
-shared placement seed (a re-seed is pending), every other entry closing.}
+setup slack. The combined build's single failing endpoint misses hold by
+2\,ps on one corner at the shared placement seed (a second seed lands at
+$-$82\,ps, so we report the first); every other entry closes.}
 \label{tab:area}
 \scriptsize
 \setlength{\tabcolsep}{2.5pt}

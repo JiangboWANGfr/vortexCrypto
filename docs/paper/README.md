@@ -71,10 +71,12 @@ Decisions of record:
   Combined HARE, fitted for the first time: +94,524 (51.4%), cheaper than
   the ChaCha engines alone. The arx16-below-sg16 gap narrowed to 1,386
   ALMs on same-version fits (5,573 had mixed revisions).
-- Combined's one hold corner misses by 2 ps at seed 6 (setup all
-  non-negative everywhere); a seed-7 re-fit is pending, both seeds to be
-  reported. Single-seed (6) throughout otherwise; a 3-seed pass is a
-  pre-submission nice-to-have.
+- Combined's hold miss is ONE endpoint, one corner (Slow vid1 0C), 2 ps
+  at seed 6; seed 7 was tried and is worse (-82 ps, 277,573 ALMs), so
+  seed 6 stands and the paper reports both. QSF is back at seed 6. A
+  targeted endpoint fix would need re-fitting to recover the seed-6 STA
+  database (build.sh archives reports, not .qdb) -- pre-submission
+  nice-to-have alongside the 3-seed pass.
 - The S2 register-predictability sentence dropped its "within 2.4%" figure
   pending re-derivation from the new fits' entity tables.
 - The sg16 area figure is the 2R1W build (223,427); the R4 predecessor
