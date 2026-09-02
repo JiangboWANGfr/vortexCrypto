@@ -88,6 +88,10 @@ const impl_t kImpls[] = {
   // NUM_THREADS to be a multiple of 16, which the recorded shape c2w4t16 is and
   // the CI default c1w4t4 is not.
   { "chacha_poly_sg16", "sg16", true, false, true, false, false, false },
+  // DIAGNOSTIC, index 13: the S2 row with the Poly1305 absorbs deleted, the
+  // ceiling for any stateful Poly1305 engine. Wrong tag by design; measured
+  // through --expect-fail like index 11.
+  { "chacha_poly_s2_noauth", "s2_noauth", false, false, true, false, false, true },
 };
 
 const uint32_t kNumImpls = (uint32_t)(sizeof(kImpls) / sizeof(kImpls[0]));

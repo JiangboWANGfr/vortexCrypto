@@ -1082,7 +1082,7 @@ __kernel void chacha_poly_mac(kernel_arg_t* __UNIFORM__ arg) {
 //
 // Poly1305 is left on the S1 MAC path, so the difference against that row is
 // the ChaCha half and nothing else.
-template <int POLY>
+template <int POLY, int AUTH = 1>
 inline void chacha_poly_s2_body(kernel_arg_t* __UNIFORM__ arg) {
   const uint32_t* key = (const uint32_t*)arg->key_addr;
   const uint32_t num_msgs = arg->num_msgs;
@@ -1126,15 +1126,17 @@ inline void chacha_poly_s2_body(kernel_arg_t* __UNIFORM__ arg) {
       poly1305_init(st, x);
     }
 
-    for (uint32_t off = 0; off < aad_bytes; off += POLY1305_BLOCK_BYTES) {
-      const uint32_t n = (aad_bytes - off < POLY1305_BLOCK_BYTES)
-                       ? (aad_bytes - off) : POLY1305_BLOCK_BYTES;
-      uint8_t padded[POLY1305_BLOCK_BYTES] = {0};
-      for (uint32_t i = 0; i < n; ++i) {
-        padded[i] = aad[off + i];
+    if (AUTH) {
+      for (uint32_t off = 0; off < aad_bytes; off += POLY1305_BLOCK_BYTES) {
+        const uint32_t n = (aad_bytes - off < POLY1305_BLOCK_BYTES)
+                         ? (aad_bytes - off) : POLY1305_BLOCK_BYTES;
+        uint8_t padded[POLY1305_BLOCK_BYTES] = {0};
+        for (uint32_t i = 0; i < n; ++i) {
+          padded[i] = aad[off + i];
+        }
+        poly1305_block<0, POLY>(st, load_le32(padded), load_le32(padded + 4),
+                                load_le32(padded + 8), load_le32(padded + 12));
       }
-      poly1305_block<0, POLY>(st, load_le32(padded), load_le32(padded + 4),
-                              load_le32(padded + 8), load_le32(padded + 12));
     }
 
     const uint32_t* pt = src_base + (size_t)words * msg;
@@ -1147,19 +1149,19 @@ inline void chacha_poly_s2_body(kernel_arg_t* __UNIFORM__ arg) {
       uint32_t c0  = pb[0]  ^ vx_cha_crd(0);   uint32_t c1  = pb[1]  ^ vx_cha_crd(1);
       uint32_t c2  = pb[2]  ^ vx_cha_crd(2);   uint32_t c3  = pb[3]  ^ vx_cha_crd(3);
       cb[0] = c0; cb[1] = c1; cb[2] = c2; cb[3] = c3;
-      poly1305_block<0, POLY>(st, c0, c1, c2, c3);
+      if (AUTH) poly1305_block<0, POLY>(st, c0, c1, c2, c3);
       uint32_t c4  = pb[4]  ^ vx_cha_crd(4);   uint32_t c5  = pb[5]  ^ vx_cha_crd(5);
       uint32_t c6  = pb[6]  ^ vx_cha_crd(6);   uint32_t c7  = pb[7]  ^ vx_cha_crd(7);
       cb[4] = c4; cb[5] = c5; cb[6] = c6; cb[7] = c7;
-      poly1305_block<0, POLY>(st, c4, c5, c6, c7);
+      if (AUTH) poly1305_block<0, POLY>(st, c4, c5, c6, c7);
       uint32_t c8  = pb[8]  ^ vx_cha_crd(8);   uint32_t c9  = pb[9]  ^ vx_cha_crd(9);
       uint32_t c10 = pb[10] ^ vx_cha_crd(10);  uint32_t c11 = pb[11] ^ vx_cha_crd(11);
       cb[8] = c8; cb[9] = c9; cb[10] = c10; cb[11] = c11;
-      poly1305_block<0, POLY>(st, c8, c9, c10, c11);
+      if (AUTH) poly1305_block<0, POLY>(st, c8, c9, c10, c11);
       uint32_t c12 = pb[12] ^ vx_cha_crd(12);  uint32_t c13 = pb[13] ^ vx_cha_crd(13);
       uint32_t c14 = pb[14] ^ vx_cha_crd(14);  uint32_t c15 = pb[15] ^ vx_cha_crd(15);
       cb[12] = c12; cb[13] = c13; cb[14] = c14; cb[15] = c15;
-      poly1305_block<0, POLY>(st, c12, c13, c14, c15);
+      if (AUTH) poly1305_block<0, POLY>(st, c12, c13, c14, c15);
     }
 
     if (tail != 0) {
@@ -1181,15 +1183,20 @@ inline void chacha_poly_s2_body(kernel_arg_t* __UNIFORM__ arg) {
         cb[i] = cv;
         padded[i] = cv;
       }
-      for (uint32_t off = 0; off < tail; off += POLY1305_BLOCK_BYTES) {
-        poly1305_block<0, POLY>(st, load_le32(padded + off),
-                                load_le32(padded + off + 4),
-                                load_le32(padded + off + 8),
-                                load_le32(padded + off + 12));
+      if (AUTH) {
+        for (uint32_t off = 0; off < tail; off += POLY1305_BLOCK_BYTES) {
+          poly1305_block<0, POLY>(st, load_le32(padded + off),
+                                  load_le32(padded + off + 4),
+                                  load_le32(padded + off + 8),
+                                  load_le32(padded + off + 12));
+        }
       }
     }
 
-    poly1305_block<0, POLY>(st, (uint32_t)aad_bytes, 0u, (uint32_t)msg_bytes, 0u);
+    if (AUTH) {
+      poly1305_block<0, POLY>(st, (uint32_t)aad_bytes, 0u,
+                              (uint32_t)msg_bytes, 0u);
+    }
     uint32_t tag[4];
     poly1305_finish(st, tag);
     uint32_t* tp = tag_base + 4 * msg;
@@ -1245,5 +1252,14 @@ __kernel void chacha_poly_xr(kernel_arg_t* __UNIFORM__ arg) {
 // S2: ChaCha20's state in a per-lane context, Poly1305 on the S1 MAC path.
 __kernel void chacha_poly_s2(kernel_arg_t* __UNIFORM__ arg) {
   chacha_poly_s2_body<1>(arg);
+}
+
+// DIAGNOSTIC: the S2 row with every Poly1305 absorb deleted -- the ceiling
+// for any stateful Poly1305 engine. init and finish still run (an engine
+// keeps the key derivation and the tag add), so the tag is wrong on purpose
+// and the row records via --expect-fail, the same bargain as s3f_norp. The
+// slope difference against s2 is the authenticator's whole marginal cost.
+__kernel void chacha_poly_s2_noauth(kernel_arg_t* __UNIFORM__ arg) {
+  chacha_poly_s2_body<1, 0>(arg);
 }
 #endif
