@@ -3,3 +3,4 @@
 *.pyc
 # Archived/superseded docs — kept on disk, never tracked
 docs/archives/
+quartus_sh_tcl_file_for_qsyspro.tcl
