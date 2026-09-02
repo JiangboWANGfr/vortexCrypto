@@ -549,13 +549,18 @@ argument is what it does \emph{not} cost---S2's context and its lifetime.
 HARE-SG16 achieves the lowest observed marginal cost in both regimes:
 essentially tied with S2 in the large-footprint regime (1.728 against
 1.807\,\cB) and $1.61\times$ ahead small-footprint, while avoiding
-persistent architectural crypto context. One asymmetry scopes that tie:
-the ChaCha S2 row has no Poly1305 engine (Sec.~\ref{sec:ise}-B), and the
-counters put 42\% of its retired instructions in the lane-local
-authenticator, so a fully-engined S2 could plausibly take the marginal
-outright---at the price of a second per-(warp,\,lane) context class with
-the same lifetime obligations. The macro form reaches authenticator
-granularity inside the same 2R1W budget and no context at all.
+persistent architectural crypto context. One asymmetry could scope that
+tie: the ChaCha S2 row has no Poly1305 engine (Sec.~\ref{sec:ise}-B), and
+the counters put 42\% of its retired instructions in the lane-local
+authenticator. We measured what an engine could buy with a diagnostic row
+that deletes every absorb---83\% of the row's instruction stream: the row
+runs 5\% \emph{slower} without its authenticator (1.890 against
+1.807\,\cB\ large-footprint). The MACs execute in the shadow of the
+engine's eight-cycle double-rounds and the row's memory traffic, so even a
+zero-instruction authenticator would buy nothing; the tie stands, and the
+missing engine costs the S2 row no performance---only the macro form
+reaches authenticator granularity, inside the same 2R1W budget and with no
+context at all.
 One definitional note: the ChaCha S0 row
 assumes rotate instructions (Zbb semantics); without them the large-footprint
 figure moves only 2.4\%---both variants are bound by the same memory
