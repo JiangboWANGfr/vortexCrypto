@@ -126,6 +126,23 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
         return e ^ (e << 1) ^ (e << 2) ^ (e << 7);
     endfunction
 
+    // 64x64 -> 128 carry-less multiply as THREE clmul64, one Karatsuba level:
+    // for a = {a1,a0}, b = {b1,b0} the school product a1b1,a1b0,a0b1,a0b0 (four
+    // multiplies) becomes q0=a0b0, q2=a1b1, and one cross term
+    // qm=(a0^a1)(b0^b1)^q0^q2, three multiplies. In GF(2) the Karatsuba
+    // subtractions are XORs, so the saving is a net one-multiply-in-four.
+    function automatic logic [4*XLEN-1:0] clmul128 (input logic [2*XLEN-1:0] a,
+                                                    input logic [2*XLEN-1:0] b);
+        logic [2*XLEN-1:0] q0, q2, qm;
+        q0 = clmul64(a[XLEN-1:0],      b[XLEN-1:0]);
+        q2 = clmul64(a[2*XLEN-1:XLEN], b[2*XLEN-1:XLEN]);
+        qm = clmul64(a[XLEN-1:0] ^ a[2*XLEN-1:XLEN],
+                     b[XLEN-1:0] ^ b[2*XLEN-1:XLEN]) ^ q0 ^ q2;
+        return {{2*XLEN{1'b0}}, q0}
+             ^ ({{2*XLEN{1'b0}}, qm} << XLEN)
+             ^ ({{2*XLEN{1'b0}}, q2} << (2*XLEN));
+    endfunction
+
 
 `ifdef VX_CFG_EXT_AUTH_SG4_ENABLE
     // Stateless subgroup GF(2^128) multiply.
@@ -154,19 +171,27 @@ module VX_auth_ghash import VX_gpu_pkg::*; #(
 
     for (genvar q = 0; q < NUM_LANES / 4; ++q) begin : g_quads
         logic [7:0][XLEN-1:0] pp;
-        logic [2*XLEN-1:0] prod;
+        logic [4*XLEN-1:0] a128, b128, p_lo, p_hi, p_mid;
+        logic [8*XLEN-1:0] prod256;
         always @(*) begin
-            // '0 rather than an assignment pattern: pp is PACKED, and '{default:'0}
-            // is an unpacked-array form whose meaning here is not what it reads as.
-            pp = '0;
-            prod = '0;
-            for (int i = 0; i < 4; ++i) begin
-                for (int j = 0; j < 4; ++j) begin
-                    prod = clmul64(execute_if.data.rs1_data[4*q+i],
-                                   execute_if.data.rs2_data[4*q+j]);
-                    pp[i+j]   = pp[i+j]   ^ prod[XLEN-1:0];
-                    pp[i+j+1] = pp[i+j+1] ^ prod[2*XLEN-1:XLEN];
-                end
+            // The quad's four 32-bit limbs form one 128-bit operand each, limb 0
+            // in the low word. Second Karatsuba level over the two 64-bit halves:
+            // p_lo=Alo*Blo, p_hi=Ahi*Bhi, and one cross term, three 64x64
+            // multiplies -- each itself three clmul64 -- so nine clmul64 build the
+            // 256-bit product where the schoolbook 4x4 used sixteen.
+            a128 = {execute_if.data.rs1_data[4*q+3], execute_if.data.rs1_data[4*q+2],
+                    execute_if.data.rs1_data[4*q+1], execute_if.data.rs1_data[4*q+0]};
+            b128 = {execute_if.data.rs2_data[4*q+3], execute_if.data.rs2_data[4*q+2],
+                    execute_if.data.rs2_data[4*q+1], execute_if.data.rs2_data[4*q+0]};
+            p_lo  = clmul128(a128[2*XLEN-1:0],      b128[2*XLEN-1:0]);
+            p_hi  = clmul128(a128[4*XLEN-1:2*XLEN], b128[4*XLEN-1:2*XLEN]);
+            p_mid = clmul128(a128[2*XLEN-1:0] ^ a128[4*XLEN-1:2*XLEN],
+                             b128[2*XLEN-1:0] ^ b128[4*XLEN-1:2*XLEN]) ^ p_lo ^ p_hi;
+            prod256 = {{4*XLEN{1'b0}}, p_lo}
+                    ^ ({{4*XLEN{1'b0}}, p_mid} << (2*XLEN))
+                    ^ ({{4*XLEN{1'b0}}, p_hi}  << (4*XLEN));
+            for (int k = 0; k < 8; ++k) begin
+                pp[k] = prod256[XLEN*k +: XLEN];
             end
         end
 
