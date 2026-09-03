@@ -5,6 +5,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <dlfcn.h>
 #include <unistd.h>
 #include "common.h"
 #include "aes_gcm_ref.h"
@@ -28,6 +29,11 @@ uint32_t g_blocks_per_msg = 16;
 uint32_t g_tail_bytes = 0;
 uint32_t g_aad_bytes = 0;
 uint32_t g_impl = 0;
+// -r: run the kernel this many times before the measured pass, for
+// sustained-load power windows; -P samples the board's power rails
+// between launches (de10pro driver only, resolved at run time).
+uint32_t g_repeats = 1;
+int g_power_sampling = 0;
 
 // Every implementation is a separate entry point in the same binary, sharing
 // this host program's buffers, vectors and counter reduction. Only the device
@@ -209,7 +215,7 @@ const uint8_t kKatAesCt[16] = {
 void show_usage() {
   std::printf(
       "AES-128-GCM\n"
-      "Usage: [-n msgs] [-b blocks_per_msg] [-t tail_bytes] [-a aad_bytes] [-i impl] [-k kernel] [-h]\n");
+      "Usage: [-n msgs] [-b blocks_per_msg] [-t tail_bytes] [-a aad_bytes] [-i impl] [-k kernel] [-r repeats] [-P] [-h]\n");
   for (uint32_t i = 0; i < kNumImpls; ++i) {
     std::printf("  -i%u  %s\n", i, kImpls[i].label);
   }
@@ -217,13 +223,19 @@ void show_usage() {
 
 void parse_args(int argc, char** argv) {
   int c;
-  while ((c = getopt(argc, argv, "n:b:t:a:i:k:h")) != -1) {
+  while ((c = getopt(argc, argv, "n:b:t:a:i:k:r:Ph")) != -1) {
     switch (c) {
     case 'n': g_num_msgs = (uint32_t)std::atoi(optarg); break;
     case 'b': g_blocks_per_msg = (uint32_t)std::atoi(optarg); break;
     case 't': g_tail_bytes = (uint32_t)std::atoi(optarg); break;
     case 'a': g_aad_bytes = (uint32_t)std::atoi(optarg); break;
     case 'i': g_impl = (uint32_t)std::atoi(optarg); break;
+    case 'r': {
+      const int reps = std::atoi(optarg);
+      g_repeats = reps < 1 ? 1u : (uint32_t)reps;
+      break;
+    }
+    case 'P': g_power_sampling = 1; break;
     case 'k': g_kernel_file = optarg; break;
     case 'h': show_usage(); std::exit(0); break;
     default: show_usage(); std::exit(-1);
@@ -517,6 +529,36 @@ int main(int argc, char** argv) {
   li.block_dim[2] = 1;
   li.lmem_size = AES_GCM_LMEM_BYTES;
 
+  // Power runs: resolve the de10pro sampler if asked (absent on other
+  // drivers), then run the kernel g_repeats-1 extra times, sampling between
+  // launches on this one thread so telemetry never races device traffic.
+  typedef int (*vx_power_fn)(uint64_t*, uint64_t*);
+  vx_power_fn power_fn = nullptr;
+  if (g_power_sampling) {
+    power_fn = (vx_power_fn)dlsym(RTLD_DEFAULT, "vx_de10pro_power_sample");
+    if (power_fn == nullptr) {
+      std::printf("POWER: sampler unavailable on this driver\n");
+    }
+  }
+#define SAMPLE_POWER(tag)                                                     \
+  do {                                                                        \
+    if (power_fn != nullptr) {                                                \
+      uint64_t in_uw = 0, core_uw = 0;                                        \
+      if (power_fn(&in_uw, &core_uw) == 0) {                                  \
+        std::printf("POWER: %s input_uw=%llu core_uw=%llu\n", tag,           \
+                    (unsigned long long)in_uw, (unsigned long long)core_uw);  \
+      }                                                                       \
+    }                                                                         \
+  } while (0)
+  SAMPLE_POWER("pre");
+  for (uint32_t rep = 1; rep < g_repeats; ++rep) {
+    vx_event_h rep_ev = nullptr;
+    CHECK(vx_enqueue_launch(queue, &li, 0, nullptr, &rep_ev));
+    CHECK(vx_event_wait_value(rep_ev, 1, VX_TIMEOUT_INFINITE));
+    vx_event_release(rep_ev);
+    SAMPLE_POWER("mid");
+  }
+
   vx_event_h launch_ev = nullptr;
   vx_event_h ct_ev = nullptr;
   vx_event_h tag_ev = nullptr;
@@ -551,8 +593,13 @@ int main(int argc, char** argv) {
     if (core != 0) {
       core_instrs += ':';
     }
-    core_instrs += std::to_string(v);
+    core_instrs += std::to_string(v / g_repeats);
   }
+  // The free-running counters span every -r launch; scale back to one pass.
+  // Inter-launch gaps are microseconds of MMIO against the kernel's cycles,
+  // so per-block figures stay honest for the power runs -r exists for.
+  cycles /= g_repeats;
+  instrs /= g_repeats;
 
   int errors = 0;
   for (uint32_t m = 0; m < g_num_msgs && errors < 8; ++m) {
@@ -569,7 +616,7 @@ int main(int argc, char** argv) {
   std::printf("AES_GCM_PERF: impl=%s key_bits=128 mode=gcm msgs=%u "
               "blocks_per_msg=%u blocks=%llu bytes=%zu cycles=%llu "
               "instrs=%llu core_instrs=%s cycles_per_block=%.2f "
-              "instrs_per_block=%.2f bytes_per_cycle=%.4f cores=%lu "
+              "instrs_per_block=%.2f bytes_per_cycle=%.4f repeats=%u cores=%lu "
               "warps=%lu threads=%lu\n",
               kImpls[g_impl].label, g_num_msgs, g_blocks_per_msg,
               (unsigned long long)total_blocks, data_bytes,
@@ -578,10 +625,12 @@ int main(int argc, char** argv) {
               (double)cycles / (double)total_blocks,
               (double)instrs / (double)total_blocks,
               (double)data_bytes / (double)cycles,
-              (unsigned long)num_cores, (unsigned long)num_warps,
+              (unsigned)g_repeats, (unsigned long)num_cores, (unsigned long)num_warps,
               (unsigned long)num_threads);
 
   vx_device_dump_perf(dev, stdout);
+  SAMPLE_POWER("post");
+#undef SAMPLE_POWER
 
   vx_event_release(tag_ev);
   vx_event_release(ct_ev);

@@ -817,5 +817,50 @@ private:
   uint64_t gpu_isa_caps_ = 0;
 };
 
+// Power telemetry for measurement hosts, resolved by dlsym so the crypto
+// applications stay driver-portable. Opens its own BAR-only handle lazily
+// (kmem_size 0: plain register reads, no DMA staging) and keeps it for the
+// life of the process. Callers serialise sampling with their own device
+// traffic; the measurement hosts do so by sampling between kernel launches
+// on one thread, so telemetry never races the command processor.
+extern "C" int vx_de10pro_power_sample(uint64_t* input_uw, uint64_t* core_uw) {
+  using vortex::de10pro::BoardManager;
+  using vortex::de10pro::BoardManagerIo;
+  using vortex::de10pro::BoardProbeResult;
+  using vortex::de10pro::BoardTelemetry;
+  static BoardManager* manager = nullptr;
+  if (manager == nullptr) {
+    const uint32_t bdf = env_u32("DE10PRO_PCIE_BDF", VX_DE10PRO_DEFAULT_BDF);
+    const auto bar = static_cast<pcie_bar_t>(
+        env_u32("DE10PRO_VX_BAR", VX_DE10PRO_DEFAULT_BAR));
+    pcie_handle_t handle = drv_open(bdf, bar, 0);
+    if (handle == nullptr) {
+      return -1;
+    }
+    auto candidate = new BoardManager(BoardManagerIo{
+        handle,
+        [](void* context, uint64_t address, uint32_t* value) {
+          return drv_read32(context, address, value);
+        },
+        [](void* context, uint64_t address, uint32_t value) {
+          return drv_write32(context, address, value);
+        }});
+    if (candidate->probe() != BoardProbeResult::Available) {
+      delete candidate;
+      return -1;
+    }
+    manager = candidate;
+  }
+  BoardTelemetry telemetry{};
+  if (!manager->read_telemetry(&telemetry)) {
+    return -1;
+  }
+  *input_uw = BoardManager::power_raw_to_microwatts(telemetry.power_raw[0],
+                                                    telemetry.power_lsb_nw[0]);
+  *core_uw = BoardManager::power_raw_to_microwatts(telemetry.power_raw[1],
+                                                   telemetry.power_lsb_nw[1]);
+  return 0;
+}
+
 #define VX_BACKEND_HAS_PLATFORM_QUERY
 #include <callbacks.inc>

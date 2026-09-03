@@ -19,6 +19,8 @@ PROJECT := libvortex-de10pro.so
 BOARDCTL := vortex-de10pro-boardctl
 BOARDCTL_SRCS := $(SRC_DIR)/boardctl.cpp $(SRC_DIR)/driver.cpp \
 	$(SRC_DIR)/board_manager.cpp
+RESET := vortex-de10pro-reset
+RESET_SRCS := $(SRC_DIR)/reset.cpp $(SRC_DIR)/driver.cpp
 
 ifdef DEBUG
 	CXXFLAGS += -g -O0
@@ -28,13 +30,16 @@ endif
 
 .PHONY: all force clean
 
-all: $(DESTDIR)/$(PROJECT) $(DESTDIR)/$(BOARDCTL)
+all: $(DESTDIR)/$(PROJECT) $(DESTDIR)/$(BOARDCTL) $(DESTDIR)/$(RESET)
 
 $(DESTDIR)/$(PROJECT): $(SRCS) $(CONFIG_FILE)
 	$(CXX) $(CXXFLAGS) $(SRCS) $(LDFLAGS) -o $@
 
 $(DESTDIR)/$(BOARDCTL): $(BOARDCTL_SRCS) $(CONFIG_FILE)
 	$(CXX) $(CXXFLAGS) $(BOARDCTL_SRCS) -pthread -o $@
+
+$(DESTDIR)/$(RESET): $(RESET_SRCS) $(CONFIG_FILE)
+	$(CXX) $(CXXFLAGS) $(RESET_SRCS) -pthread -o $@
 
 $(CONFIG_FILE): force
 	@mkdir -p $(@D)
