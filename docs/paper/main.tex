@@ -641,11 +641,12 @@ shrink the instruction stream; S3 spends issue slots to avoid the context
 \subsection{Area and timing}
 \begin{table}[t]
 \centering
-\caption{Place-and-route on Stratix~10. Every build closes the 200-MHz GPU
-clock domain in all 30 timing-model/corner entries. Closing the combined
-build's last corner---a 2\,ps hold artifact of registers retimed across
-one dispatch buffer's RAM---took pinning that buffer out of retiming, an
-exclusion the shared constraint set now carries.}
+\caption{Place-and-route on Stratix~10. $\Delta$ALM is against the
+crypto-free core; $+\%$ is the increase over the build a row extends (the
+core for the S1 rows and the combined build). Every build closes the
+200-MHz GPU clock domain in all 30 timing-model/corner entries; the
+combined build's last 2\,ps hold corner closed by pinning one dispatch
+buffer out of register retiming, now part of the shared constraint set.}
 \label{tab:area}
 \scriptsize
 \setlength{\tabcolsep}{2.5pt}
@@ -677,14 +678,14 @@ rule for AES (\texttt{vaes*} on 128-bit element groups) but offer ChaCha
 no ratified form and no 512-bit group---SIMT subgroups supply exactly
 that width, where our sixteen-lane result lives.
 \textbf{GPU software cryptography} reaches back to early CUDA
-AES~\cite{manavski2007cuda} and continues through GPU GCM implementations;
-these set the S0 bar every tier here is measured against.
+AES~\cite{manavski2007cuda}; such implementations set the S0 bar every
+tier here is measured against.
 \textbf{GPU confidential computing} puts AEAD on the CPU--GPU path;
 recent systems work reduces its \emph{scheduling}
 overheads~\cite{wang2024fastrack,lee2025gputee}, orthogonal to---and
 composing with---an ISE's per-byte cost reduction.
 \textbf{Fixed-function accelerators} deliver bandwidth but freeze the
-algorithm and sit outside the SIMT programming model; HARE's tiers are all
+algorithm and sit outside the SIMT programming model; HARE's tiers are
 programmable instructions inside it.
 
 \section{Conclusion}\label{sec:conclusion}
@@ -695,9 +696,8 @@ subgroup-cooperative instructions carry the lowest marginal cost for
 both---provided the subgroup and the instruction's granularity span the
 block state, working state lives exactly as long as one instruction, and
 records amortise the start-up. The rules are properties of block-state
-extent and issue bandwidth, not of these ciphers; the whole extension
-fits 2R1W operand delivery, and what ran out first was not area, timing,
-or read ports but opcode space---budget it as deliberately as ALMs.
+extent and issue bandwidth, not of these ciphers; what ran out first was
+opcode space---budget it as deliberately as ALMs.
 
 \balance
 \bibliographystyle{IEEEtran}
