@@ -71,12 +71,12 @@ Decisions of record:
   Combined HARE, fitted for the first time: +94,524 (51.4%), cheaper than
   the ChaCha engines alone. The arx16-below-sg16 gap narrowed to 1,386
   ALMs on same-version fits (5,573 had mixed revisions).
-- Combined's hold miss is ONE endpoint, one corner (Slow vid1 0C), 2 ps
-  at seed 6; seed 7 was tried and is worse (-82 ps, 277,573 ALMs), so
-  seed 6 stands and the paper reports both. QSF is back at seed 6. A
-  targeted endpoint fix would need re-fitting to recover the seed-6 STA
-  database (build.sh archives reports, not .qdb) -- pre-submission
-  nice-to-have alongside the 3-seed pass.
+- Combined's hold corner is CLOSED (FPGA commit b8147cf): the 2 ps miss
+  was a Hyper-Retimer artifact across one dispatch buffer's RAM; pinning
+  exactly that buffer out of register retiming closes all 30 corners at
+  277,466 ALMs (seed 7 and a broad all-buffers pin are on record as
+  worse). The exclusion is part of the constraint set of record; the
+  other nine builds re-fit under it in the u5b overnight queue.
 - The S2 register-predictability sentence dropped its "within 2.4%" figure
   pending re-derivation from the new fits' entity tables.
 - The sg16 area figure is the 2R1W build (223,427); the R4 predecessor
@@ -97,7 +97,12 @@ Decisions of record:
   SYM+AUTH + SYM_SG4/AUTH_SG4 + SYM_CHACHA/AUTH_POLY +
   SYM_CHACHA_SG16/AUTH_POLY_STEP16.
 
-Open items: the draft is 7 pages against DAC's 6 -- needs a compression
-pass; combined seed-7 re-fit; re-derive the S2 register-predictability
-figure; board (U7); final re-baseline of the performance dataset at the
-submission commit.
+Compression done 2026-09-03: body fits 6 pages, page 7 is references
+only (tab_steps table cut -- derivable from tab_tiers; Security merged
+into Sec. III's properties paragraph; methodology/state/conclusion
+tightened; the unverifiable register-predictability clause removed).
+
+Open items: verify the u5b nine re-fits close under the new constraint
+set and archive fits-2026-09-03/; board (U7); final re-baseline of the
+performance dataset at the submission commit; 3-seed pass if time
+allows.
