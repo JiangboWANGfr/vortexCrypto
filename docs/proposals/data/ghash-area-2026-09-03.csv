@@ -1,0 +1,4 @@
+stage,total_alm,registers,ghash,aes_round,chacha_xr,poly,dr16,slack,cycles
+schoolbook,277466,469244,62382,9538,9377,5214,2452,+0.000,---
+karatsuba,248145,,36036,9668,7659,5110,2410,-0.072,same
+shared,238526,429048,24822,9661,7711,5179,2369,+0.000,same

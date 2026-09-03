@@ -102,7 +102,42 @@ only (tab_steps table cut -- derivable from tab_tiers; Security merged
 into Sec. III's properties paragraph; methodology/state/conclusion
 tightened; the unverifiable register-predictability clause removed).
 
-Open items: verify the u5b nine re-fits close under the new constraint
-set and archive fits-2026-09-03/; board (U7); final re-baseline of the
-performance dataset at the submission commit; 3-seed pass if time
-allows.
+- Base switched 2026-09-03 (65be9102b): the author's expanded draft is
+  main.tex -- board-gated framing (\AESBoardSpeedup/\ChaChaBoardSpeedup are
+  TBD until the gated DE10-Pro sweep), restyled Table I, redrawn tiers
+  figure, AEAD-dataflow figure, Discussion section. The previous 6-page
+  main.tex is 6b2e314c2. Currently 8 pages incl. refs; compression later.
+- Shared GHASH adopted (d97c021cd): results/c2w4t16.combined IS the
+  shared-array fit, 238,526 ALMs, +54,555 (29.7%), all 30 corners closed,
+  cycles bit-identical at b=8 / -0.16% at b=64. Schoolbook fit kept at
+  results/attic/c2w4t16.combined.schoolbook; Karatsuba-only (248,145,
+  setup -72 ps) at results/c2w4t16.combined-karatsuba.
+- Table IV repurposed: it no longer lists per-build ALMs (that duplicated
+  Table II's dALM and Table III's ALMs). It is now the per-primitive
+  breakdown of the extension (GHASH 45.5% / AES round 17.7% / ChaCha xr
+  14.1% / Poly 9.5% / dr.sg16 4.3% / glue 8.8%) plus the three GHASH
+  multiplier stages; the generator reads data/ghash-area-2026-09-03.csv.
+  Table II keeps dALM; Combined, the zero and timing live in D's prose.
+- TODO(u5c) markers in main.tex flag every per-tier area number that
+  re-syncs once run_hare_fits_u5c.sh completes (sg4 with shared GHASH,
+  chacha-s3f, chacha-s2p, arx16, sg16); the tables already read results/
+  live and show the mixed set. Re-sync ONCE, from the generator's output.
+- ChaCha S0 row under review (data/chacha-s0-rori-20260903.md): the
+  "moves only 2.4% without rotate" sentence is removed -- plain software
+  is 12.5% FASTER per byte than the rori row (9.998 vs 11.424 c/B), since
+  rori issues to the SYM unit, not the ALU. Against sw the ChaCha S0->S1
+  step is 1.35x, not 1.55x. Whether sw becomes the S0 row of record is
+  the author's decision; the frozen dataset has no sw rows yet.
+- Six bibliography entries imported with the expanded draft
+  (adams2021crypto, lee2025gpugcm, marshall2021aesise, marshall2021chacha,
+  volos2018graviton, wang2021gpuchacha) are TODO-verify; they look like
+  real papers but have not passed the 08-31 check.
+- Power: the D section states method and the measured idle floor
+  (46.5 W input / 22.5 W core); energy per byte is TODO(power sweep),
+  which needs a clean host boot (DMA recovers only by reboot).
+
+Open items: u5c terminal check + fits-2026-09-03/ snapshot + the one-pass
+area re-sync (abstract, intro, D, Table II prose); S0 row decision; verify
+the six bib entries; board power sweep + U7 performance sweep (the paper's
+data source of record); compression 8 -> 6 pages; final dataset
+re-baseline at the submission commit.

@@ -53,7 +53,9 @@ Gated DE10-Pro measurements show large-footprint marginal-cost reductions of
 The comparison exposes an intercept--slope tradeoff: persistent engines can
 amortize short-record setup, whereas HARE avoids persistent unit-private
 context. Place-and-route shows that ChaCha SG16 adds 3.4\% ALMs over S1, while
-Combined HARE remains 19{,}456 ALMs smaller than the standalone ChaCha engine.
+Combined HARE, with one GHASH multiplier array shared across its quads,
+remains 58{,}396 ALMs smaller than the standalone ChaCha engine.
+% TODO(u5c): 3.4% and 58,396 re-sync once sg16 and chacha-s2p re-fit.
 The results show that state lifetime, lane scope, and operation granularity
 must be co-designed for programmable SIMT authenticated encryption.
 \end{abstract}
@@ -674,6 +676,11 @@ warps and sixteen lanes is 57{,}344 bits per core. Context is per lane, not
 per warp, by design: sharing one key per warp was rejected because batching
 records from \emph{different} sessions---different keys in the same
 warp---is the case that makes a GPU worth using for AEAD at all.
+There is deliberately no Poly1305 engine: five limbs live in ten registers
+and a block step is ten three-source MACs, so the ChaCha-Poly S2 row pairs
+its cipher engine with the lane-local \texttt{poly26.mac}; GHASH's full
+GF($2^{128}$) block step is where a stateful authenticator pays, which is
+why only the AES-GCM S2 row is a dual engine.
 
 \subsection{HARE: S3 subgroup-cooperative instructions}
 For AES-GCM the subgroup is an aligned quad: lane $i$ holds column $i$ of
@@ -782,25 +789,28 @@ vocabulary has accelerated AES and left ChaCha largely issue-bound. Stateful
 engines reduce marginal cost further and remain valuable for short records,
 but they are not the lowest-marginal-cost point and have the largest
 incremental area in the measured ladder.
-The per-step ratios make the harvest pattern explicit:
-
-\begin{center}
-\scriptsize
-\input{tables/tab_steps}
-\end{center}
-
-\noindent AES-GCM's largest step is the first; ChaCha's is the second. The
-subgroup step multiplies both at the small-footprint point ($1.49\times$,
+The per-step pattern falls out of Table~\ref{tab:tiers}'s $\times$S1
+columns: AES-GCM's largest step is the first, ChaCha's is the second, and
+the subgroup step multiplies both at the small-footprint point ($1.49\times$,
 $1.61\times$); at the large-footprint point it is decisive for AES-GCM
 ($2.71\times$) and, for ChaCha, a narrow win ($1.05\times$) whose real
 argument is what it does \emph{not} cost---S2's context and its lifetime.
 HARE-SG16 achieves the lowest observed marginal cost in both regimes:
 essentially tied with S2 in the large-footprint regime (1.728 against
 1.807\,\cB) and $1.61\times$ ahead small-footprint, while avoiding
-additional persistent unit-private crypto context.
-One definitional note: the ChaCha S0 row
-assumes rotate instructions (Zbb semantics); without them the large-footprint
-figure moves only 2.4\%, so the ladder does not hinge on that choice.
+additional persistent unit-private crypto context. That tie is against a
+partially engined S2---the row has no Poly1305 engine, and 42\% of its
+instructions are the lane-local authenticator---so we measured what an
+engine could buy: a diagnostic that deletes every absorb (83\% of the
+stream) runs 5\% \emph{slower} (1.890 against 1.807\,\cB). The MACs execute
+in the shadow of the engine's eight-cycle double-rounds; an engine's ceiling
+is at most zero, and the tie stands.
+% Removed 2026-09-03: "without rotate instructions the S0 figure moves only
+% 2.4%" came from the superseded n=64 dataset and does not reproduce -- at
+% n=128 the plain-software row is 12.5% FASTER per byte than the rori row
+% (9.998 vs 11.424 c/B, b=16->32), because rori issues to the SYM unit, not
+% the ALU. See data/chacha-s0-rori-20260903.md; the S0 row of record is
+% under review.
 At both operating points the subgroup tier has the lowest marginal cost for
 both AEADs ($5.81\times$ and $8.41\times$ over S1 small-footprint). The first
 on-board AES-SG4 cross-check processes 16\,KiB in 36{,}345 cycles and 128\,KiB
@@ -883,34 +893,64 @@ semantics to shrink the instruction stream; S3 spends issue slots to avoid
 additional persistent unit-private context. The appropriate choice therefore
 depends on record length and the platform's context-switch contract.
 
-\subsection{Area and timing}
+\subsection{Area, timing, and power}
 \begin{table}[t]
 \centering
-\caption{Same-version, seed-6 place-and-route on Stratix~10. Every reported
-build has nonnegative setup and hold slack across all archived corner checks.}
+\caption{Where the extension's area goes (Combined build, two cores, shared
+GHASH) and what the three GHASH multiplier implementations cost.
+Percentages in the upper block are of the extension's $\Delta$ALM; in the
+lower, of the crypto-free core. Slack is the worst Vortex-domain entry over
+the 30 corner checks; cycles are AES-GCM S3\,/\,4 at the board
+configuration relative to the schoolbook build.}
 \label{tab:area}
 \scriptsize
 \setlength{\tabcolsep}{2.5pt}
 \input{tables/tab_area}
 \end{table}
-Table~\ref{tab:area} prices the ladder against the crypto-free two-core
-accelerator build (183{,}971 ALMs). AES S1 and ChaCha S1 add 24{,}910 and
-32{,}068 ALMs, respectively. Relative to its ChaCha-S1 parent, the two SG16
-instructions add \textbf{7{,}388 ALMs (3.4\%)} and return $4.32\times$
-large-footprint marginal speedup ($8.41\times$ small-footprint). The AES-SG4
-pair adds 54{,}414 ALMs over its AES-S1 parent; its GF($2^{128}$) multiplier
-is the dominant new datapath. Against the crypto-free build, AES S2 adds
-105{,}118 ALMs and ChaCha S2 adds 112{,}951. The latter increment is
-$2.86\times$ SG16's 39{,}456-ALM increment, without implying that context
-alone explains the full difference between the bundles.
+Table~\ref{tab:tiers}'s $\Delta$ALM column prices each tier against the
+crypto-free two-core build (183{,}971 ALMs); Table~\ref{tab:area} asks where
+that area goes and what it took to bring it down.
+% TODO(u5c): the per-tier deltas quoted in the abstract and here (SG16 over
+% ChaCha S1, AES SG4 over AES S1, the S2 engines) re-sync once the
+% same-version set completes; do not hand-copy from the current mixed table.
+In the first Combined fit one block held two thirds of the extension:
+GHASH's GF($2^{128}$) multiply, a schoolbook $4{\times}4$ of 32-bit
+carry-less products per four-lane quad, one array per quad---64 multipliers
+per core, 62{,}382 ALMs across the two cores against 9{,}538 for the AES
+round itself. Two changes to that block, and nothing else, cut it
+$2.5\times$. Karatsuba on both levels of the 128-bit product turns sixteen
+multiplies into nine, but the deeper XOR combine costs 72\,ps of setup at
+200\,MHz. Sharing one nine-multiply array across the four quads---GHASH per
+record is a serial chain, so the quads hold independent records and one
+array walks them in four cycles---removes three of the four arrays and puts
+one quad's Karatsuba, not four in parallel, on the critical path; every
+corner closes again. The latency costs nothing measurable: the unit sat at
+13\% occupancy on a memory-bound AEAD, and cycles are bit-identical at
+16\,KiB and within 0.16\% at 128\,KiB. Combined HARE lands at 238{,}526
+ALMs, +54{,}555 (29.7\%) over the crypto-free build and 58{,}396 ALMs
+below the standalone ChaCha S2 engines;
+% TODO(u5c): 58,396 uses the 09-01 chacha-s2p fit; re-sync after its re-fit.
+GHASH is now 45\% of the extension, and what remains of it is the sixteen
+lane-local multipliers the S1 tier itself needs plus the one shared array.
+Because the extension is a per-lane ISA rather than a shared block, its
+cost scales with cores alongside the baseline: the percentage is a
+steady-state per-core tax, not one amortised by adding cores.
 
-The deployable Combined build contains both recommended subgroup paths and
-their S1 vocabularies. It occupies 277{,}466 ALMs, adding 93{,}495 (50.8\%)
-over the crypto-free build while remaining 19{,}456 ALMs smaller than the
-standalone ChaCha-S2 build. At common seed~6, all ten configurations have
-nonnegative setup and hold slack across all 30 archived corner checks. GPU
-and PCIe timing, RAM/DSP usage, and the per-corner summaries are retained in
-the build archive.
+All ten configurations close setup and hold across the 30 archived corner
+checks at common seed~6. The constraint set carries one exclusion---a
+single dispatch buffer pinned out of register retiming---which closed the
+Combined build's last 2\,ps hold corner; GPU and PCIe timing, RAM/DSP
+usage, and the per-corner summaries are retained in the build archive.
+
+Power is read on the board from the two LTC2945 monitors the shell already
+carries (12\,V input and the FPGA core rail, about ten samples per second),
+sampled inside the measurement process between kernel launches so
+telemetry never races the command processor. With the Combined image loaded
+and idle the floor is 46.5\,W input and 22.5\,W core, dominated by the PCIe
+and DDR4 shell; the quantity of interest is the active-minus-idle delta at
+sustained load, from which energy per byte follows with the measured
+throughput.
+% TODO(power sweep): active deltas and J/B per tier from the gated sweep.
 
 \subsection{Security properties}
 All evaluated instruction forms have operand-independent latency, and the

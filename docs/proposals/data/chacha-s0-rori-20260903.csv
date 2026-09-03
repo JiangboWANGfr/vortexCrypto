@@ -1,0 +1,5 @@
+impl,blocks_per_msg,bytes,cycles,source
+sw,16,131072,1469082,rtlsim 2026-09-03 c2w4t16 chacha-s1 configs -n128 -i0
+sw,32,262144,2779520,rtlsim 2026-09-03 c2w4t16 chacha-s1 configs -n128 -i0
+rori,16,131072,1671111,measure-n128-2r1w-v2
+rori,32,262144,3168524,measure-n128-2r1w-v2
