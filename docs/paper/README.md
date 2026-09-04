@@ -147,8 +147,16 @@ tightened; the unverifiable register-predictability clause removed).
   gen_tables.py here remains the generator -- run it, then cp
   tables/tab_{tiers,state,area}.tex into docs/aead_dac_paper/tables/.
 
-Open items: u5c terminal check + fits-2026-09-03/ snapshot + the one-pass
-area re-sync (abstract, intro, D, Table II prose); S0 row decision; verify
-the six bib entries; board power sweep + U7 performance sweep (the paper's
-data source of record); compression 8 -> 6 pages; final dataset
-re-baseline at the submission commit.
+- ACM paper.bib verified 2026-09-04 (all 12 cited keys): three corrected
+  (arXiv 2507.02770's published title; Vortex last author 'Kim, Hyesoon'
+  + DOI; RISC-V crypto Vol. I is 2022, Vol. II 2023), NVIDIA whitepaper
+  refined from its own history page (Nertney, WP-11459-001 v1.0, Jul 2023).
+- Conclusion (outro.tex) rewritten 2026-09-04: the old one described a
+  different design (PE-resident chain state, AES-256, 250 MHz, 94x/7.5x).
+  The fitter seed is no longer mentioned anywhere in the prose.
+
+Open items: S0 row decision (sw vs rori); board power sweep + U7
+performance sweep after a clean boot (the ACM methodology names the board
+as source of record -- this is a commitment; every table number then comes
+from the board); final dataset re-baseline at the submission commit. ACM
+draft: body 6 pages + refs, 0 errors/undefined/duplicates/overfull.
