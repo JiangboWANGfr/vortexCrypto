@@ -1,0 +1,13 @@
+app,impl,blocks_per_msg,bytes,cycles,instrs,config
+aes_gcm,hw_s1,2,4096,164683,11786,board_1bank
+aes_gcm,hw_s1,4,8192,191103,18250,board_1bank
+aes_gcm,hw_s1,8,16384,244821,31178,board_1bank
+aes_gcm,hw_s1,64,131072,935375,212170,board_1bank
+aes_gcm,hw_s1,128,262144,1881665,419018,board_1bank
+aes_gcm,hw_s1,256,524288,5465169,832714,board_1bank
+aes_gcm,hw_s3g,2,4096,96349,7362,board_1bank
+aes_gcm,hw_s3g,4,8192,101168,10242,board_1bank
+aes_gcm,hw_s3g,8,16384,107944,16002,board_1bank
+aes_gcm,hw_s3g,64,131072,215814,96642,board_1bank
+aes_gcm,hw_s3g,128,262144,347950,188802,board_1bank
+aes_gcm,hw_s3g,256,524288,717468,373122,board_1bank
