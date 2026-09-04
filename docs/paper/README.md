@@ -118,10 +118,26 @@ tightened; the unverifiable register-predictability clause removed).
   14.1% / Poly 9.5% / dr.sg16 4.3% / glue 8.8%) plus the three GHASH
   multiplier stages; the generator reads data/ghash-area-2026-09-03.csv.
   Table II keeps dALM; Combined, the zero and timing live in D's prose.
-- TODO(u5c) markers in main.tex flag every per-tier area number that
-  re-syncs once run_hare_fits_u5c.sh completes (sg4 with shared GHASH,
-  chacha-s3f, chacha-s2p, arx16, sg16); the tables already read results/
-  live and show the mixed set. Re-sync ONCE, from the generator's output.
+- u5c complete 2026-09-04 (0 failed): ten fits, RTL identical across
+  stamps d97c021cd..b08f6f30d (docs-only commits between), pinned
+  constraint set, seed 6. Deltas of record: AES S1 +24,793 (13.5%);
+  ChaCha S1 +31,959 (17.4%); SG16 pair over ChaCha S1 +6,054 (2.8%);
+  ChaCha SG4 pair +3,349 (1.6%); AES SG4 pair +15,785 (7.6%, down from
+  +25.3% with the schoolbook GHASH); AES S2 +104,618; ChaCha S2 +111,517
+  (2.93x the SG16 stack); Combined +54,555 (29.7%), 56,962 below ChaCha
+  S2. All TODO(u5c) markers resolved from the generator's numbers.
+- arx16 vs sg16 is +253 ALMs on this set (was -1,386 on the 09-01 set):
+  a 0.1% difference that flips sign between fits. It is noise; the paper
+  must not claim the ablation is smaller OR larger, only that the working
+  registers cost nothing measurable in area.
+- OPEN: s2p (AES S2) under the pinned constraint set misses setup on
+  three hot corners (-0.228 / -0.204 / -0.193 ns, TNS -6.5 ns -- a path
+  family). The same build closed on the pin-less 09-01 set (kept at
+  results/attic/c2w4t16.s2p). The dispatch-buffer pin that closes
+  Combined's hold corner breaks the S2 comparator. Decision pending:
+  disclose nine-of-ten, or fit s2p without the pin as a documented
+  exception (run_s2p_nopin.sh -> results/c2w4t16.s2p-nopin). The two
+  "all ten close" sentences (Methodology, D) wait on it.
 - ChaCha S0 row under review (data/chacha-s0-rori-20260903.md): the
   "moves only 2.4% without rotate" sentence is removed -- plain software
   is 12.5% FASTER per byte than the rori row (9.998 vs 11.424 c/B), since

@@ -52,10 +52,9 @@ Gated DE10-Pro measurements show large-footprint marginal-cost reductions of
 \AESBoardSpeedup{} and \ChaChaBoardSpeedup{} over those lane-local baselines.
 The comparison exposes an intercept--slope tradeoff: persistent engines can
 amortize short-record setup, whereas HARE avoids persistent unit-private
-context. Place-and-route shows that ChaCha SG16 adds 3.4\% ALMs over S1, while
+context. Place-and-route shows that ChaCha SG16 adds 2.8\% ALMs over S1, while
 Combined HARE, with one GHASH multiplier array shared across its quads,
-remains 58{,}396 ALMs smaller than the standalone ChaCha engine.
-% TODO(u5c): 3.4% and 58,396 re-sync once sg16 and chacha-s2p re-fit.
+remains 56{,}962 ALMs smaller than the standalone ChaCha engine.
 The results show that state lifetime, lane scope, and operation granularity
 must be co-designed for programmable SIMT authenticated encryption.
 \end{abstract}
@@ -113,7 +112,7 @@ same-image S1 anchors by \AESBoardSpeedup{} for AES-GCM and
 \ChaChaBoardSpeedup{} for ChaCha20-Poly1305. S2 and HARE optimize different
 regimes: S2 amortizes short-record setup through persistent context, whereas
 HARE avoids that context and targets lower long-stream marginal cost. Post-fit
-results show that ChaCha SG16 adds only 3.4\% ALMs over S1 and that the Combined
+results show that ChaCha SG16 adds only 2.8\% ALMs over S1 and that the Combined
 HARE build is smaller than the standalone ChaCha S2 engine.
 
 This paper makes three contributions:
@@ -860,7 +859,7 @@ well as state location and lifetime. S2 has the smallest instruction stream
 (28.9 instructions per 64-byte block) and large-footprint marginal cost close
 to the macro (115.7 versus 110.6 cycles per 64 bytes), but introduces a
 persistent per-(warp,\,lane) namespace. Relative to the crypto-free build,
-ChaCha S2 adds 112{,}951 ALMs, $2.86\times$ the 39{,}456-ALM increment of
+ChaCha S2 adds 111{,}517 ALMs, $2.93\times$ the 38{,}013-ALM increment of
 SG16. We implement the engine datapath but not preemption save-or-destroy;
 ownership, validity, and zeroize-on-release remain part of its architectural
 contract. SG16 keeps live state in ordinary registers and owes only
@@ -910,9 +909,6 @@ configuration relative to the schoolbook build.}
 Table~\ref{tab:tiers}'s $\Delta$ALM column prices each tier against the
 crypto-free two-core build (183{,}971 ALMs); Table~\ref{tab:area} asks where
 that area goes and what it took to bring it down.
-% TODO(u5c): the per-tier deltas quoted in the abstract and here (SG16 over
-% ChaCha S1, AES SG4 over AES S1, the S2 engines) re-sync once the
-% same-version set completes; do not hand-copy from the current mixed table.
 In the first Combined fit one block held two thirds of the extension:
 GHASH's GF($2^{128}$) multiply, a schoolbook $4{\times}4$ of 32-bit
 carry-less products per four-lane quad, one array per quad---64 multipliers
@@ -927,9 +923,8 @@ one quad's Karatsuba, not four in parallel, on the critical path; every
 corner closes again. The latency costs nothing measurable: the unit sat at
 13\% occupancy on a memory-bound AEAD, and cycles are bit-identical at
 16\,KiB and within 0.16\% at 128\,KiB. Combined HARE lands at 238{,}526
-ALMs, +54{,}555 (29.7\%) over the crypto-free build and 58{,}396 ALMs
+ALMs, +54{,}555 (29.7\%) over the crypto-free build and 56{,}962 ALMs
 below the standalone ChaCha S2 engines;
-% TODO(u5c): 58,396 uses the 09-01 chacha-s2p fit; re-sync after its re-fit.
 GHASH is now 45\% of the extension, and what remains of it is the sixteen
 lane-local multipliers the S1 tier itself needs plus the one shared array.
 Because the extension is a per-lane ISA rather than a shared block, its
@@ -1053,7 +1048,7 @@ That choice does not make S3 universally fastest. Persistent S2 context can
 reduce fixed cost for short records, but requires the largest incremental area
 and a separate ownership and zeroization contract. HARE instead targets lower
 marginal cost without that persistent namespace. The deployable Combined HARE build uses
-19{,}456 fewer ALMs than standalone ChaCha S2 while containing both
+56{,}962 fewer ALMs than standalone ChaCha S2 while containing both
 subgroup paths. The broader lesson is to evaluate
 an AEAD ISE with both slope and intercept, and to budget state lifetime,
 operand delivery, convergence, and opcode space alongside ALMs. Power and
