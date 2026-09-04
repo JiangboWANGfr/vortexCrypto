@@ -60,8 +60,11 @@ def main():
     ap.add_argument("--bitstream", required=True, help="label, e.g. combined")
     ap.add_argument("--out", required=True)
     ap.add_argument("--timeout", type=int, default=180,
-                    help="per-run seconds; exceeding it means the DMA wedged "
-                         "and aborts the whole sweep")
+                    help="per-run seconds; exceeding it is treated as a hang")
+    ap.add_argument("--retries", type=int, default=3,
+                    help="on a hang, MMIO-reset and retry the run this many "
+                         "times before aborting (this host hangs sg16 "
+                         "intermittently but recovers from a reset)")
     a = ap.parse_args()
 
     appdir = os.path.join(ROOT, "build32", "tests", "crypto", a.app)
@@ -87,12 +90,20 @@ def main():
                 if os.path.getmtime(binary) != bin_mtime:
                     sys.exit(f"ABORT: {binary} was rebuilt during the sweep "
                              f"(a concurrent make?) -- results would be inconsistent")
+                reset = os.path.join(ROOT, "build32", "sw", "runtime",
+                                     "vortex-de10pro-reset")
                 with open(os.path.join(logdir, tag + ".log"), "w") as log:
                     cyc, kv0, bad, hang = [], None, None, False
                     for r in range(a.warmup + a.runs):
-                        kv, err = run_once(binary, appdir, opts, env, log, a.timeout)
+                        for attempt in range(a.retries + 1):
+                            kv, err = run_once(binary, appdir, opts, env, log, a.timeout)
+                            if kv != "HANG":
+                                break
+                            log.write(f"[hang -> reset, retry {attempt+1}/{a.retries}]\n")
+                            if os.path.exists(reset):
+                                subprocess.run([reset], env=env)  # MMIO CP reset, no DMA
                         if kv == "HANG":
-                            hang = True; bad = f"run {r}: {err}"; break
+                            hang = True; bad = f"run {r}: {err} (after {a.retries} resets)"; break
                         if err:
                             bad = f"run {r}: {err}"; break
                         if r < a.warmup: continue
@@ -101,13 +112,8 @@ def main():
                             bad = f"instrs drift {kv0['instrs']} -> {kv['instrs']}"; break
                         cyc.append(int(kv["cycles"]))
                 if hang:
-                    reset = os.path.join(ROOT, "build32", "sw", "runtime",
-                                         "vortex-de10pro-reset")
-                    if os.path.exists(reset):
-                        subprocess.run([reset], env=env)   # MMIO CP reset, no DMA
-                    sys.exit(f"ABORT: {tag} hung ({bad}); the DMA is likely "
-                             f"wedged. Stopping before a mid-DMA kill makes it "
-                             f"worse -- reboot if the next run also hangs.")
+                    sys.exit(f"ABORT: {tag} hung {a.retries+1}x through resets "
+                             f"({bad}); the device is not recovering -- reboot.")
                 if bad or len(cyc) < a.runs:
                     print(f"  {tag}: REJECTED ({bad or 'short'})", flush=True); continue
                 cyc.sort(); byt = int(kv0["bytes"]); med = statistics.median(cyc)
