@@ -64,3 +64,20 @@ DECISION FOR THE AUTHOR: the paper's central speedups are ~1.8x (AES) to
 (2) keep rtlsim numbers but frame them as a 2-channel-memory machine and
     disclose the board deltas + the ramulator-scattered-access caveat.
 Not decided here; no paper edit made.
+
+## ChaCha SG4 added (2026-09-04, s3f bitstream, program+reboot)
+
+Board ChaCha, same-CSV S1 anchor, large-footprint marginal:
+  S1   2.539 c/B  i/B 1.180   1.00x
+  SG4  2.651 c/B  i/B 1.414   0.96x  (4 lanes: SLOWER than S1, MORE instrs --
+                                      cannot span the 512-bit state)
+  SG16 1.532 c/B  i/B 0.766   1.66x  (16 lanes: the win)
+
+WIDTH RULE on silicon is sharper than in rtlsim. rtlsim: SG4 1.29x -> SG16
+4.32x (narrow still helps). Silicon: SG4 0.96x -> SG16 1.66x (narrow gives
+NOTHING, and costs more instructions). The qualitative claim "the subgroup
+must span the block state" is intact and cleaner on the board; only the
+magnitudes shrink.
+
+Board rows still needing their own bitstream (one reboot each): AES S2
+(hw_s2, s2p), ChaCha S2 (s2, chacha-s2p), arx16 stateless ablation.
