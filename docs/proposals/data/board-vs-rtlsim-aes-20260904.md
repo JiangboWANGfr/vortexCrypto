@@ -135,3 +135,34 @@ Framing that survives (option C): the paper is a design-space map, not a
 lane) key context; S3 wins AES and trades ChaCha speed for a third of the
 area and no resident secret. All measured on silicon.
 Remaining: arx16 ablation (granularity axis), one reboot.
+
+## arx16 ablation added (2026-09-04) -- granularity axis confirmed, sharper
+
+At the SAME 16-lane width (impl label sg16 for both; distinguished by
+bitstream): dr.sg16 large marginal 1.532 c/B vs arx.sg16 3.302 c/B -> the
+double-round macro is 2.16x faster than the stateless per-line form (paper
+rtlsim: 1.78x). arx.sg16 is even slower than S1 (0.77x). So the subgroup's
+win is about GRANULARITY (a whole double-round per instruction), not only
+width -- the paper's width-and-granularity co-design rule, confirmed on
+silicon and sharper than in simulation.
+
+## MASTER board table (all 8 configs, large-footprint marginal, x S1)
+              AES              ChaCha
+  S1      2.820  1.00x     2.539  1.00x
+  S2      1.115  2.53x     0.719  3.53x   (engine)
+  SG4     1.041  2.71x     2.651  0.96x   (AES: the win / ChaCha: useless)
+  SG16      --             1.532  1.66x   (dr)
+  arx.sg16  --             3.302  0.77x   (stateless per-line ablation)
+
+Silicon story, coherent across all three axes:
+  WIDTH:      ChaCha SG4 0.96x -> SG16 1.66x (must span the 512-bit state)
+  GRANULARITY: at 16 lanes, dr 1.532 vs arx 3.302 = 2.16x (macro, not line)
+  STATE:      S2 fastest for ChaCha (wide state, 486k start-up sinks SG16);
+              S3 fastest for AES (narrow 4-lane, tiny start-up). Split is
+              mechanistic and tracks start-up. Small records: S2 wins both.
+The width-and-granularity RULE (contribution 2) is validated and sharper.
+The "S3 lowest marginal for both" phrasing (in contribution 3 / the eval) is
+half-true and must become the honest design-space map: S3 wins AES, and buys
+ChaCha near-competitive throughput without a persistent secret and at ~1/3
+the area. No S0 board rows (FPU-less core hangs the software kernels);
+counters stay rtlsim (board cannot expose them).
