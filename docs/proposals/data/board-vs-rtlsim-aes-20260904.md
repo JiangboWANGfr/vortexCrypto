@@ -108,3 +108,30 @@ framing must move from "S3 is the sweet spot / fastest" to "S3 buys
 near-engine throughput without a persistent secret namespace and at a
 fraction of the area." Still to measure (one reboot each): AES S2 (likely the
 same inversion), arx16 ablation.
+
+## AES S2 added (2026-09-04) -- the result is a SPLIT, not a refutation
+
+Board large-footprint marginal (c/B), same-CSV S1 anchor, both algorithms:
+                S1      S2            S3(subgroup)   lowest marginal
+  AES    large  2.820   1.115(2.53x)  1.041(2.71x)   S3 (SG4, 4 lanes)
+  ChaCha large  2.539   0.719(3.53x)  1.532(1.66x)   S2 (engine)
+  AES    small  2.677   0.402(6.66x)  0.937(2.86x)   S2
+  ChaCha small  2.523   0.591(4.27x)  1.403(1.80x)   S2
+
+Correction to the ChaCha-only note above: with AES S2 in hand, the paper's
+"subgroup lowest marginal for BOTH" is HALF right on silicon -- true for AES,
+false for ChaCha -- and the split is mechanistic, not noise. AES state is 128
+bits -> 4-lane subgroup -> 32 records in flight -> small start-up (intercept
+~9k) -> the subgroup wins the marginal. ChaCha state is 512 bits -> 16-lane
+subgroup -> 8 records in flight -> huge start-up (intercept ~486k) -> the
+engine wins. The board thus SHARPENS the paper's own width/start-up rule: the
+subgroup wins when the block state is small enough that its subgroup stays
+narrow; when the state forces a wide subgroup, start-up dominates and the
+stateful engine is faster. Small-footprint, S2 wins both (context amortizes
+start-up), exactly as the paper says.
+
+Framing that survives (option C): the paper is a design-space map, not a
+"we win" claim. S2 is fastest but costs ~3x area and a persistent per-(warp,
+lane) key context; S3 wins AES and trades ChaCha speed for a third of the
+area and no resident secret. All measured on silicon.
+Remaining: arx16 ablation (granularity axis), one reboot.
