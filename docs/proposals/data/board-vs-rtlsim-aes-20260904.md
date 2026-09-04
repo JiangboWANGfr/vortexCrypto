@@ -166,3 +166,28 @@ half-true and must become the honest design-space map: S3 wins AES, and buys
 ChaCha near-competitive throughput without a persistent secret and at ~1/3
 the area. No S0 board rows (FPU-less core hangs the software kernels);
 counters stay rtlsim (board cannot expose them).
+
+## S0 baselines added (2026-09-04) -- S0 runs on silicon, sw-vs-rori resolved
+
+S0 is NOT blocked on the FPU-less board (earlier "hang" was a stale rtlsim
+build + a wedged board, misread). AES sw_ttable and ChaCha sw/rori all run
+on the board (pure software, any bitstream). S0->S1 marginal, silicon:
+  AES:    S1 2.820  vs  S0(sw_ttable) 34.234  ->  12.1x  (rtlsim 14.6-18.2x)
+  ChaCha: S1 2.539  vs  S0(sw) 4.374 / rori 4.448 -> 1.72x/1.75x (rtlsim 1.55x)
+The "S1 helps AES ~12x, barely helps ChaCha ~1.7x" contrast holds on silicon.
+
+sw vs rori on silicon: within 2% (sw 4.374 vs rori 4.448 large marginal; rori
+faster at b=1). The rtlsim "sw 12.5% faster" was itself a ramulator artifact.
+So rori is a fine S0 row (the paper's choice stands); the ladder does not
+hinge on it. chacha-s0-rori-20260903.md's conclusion is superseded by this.
+
+## COMPLETE board map (both algorithms, all tiers, large-footprint x S1)
+              AES                 ChaCha
+  S0     0.08x (sw_ttable)   0.58x (sw) / 0.57x (rori)
+  S1     1.00x               1.00x
+  S2     2.53x               3.53x
+  SG4    2.71x               0.96x
+  SG16     --                1.66x
+  arx16    --                0.77x
+Only the mechanism counters (DRAM B/B, stalls, IPC) remain rtlsim-only --
+the board cannot expose them; they stay disclosed as simulated.
