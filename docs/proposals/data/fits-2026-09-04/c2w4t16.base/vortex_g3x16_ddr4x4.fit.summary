@@ -1,0 +1,17 @@
+Fitter Status : Successful - Thu Sep  3 13:23:08 2026
+Quartus Prime Version : 19.2.0 Build 57 06/24/2019 SJ Pro Edition
+Revision Name : vortex_g3x16_ddr4x4
+Top-level Entity Name : vortex_de10pro_top
+Family : Stratix 10
+Device : 1SG280HU1F50E1VG
+Timing Models : Final
+Logic utilization (in ALMs) : 208,764 / 933,120 ( 22 % )
+Total dedicated logic registers : 377905
+Total pins : 284 / 1,152 ( 25 % )
+Total block memory bits : 5,002,544 / 240,046,080 ( 2 % )
+Total RAM Blocks : 1,680 / 11,721 ( 14 % )
+Total DSP Blocks : 68 / 5,760 ( 1 % )
+Total DIB Channels : 0 / 75 ( 0 % )
+Total HSSI RX channels : 16 / 96 ( 17 % )
+Total HSSI TX channels : 16 / 96 ( 17 % )
+Total PLLs : 23 / 184 ( 13 % )

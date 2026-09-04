@@ -130,27 +130,22 @@ tightened; the unverifiable register-predictability clause removed).
   a 0.1% difference that flips sign between fits. It is noise; the paper
   must not claim the ablation is smaller OR larger, only that the working
   registers cost nothing measurable in area.
-- OPEN: s2p (AES S2) under the pinned constraint set misses setup on
-  three hot corners (-0.228 / -0.204 / -0.193 ns, TNS -6.5 ns -- a path
-  family). The same build closed on the pin-less 09-01 set (kept at
-  results/attic/c2w4t16.s2p). The dispatch-buffer pin that closes
-  Combined's hold corner breaks the S2 comparator. Decision pending:
-  disclose nine-of-ten, or fit s2p without the pin as a documented
-  exception (run_s2p_nopin.sh -> results/c2w4t16.s2p-nopin). The two
-  "all ten close" sentences (Methodology, D) wait on it.
-- ChaCha S0 row under review (data/chacha-s0-rori-20260903.md): the
-  "moves only 2.4% without rotate" sentence is removed -- plain software
-  is 12.5% FASTER per byte than the rori row (9.998 vs 11.424 c/B), since
-  rori issues to the SYM unit, not the ALU. Against sw the ChaCha S0->S1
-  step is 1.35x, not 1.55x. Whether sw becomes the S0 row of record is
-  the author's decision; the frozen dataset has no sw rows yet.
-- Six bibliography entries imported with the expanded draft
-  (adams2021crypto, lee2025gpugcm, marshall2021aesise, marshall2021chacha,
-  volos2018graviton, wang2021gpuchacha) are TODO-verify; they look like
-  real papers but have not passed the 08-31 check.
-- Power: the D section states method and the measured idle floor
-  (46.5 W input / 22.5 W core); energy per byte is TODO(power sweep),
-  which needs a clean host boot (DMA recovers only by reboot).
+- s2p (AES S2) DECIDED 2026-09-04: under the dispatch-buffer retiming pin
+  it missed setup by up to 228 ps on three hot corners (TNS -6.5 ns, a
+  path family); fitted without the pin it closes all 30 corners at
+  289,089 ALMs and that fit is now results/c2w4t16.s2p (the pinned one is
+  attic/c2w4t16.s2p.pinned). Author's decision: the paper reports timing
+  and area only and does not mention the constraint difference; so the
+  methodology says "one RTL revision and seed 6" (no "one constraint set"
+  claim -- that would be false), and the difference is recorded in
+  data/fits-2026-09-04/README.md for reproducers.
+- Snapshot of record: data/fits-2026-09-04/ (ten builds' fit/sta
+  summaries + READMEs + the table above). Every build closes every corner.
+  AES S2 dALM is +105,118 again (the pin-less fit matches the 09-01 one).
+- THE PAPER OF RECORD IS NOW docs/aead_dac_paper/ (acmart, Overleaf clone,
+  separate nested git, gitignored here). docs/paper/ is frozen history;
+  gen_tables.py here remains the generator -- run it, then cp
+  tables/tab_{tiers,state,area}.tex into docs/aead_dac_paper/tables/.
 
 Open items: u5c terminal check + fits-2026-09-03/ snapshot + the one-pass
 area re-sync (abstract, intro, D, Table II prose); S0 row decision; verify
