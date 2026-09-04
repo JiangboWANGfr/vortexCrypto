@@ -110,8 +110,8 @@ def main():
                              f"worse -- reboot if the next run also hangs.")
                 if bad or len(cyc) < a.runs:
                     print(f"  {tag}: REJECTED ({bad or 'short'})", flush=True); continue
-                cyc.sort(); q = statistics.quantiles(cyc, n=4)
-                med = statistics.median(cyc); byt = int(kv0["bytes"])
+                cyc.sort(); byt = int(kv0["bytes"]); med = statistics.median(cyc)
+                q = statistics.quantiles(cyc, n=4) if len(cyc) >= 2 else [cyc[0], med, cyc[-1]]
                 w.writerow([a.app, kv0["impl"], a.bitstream, a.msgs, b, byt, a.runs, a.warmup,
                             int(med), int(q[0]), int(q[2]), cyc[0], cyc[-1],
                             kv0["instrs"], kv0["core_instrs"], kv0["balance"],
