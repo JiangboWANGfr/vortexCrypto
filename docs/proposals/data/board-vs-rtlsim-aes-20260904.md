@@ -81,3 +81,30 @@ magnitudes shrink.
 
 Board rows still needing their own bitstream (one reboot each): AES S2
 (hw_s2, s2p), ChaCha S2 (s2, chacha-s2p), arx16 stateless ablation.
+
+## ChaCha S2 added (2026-09-04) -- OVERTURNS the marginal-cost claim
+
+Board ChaCha, large-footprint marginal (c/B), same-CSV S1 anchor:
+  S1   2.539  i/B 1.180  1.00x  intercept 13k
+  S2   0.719  i/B 0.451  3.53x  intercept 16k   <- engine, fastest on BOTH axes
+  SG4  2.651  i/B 1.414  0.96x  intercept 108k
+  SG16 1.532  i/B 0.766  1.66x  intercept 486k
+
+THE PAPER'S CENTRAL CLAIM DOES NOT HOLD ON SILICON. Paper (rtlsim): SG16 has
+the lowest marginal, "essentially tied" with S2 (1.728 vs 1.807 c/B), and
+crosses over S2 near 100 KiB. Board: S2's marginal (0.719) is HALF SG16's
+(1.532), and S2's intercept (16k) is 30x below SG16's (486k). S2 dominates
+SG16 on both slope and intercept -- there is no crossover; SG16 never catches
+S2 on performance. Cause: S2's instruction stream is the shortest (i/B 0.451),
+and on real DDR4 (vs ramulator) instruction count, not scattered-DRAM
+penalty, decides -- exactly the effect that inflated the S1 anchor also
+un-inflates S2 relative to the subgroup.
+
+Consequence for the argument: "subgroup instructions carry the lowest
+marginal cost for both AEADs" is false on silicon for ChaCha. SG16's case is
+no longer speed; it is (a) area -- SG16 pair +2.8% vs the ChaCha S2 engine's
+much larger bundle -- and (b) no persistent per-(warp,lane) key context. The
+framing must move from "S3 is the sweet spot / fastest" to "S3 buys
+near-engine throughput without a persistent secret namespace and at a
+fraction of the area." Still to measure (one reboot each): AES S2 (likely the
+same inversion), arx16 ablation.
