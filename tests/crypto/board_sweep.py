@@ -25,9 +25,18 @@ def git_stamp():
     except Exception:
         return "?"
 
-def run_once(binary, cwd, opts, env, log):
-    p = subprocess.run([binary] + opts, cwd=cwd, env=env, text=True,
-                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=600)
+# A hang (timeout) means the device DMA is likely wedged; the caller aborts
+# the whole sweep rather than SIGKILL-and-continue, which on this host would
+# leave the DMA engine dead. HANG is signalled by returning ("HANG", msg).
+def run_once(binary, cwd, opts, env, log, per_run_timeout):
+    try:
+        p = subprocess.run([binary] + opts, cwd=cwd, env=env, text=True,
+                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                           timeout=per_run_timeout)
+    except subprocess.TimeoutExpired as e:
+        log.write(f"$ {os.path.basename(binary)} {' '.join(opts)}\n"
+                  f"[HANG > {per_run_timeout}s]\n{e.output or ''}\n")
+        return "HANG", f"no response in {per_run_timeout}s"
     log.write(f"$ {os.path.basename(binary)} {' '.join(opts)}\n{p.stdout}\n")
     perfs = PERF.findall(p.stdout)
     if p.returncode != 0:            return None, f"exit {p.returncode}"
@@ -50,6 +59,9 @@ def main():
     ap.add_argument("--warmup", type=int, default=5)
     ap.add_argument("--bitstream", required=True, help="label, e.g. combined")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--timeout", type=int, default=180,
+                    help="per-run seconds; exceeding it means the DMA wedged "
+                         "and aborts the whole sweep")
     a = ap.parse_args()
 
     appdir = os.path.join(ROOT, "build32", "tests", "crypto", a.app)
@@ -58,6 +70,7 @@ def main():
         sys.exit(f"missing {binary} -- build it for this bitstream first")
     env = dict(os.environ, VORTEX_DRIVER="de10pro",
                LD_LIBRARY_PATH=os.path.join(ROOT, "build32", "sw", "runtime"))
+    bin_mtime = os.path.getmtime(binary)   # a concurrent `make` rebuilds this
     logdir = a.out + ".logs"; os.makedirs(logdir, exist_ok=True)
     stamp = git_stamp(); when = datetime.datetime.now().isoformat(timespec="seconds")
     new = not os.path.exists(a.out)
@@ -71,10 +84,15 @@ def main():
             for b in a.blocks.split(","):
                 opts = ["-n", str(a.msgs), "-b", b, "-i", impl]
                 tag = f"{a.app}_i{impl}_b{b}"
+                if os.path.getmtime(binary) != bin_mtime:
+                    sys.exit(f"ABORT: {binary} was rebuilt during the sweep "
+                             f"(a concurrent make?) -- results would be inconsistent")
                 with open(os.path.join(logdir, tag + ".log"), "w") as log:
-                    cyc, kv0, bad = [], None, None
+                    cyc, kv0, bad, hang = [], None, None, False
                     for r in range(a.warmup + a.runs):
-                        kv, err = run_once(binary, appdir, opts, env, log)
+                        kv, err = run_once(binary, appdir, opts, env, log, a.timeout)
+                        if kv == "HANG":
+                            hang = True; bad = f"run {r}: {err}"; break
                         if err:
                             bad = f"run {r}: {err}"; break
                         if r < a.warmup: continue
@@ -82,6 +100,14 @@ def main():
                         elif kv["instrs"] != kv0["instrs"]:
                             bad = f"instrs drift {kv0['instrs']} -> {kv['instrs']}"; break
                         cyc.append(int(kv["cycles"]))
+                if hang:
+                    reset = os.path.join(ROOT, "build32", "sw", "runtime",
+                                         "vortex-de10pro-reset")
+                    if os.path.exists(reset):
+                        subprocess.run([reset], env=env)   # MMIO CP reset, no DMA
+                    sys.exit(f"ABORT: {tag} hung ({bad}); the DMA is likely "
+                             f"wedged. Stopping before a mid-DMA kill makes it "
+                             f"worse -- reboot if the next run also hangs.")
                 if bad or len(cyc) < a.runs:
                     print(f"  {tag}: REJECTED ({bad or 'short'})", flush=True); continue
                 cyc.sort(); q = statistics.quantiles(cyc, n=4)
