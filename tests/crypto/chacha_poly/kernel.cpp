@@ -918,7 +918,7 @@ inline void chacha_poly_s3_body(kernel_arg_t* __UNIFORM__ arg) {
 // Per-message setup runs redundantly in all sixteen lanes rather than being
 // routed to one: every lane already needs the key, and a broadcast would cost
 // more than the arithmetic.
-template <int USE_DR16 = 1, int USE_STEP16 = 1>
+template <int USE_DR16 = 1, int USE_STEP16 = 1, int SKIP_BLOCK0 = 0>
 inline void chacha_poly_sg16_body(kernel_arg_t* __UNIFORM__ arg) {
   // One key for every message; the nonce is per message and is a BYTE array,
   // not a word one. Indexing the key per message was this kernel's first bug:
@@ -959,7 +959,15 @@ inline void chacha_poly_sg16_body(kernel_arg_t* __UNIFORM__ arg) {
     poly1305_t st;
     {
       uint32_t x0[16];
-      chacha20_keystream<rot_sw, 0>(k, n0, n1, n2, 0, x0);
+      if (SKIP_BLOCK0) {
+        // DIAGNOSTIC: skip the redundant lane-local block-0. The r,s below are
+        // wrong, so the tag is wrong on purpose; the point is to measure what
+        // that ChaCha block costs in the per-record start-up. Runs through
+        // --expect-fail like the other diagnostics.
+        for (int i = 0; i < 16; ++i) x0[i] = n0 ^ (uint32_t)i;
+      } else {
+        chacha20_keystream<rot_sw, 0>(k, n0, n1, n2, 0, x0);
+      }
       poly1305_init(st, x0);
     }
     // Each lane keeps only its own limb, and h and r share one register: h in
@@ -1053,6 +1061,10 @@ inline void chacha_poly_sg16_body(kernel_arg_t* __UNIFORM__ arg) {
     uint32_t* tp = tag_base + 4 * msg;
     if (lane == 0) { tp[0] = tag[0]; tp[1] = tag[1]; tp[2] = tag[2]; tp[3] = tag[3]; }
   }
+}
+
+__kernel void chacha_poly_sg16_no_block0(kernel_arg_t* __UNIFORM__ arg) {
+  chacha_poly_sg16_body<1, 1, 1>(arg);
 }
 
 __kernel void chacha_poly_sg16(kernel_arg_t* __UNIFORM__ arg) {

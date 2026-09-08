@@ -94,6 +94,9 @@ const impl_t kImpls[] = {
   // NUM_THREADS to be a multiple of 16, which the recorded shape c2w4t16 is and
   // the CI default c1w4t4 is not.
   { "chacha_poly_sg16", "sg16", true, false, true, false, false, false },
+  // DIAGNOSTIC: sg16 with the Poly1305 block-0 skipped (wrong tag) to price
+  // the redundant lane-local block-0 in the per-record start-up.
+  { "chacha_poly_sg16_no_block0", "sg16_no_block0", true, false, true, false, false, false },
   // DIAGNOSTIC, index 13: the S2 row with the Poly1305 absorbs deleted, the
   // ceiling for any stateful Poly1305 engine. Wrong tag by design; measured
   // through --expect-fail like index 11.

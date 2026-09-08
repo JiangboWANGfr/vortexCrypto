@@ -1,0 +1,91 @@
+$ aes_gcm -n 128 -b 64 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=64 bytes=131072 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=64 blocks=8192 bytes=131072 cycles=154029 instrs=37008 core_instrs=18504:18504 cycles_per_block=18.80 instrs_per_block=4.52 bytes_per_cycle=0.8510 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=37008, cycles=154029, IPC=0.240
+PASSED!
+
+$ aes_gcm -n 128 -b 64 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=64 bytes=131072 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=64 blocks=8192 bytes=131072 cycles=161828 instrs=37008 core_instrs=18504:18504 cycles_per_block=19.75 instrs_per_block=4.52 bytes_per_cycle=0.8099 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=37008, cycles=161828, IPC=0.229
+PASSED!
+
+$ aes_gcm -n 128 -b 64 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=64 bytes=131072 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=64 blocks=8192 bytes=131072 cycles=136778 instrs=37008 core_instrs=18504:18504 cycles_per_block=16.70 instrs_per_block=4.52 bytes_per_cycle=0.9583 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=37008, cycles=136778, IPC=0.271
+PASSED!
+
+$ aes_gcm -n 128 -b 64 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=64 bytes=131072 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=64 blocks=8192 bytes=131072 cycles=134923 instrs=37008 core_instrs=18504:18504 cycles_per_block=16.47 instrs_per_block=4.52 bytes_per_cycle=0.9715 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=37008, cycles=134923, IPC=0.274
+PASSED!
+
+$ aes_gcm -n 128 -b 64 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=64 bytes=131072 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=64 blocks=8192 bytes=131072 cycles=134314 instrs=37008 core_instrs=18504:18504 cycles_per_block=16.40 instrs_per_block=4.52 bytes_per_cycle=0.9759 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=37008, cycles=134314, IPC=0.276
+PASSED!
+
+$ aes_gcm -n 128 -b 64 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=64 bytes=131072 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=64 blocks=8192 bytes=131072 cycles=135007 instrs=37008 core_instrs=18504:18504 cycles_per_block=16.48 instrs_per_block=4.52 bytes_per_cycle=0.9709 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=37008, cycles=135007, IPC=0.274
+PASSED!
+
+$ aes_gcm -n 128 -b 64 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=64 bytes=131072 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=64 blocks=8192 bytes=131072 cycles=133501 instrs=37008 core_instrs=18504:18504 cycles_per_block=16.30 instrs_per_block=4.52 bytes_per_cycle=0.9818 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=37008, cycles=133501, IPC=0.277
+PASSED!
+
+$ aes_gcm -n 128 -b 64 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=64 bytes=131072 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=64 blocks=8192 bytes=131072 cycles=132134 instrs=37008 core_instrs=18504:18504 cycles_per_block=16.13 instrs_per_block=4.52 bytes_per_cycle=0.9920 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=37008, cycles=132134, IPC=0.280
+PASSED!
+
+$ aes_gcm -n 128 -b 64 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=64 bytes=131072 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=64 blocks=8192 bytes=131072 cycles=129098 instrs=37008 core_instrs=18504:18504 cycles_per_block=15.76 instrs_per_block=4.52 bytes_per_cycle=1.0153 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=37008, cycles=129098, IPC=0.287
+PASSED!
+
+$ aes_gcm -n 128 -b 64 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=64 bytes=131072 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=64 blocks=8192 bytes=131072 cycles=130454 instrs=37008 core_instrs=18504:18504 cycles_per_block=15.92 instrs_per_block=4.52 bytes_per_cycle=1.0047 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=37008, cycles=130454, IPC=0.284
+PASSED!
+
+$ aes_gcm -n 128 -b 64 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=64 bytes=131072 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=64 blocks=8192 bytes=131072 cycles=155237 instrs=37008 core_instrs=18504:18504 cycles_per_block=18.95 instrs_per_block=4.52 bytes_per_cycle=0.8443 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=37008, cycles=155237, IPC=0.238
+PASSED!
+
+$ aes_gcm -n 128 -b 64 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=64 bytes=131072 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=64 blocks=8192 bytes=131072 cycles=130327 instrs=37008 core_instrs=18504:18504 cycles_per_block=15.91 instrs_per_block=4.52 bytes_per_cycle=1.0057 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=37008, cycles=130327, IPC=0.284
+PASSED!
+
+$ aes_gcm -n 128 -b 64 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=64 bytes=131072 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=64 blocks=8192 bytes=131072 cycles=134837 instrs=37008 core_instrs=18504:18504 cycles_per_block=16.46 instrs_per_block=4.52 bytes_per_cycle=0.9721 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=37008, cycles=134837, IPC=0.274
+PASSED!
+

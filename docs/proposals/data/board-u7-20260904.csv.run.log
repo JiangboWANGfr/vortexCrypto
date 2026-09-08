@@ -1,0 +1,134 @@
+=== U7 chacha (S1, SG16) -> docs/proposals/data/board-u7-20260904.csv (Fri Sep  4 01:37:34 PM CST 2026)
+  chacha_poly_i7_b1:        s1 bytes=   8192 cycles med=    56118 IQR=[55558,57035] c/B=6.8504 instrs=18304
+  chacha_poly_i7_b2:        s1 bytes=  16384 cycles med=    77016 IQR=[76117,78215] c/B=4.7007 instrs=27968
+  chacha_poly_i7_b4:        s1 bytes=  32768 cycles med=   118164 IQR=[116307,119001] c/B=3.6061 instrs=47296
+  chacha_poly_i7_b16:        s1 bytes= 131072 cycles med=   349837 IQR=[346536,351889] c/B=2.6690 instrs=163264
+  chacha_poly_i7_b32:        s1 bytes= 262144 cycles med=   673042 IQR=[670145,679108] c/B=2.5675 instrs=317888
+  chacha_poly_i7_b64:        s1 bytes= 524288 cycles med=  1346350 IQR=[1339651,1356838] c/B=2.5680 instrs=627136
+  chacha_poly_i12_b1: REJECTED (run 0: exit 1)
+  chacha_poly_i12_b2: REJECTED (run 0: exit 1)
+  chacha_poly_i12_b4: REJECTED (run 0: exit 1)
+  chacha_poly_i12_b16: REJECTED (run 0: exit 1)
+  chacha_poly_i12_b32: REJECTED (run 0: exit 1)
+  chacha_poly_i12_b64: REJECTED (run 0: exit 1)
+SWEEP DONE
+=== U7 CHACHA DONE (Fri Sep  4 01:37:35 PM CST 2026)
+=== U7 aes (S1, SG4) -> docs/proposals/data/board-u7-20260904.csv (Fri Sep  4 01:41:16 PM CST 2026)
+  aes_gcm_i1_b2:     hw_s1 bytes=   4096 cycles med=    38292 IQR=[37939,38630] c/B=9.3486 instrs=11786
+  aes_gcm_i1_b4:     hw_s1 bytes=   8192 cycles med=    49023 IQR=[48527,49282] c/B=5.9843 instrs=18250
+  aes_gcm_i1_b8:     hw_s1 bytes=  16384 cycles med=    71138 IQR=[68956,73474] c/B=4.3419 instrs=31178
+  aes_gcm_i1_b64:     hw_s1 bytes= 131072 cycles med=   372092 IQR=[368477,379105] c/B=2.8388 instrs=212170
+  aes_gcm_i1_b128:     hw_s1 bytes= 262144 cycles med=   749604 IQR=[742412,756293] c/B=2.8595 instrs=419018
+  aes_gcm_i1_b256:     hw_s1 bytes= 524288 cycles med=  1482461 IQR=[1476351,1488637] c/B=2.8276 instrs=832714
+  aes_gcm_i8_b2:    hw_s3g bytes=   4096 cycles med=    24610 IQR=[24368,24692] c/B=6.0083 instrs=7362
+  aes_gcm_i8_b4:    hw_s3g bytes=   8192 cycles med=    28291 IQR=[28092,28500] c/B=3.4535 instrs=10242
+  aes_gcm_i8_b8:    hw_s3g bytes=  16384 cycles med=    36089 IQR=[35937,36256] c/B=2.2027 instrs=16002
+  aes_gcm_i8_b64:    hw_s3g bytes= 131072 cycles med=   145501 IQR=[145233,145854] c/B=1.1101 instrs=96642
+  aes_gcm_i8_b128:    hw_s3g bytes= 262144 cycles med=   282664 IQR=[281091,283657] c/B=1.0783 instrs=188802
+  aes_gcm_i8_b256:    hw_s3g bytes= 524288 cycles med=   554896 IQR=[553738,555367] c/B=1.0584 instrs=373122
+SWEEP DONE
+=== U7 AES DONE (Fri Sep  4 01:41:25 PM CST 2026)
+=== U7 chacha sg16 (rebuilt) -> docs/proposals/data/board-u7-20260904.csv (Fri Sep  4 01:46:31 PM CST 2026)
+Traceback (most recent call last):
+  File "/home/jiangbowang/aphdcode/vortex_proj/vortexCrypto/tests/crypto/board_sweep.py", line 98, in <module>
+    main()
+  File "/home/jiangbowang/aphdcode/vortex_proj/vortexCrypto/tests/crypto/board_sweep.py", line 77, in main
+    kv, err = run_once(binary, appdir, opts, env, log)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jiangbowang/aphdcode/vortex_proj/vortexCrypto/tests/crypto/board_sweep.py", line 29, in run_once
+    p = subprocess.run([binary] + opts, cwd=cwd, env=env, text=True,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 1209, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 2116, in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+  File "/usr/lib/python3.12/subprocess.py", line 1253, in _check_timeout
+    raise TimeoutExpired(
+subprocess.TimeoutExpired: Command '['/home/jiangbowang/aphdcode/vortex_proj/vortexCrypto/build32/tests/crypto/chacha_poly/chacha_poly', '-n', '128', '-b', '1', '-i', '12']' timed out after 600 seconds
+=== U7 SG16 DONE (Fri Sep  4 01:56:32 PM CST 2026)
+=== U7 sg16 alone -> docs/proposals/data/board-u7-20260904.csv (Fri Sep  4 02:07:12 PM CST 2026)
+  chacha_poly_i12_b1:      sg16 bytes=   8192 cycles med=   520120 IQR=[513938,523777] c/B=63.4912 instrs=293712
+reset OK: status=0x0
+ABORT: chacha_poly_i12_b2 hung (run 5: no response in 120s); the DMA is likely wedged. Stopping before a mid-DMA kill makes it worse -- reboot if the next run also hangs.
+=== U7 SG16-ALONE DONE (Fri Sep  4 02:09:12 PM CST 2026)
+=== U7 sg16 (reset-and-retry) -> docs/proposals/data/board-u7-20260904.csv (Fri Sep  4 02:11:00 PM CST 2026)
+reset OK: status=0x0
+reset OK: status=0x0
+  chacha_poly_i12_b1:      sg16 bytes=   8192 cycles med=   514208 IQR=[507763,523422] c/B=62.7695 instrs=293712
+  chacha_poly_i12_b2:      sg16 bytes=  16384 cycles med=   528000 IQR=[522367,532887] c/B=32.2266 instrs=299984
+reset OK: status=0x0
+reset OK: status=0x0
+reset OK: status=0x0
+  chacha_poly_i12_b4:      sg16 bytes=  32768 cycles med=   549142 IQR=[545164,551168] c/B=16.7585 instrs=312528
+  chacha_poly_i12_b16:      sg16 bytes= 131072 cycles med=   687239 IQR=[684353,690173] c/B=5.2432 instrs=387792
+reset OK: status=0x0
+  chacha_poly_i12_b32:      sg16 bytes= 262144 cycles med=   886578 IQR=[882199,891082] c/B=3.3820 instrs=488144
+  chacha_poly_i12_b64:      sg16 bytes= 524288 cycles med=  1289343 IQR=[1285678,1293390] c/B=2.4592 instrs=688848
+SWEEP DONE
+=== U7 SG16-RETRY DONE (Fri Sep  4 02:23:01 PM CST 2026)
+=== U7 ChaCha SG4 (s3f bitstream) -> docs/proposals/data/board-u7-20260904.csv (Fri Sep  4 03:00:47 PM CST 2026)
+  chacha_poly_i9_b1:       s3f bytes=   8192 cycles med=   131196 IQR=[129964,132300] c/B=16.0151 instrs=53200
+  chacha_poly_i9_b2:       s3f bytes=  16384 cycles med=   151640 IQR=[150518,152892] c/B=9.2554 instrs=64784
+  chacha_poly_i9_b4:       s3f bytes=  32768 cycles med=   195272 IQR=[193680,195894] c/B=5.9592 instrs=87952
+reset OK: status=0x0
+  chacha_poly_i9_b16:       s3f bytes= 131072 cycles med=   455763 IQR=[454383,456690] c/B=3.4772 instrs=226960
+  chacha_poly_i9_b32:       s3f bytes= 262144 cycles med=   802472 IQR=[801218,803904] c/B=3.0612 instrs=412304
+  chacha_poly_i9_b64:       s3f bytes= 524288 cycles med=  1497911 IQR=[1497458,1499316] c/B=2.8570 instrs=782992
+SWEEP DONE
+=== U7 SG4 DONE (Fri Sep  4 03:02:48 PM CST 2026)
+=== U7 ChaCha S2 (chacha-s2p bitstream) -> docs/proposals/data/board-u7-20260904.csv (Fri Sep  4 03:08:05 PM CST 2026)
+  chacha_poly_i10_b1:        s2 bytes=   8192 cycles med=    31968 IQR=[31744,32202] c/B=3.9023 instrs=7048
+  chacha_poly_i10_b2:        s2 bytes=  16384 cycles med=    36686 IQR=[36515,36880] c/B=2.2391 instrs=10744
+  chacha_poly_i10_b4:        s2 bytes=  32768 cycles med=    46469 IQR=[46205,46548] c/B=1.4181 instrs=18136
+  chacha_poly_i10_b16:        s2 bytes= 131072 cycles med=   108260 IQR=[107933,109103] c/B=0.8260 instrs=62488
+  chacha_poly_i10_b32:        s2 bytes= 262144 cycles med=   206938 IQR=[204063,209138] c/B=0.7894 instrs=121624
+  chacha_poly_i10_b64:        s2 bytes= 524288 cycles med=   392005 IQR=[389096,401376] c/B=0.7477 instrs=239896
+SWEEP DONE
+=== U7 CHS2 DONE (Fri Sep  4 03:08:05 PM CST 2026)
+=== U7 AES S2 (s2p bitstream) -> docs/proposals/data/board-u7-20260904.csv (Fri Sep  4 03:19:51 PM CST 2026)
+  aes_gcm_i10_b2:     hw_s2 bytes=   4096 cycles med=    18323 IQR=[18109,18429] c/B=4.4734 instrs=3776
+  aes_gcm_i10_b4:     hw_s2 bytes=   8192 cycles med=    20039 IQR=[19840,20240] c/B=2.4462 instrs=4848
+  aes_gcm_i10_b8:     hw_s2 bytes=  16384 cycles med=    23278 IQR=[23133,23503] c/B=1.4208 instrs=6992
+  aes_gcm_i10_b64:     hw_s2 bytes= 131072 cycles med=   133907 IQR=[130422,134944] c/B=1.0216 instrs=37008
+  aes_gcm_i10_b128:     hw_s2 bytes= 262144 cycles med=   280092 IQR=[276998,287589] c/B=1.0685 instrs=71312
+  aes_gcm_i10_b256:     hw_s2 bytes= 524288 cycles med=   572484 IQR=[564969,577506] c/B=1.0919 instrs=139920
+SWEEP DONE
+=== U7 AESS2 DONE (Fri Sep  4 03:19:53 PM CST 2026)
+=== U7 arx16 ablation (arx16 bitstream, impl sg16/arx path) -> docs/proposals/data/board-u7-20260904.csv (Fri Sep  4 03:59:07 PM CST 2026)
+  chacha_poly_i12_b1:      sg16 bytes=   8192 cycles med=   532129 IQR=[523967,537059] c/B=64.9572 instrs=305864
+  chacha_poly_i12_b2:      sg16 bytes=  16384 cycles med=   546065 IQR=[542353,549691] c/B=33.3292 instrs=323912
+  chacha_poly_i12_b4:      sg16 bytes=  32768 cycles med=   592236 IQR=[590256,595054] c/B=18.0736 instrs=360008
+  chacha_poly_i12_b16:      sg16 bytes= 131072 cycles med=   908458 IQR=[906949,911548] c/B=6.9310 instrs=576584
+  chacha_poly_i12_b32:      sg16 bytes= 262144 cycles med=  1339511 IQR=[1338743,1341012] c/B=5.1098 instrs=865352
+  chacha_poly_i12_b64:      sg16 bytes= 524288 cycles med=  2206415 IQR=[2200895,2210064] c/B=4.2084 instrs=1442888
+SWEEP DONE
+=== U7 ARX16 DONE (Fri Sep  4 03:59:08 PM CST 2026)
+=== U7 S0 baselines -> docs/proposals/data/board-u7-20260904.csv (Fri Sep  4 05:22:15 PM CST 2026)
+  aes_gcm_i0_b2: sw_ttable bytes=   4096 cycles med=   256583 IQR=[254476,259597] c/B=62.6423 instrs=116742
+reset OK: status=0x0
+reset OK: status=0x0
+  aes_gcm_i0_b4: sw_ttable bytes=   8192 cycles med=   393970 IQR=[388752,398054] c/B=48.0921 instrs=192790
+  aes_gcm_i0_b8: sw_ttable bytes=  16384 cycles med=   664236 IQR=[662831,666708] c/B=40.5417 instrs=344886
+  aes_gcm_i0_b64: sw_ttable bytes= 131072 cycles med=  4511349 IQR=[4454864,4535292] c/B=34.4189 instrs=2474230
+  aes_gcm_i0_b128: sw_ttable bytes= 262144 cycles med=  9066384 IQR=[8994616,9095410] c/B=34.5855 instrs=4907766
+  aes_gcm_i0_b256: sw_ttable bytes= 524288 cycles med= 17986299 IQR=[17913500,18017049] c/B=34.3061 instrs=9774886
+SWEEP DONE
+  chacha_poly_i0_b1:        sw bytes=   8192 cycles med=   117469 IQR=[116952,118416] c/B=14.3395 instrs=39504
+  chacha_poly_i0_b2:        sw bytes=  16384 cycles med=   158694 IQR=[156358,162775] c/B=9.6859 instrs=60280
+  chacha_poly_i0_b4:        sw bytes=  32768 cycles med=   241391 IQR=[233493,243300] c/B=7.3667 instrs=101832
+  chacha_poly_i0_b16:        sw bytes= 131072 cycles med=   663479 IQR=[657778,666055] c/B=5.0619 instrs=351144
+  chacha_poly_i0_b32:        sw bytes= 262144 cycles med=  1239576 IQR=[1227133,1253647] c/B=4.7286 instrs=683560
+  chacha_poly_i0_b64:        sw bytes= 524288 cycles med=  2383985 IQR=[2362901,2423516] c/B=4.5471 instrs=1348392
+  chacha_poly_i1_b1:      rori bytes=   8192 cycles med=   107200 IQR=[105933,109737] c/B=13.0860 instrs=29328
+  chacha_poly_i1_b2:      rori bytes=  16384 cycles med=   146535 IQR=[141657,147864] c/B=8.9438 instrs=45072
+  chacha_poly_i1_b4:      rori bytes=  32768 cycles med=   212627 IQR=[209875,221694] c/B=6.4889 instrs=76560
+  chacha_poly_i1_b16:      rori bytes= 131072 cycles med=   646061 IQR=[633052,648694] c/B=4.9291 instrs=265488
+reset OK: status=0x0
+  chacha_poly_i1_b32:      rori bytes= 262144 cycles med=  1226629 IQR=[1205659,1240879] c/B=4.6792 instrs=517392
+  chacha_poly_i1_b64:      rori bytes= 524288 cycles med=  2394578 IQR=[2358895,2433711] c/B=4.5673 instrs=1021200
+SWEEP DONE
+=== U7 S0 DONE (Fri Sep  4 05:37:20 PM CST 2026)

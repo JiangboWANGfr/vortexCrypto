@@ -1,0 +1,91 @@
+$ aes_gcm -n 128 -b 256 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=256 bytes=524288 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=256 blocks=32768 bytes=524288 cycles=567395 instrs=139920 core_instrs=69960:69960 cycles_per_block=17.32 instrs_per_block=4.27 bytes_per_cycle=0.9240 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=139920, cycles=567395, IPC=0.247
+PASSED!
+
+$ aes_gcm -n 128 -b 256 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=256 bytes=524288 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=256 blocks=32768 bytes=524288 cycles=568448 instrs=139920 core_instrs=69960:69960 cycles_per_block=17.35 instrs_per_block=4.27 bytes_per_cycle=0.9223 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=139920, cycles=568448, IPC=0.246
+PASSED!
+
+$ aes_gcm -n 128 -b 256 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=256 bytes=524288 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=256 blocks=32768 bytes=524288 cycles=560822 instrs=139920 core_instrs=69960:69960 cycles_per_block=17.11 instrs_per_block=4.27 bytes_per_cycle=0.9349 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=139920, cycles=560822, IPC=0.249
+PASSED!
+
+$ aes_gcm -n 128 -b 256 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=256 bytes=524288 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=256 blocks=32768 bytes=524288 cycles=569623 instrs=139920 core_instrs=69960:69960 cycles_per_block=17.38 instrs_per_block=4.27 bytes_per_cycle=0.9204 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=139920, cycles=569623, IPC=0.246
+PASSED!
+
+$ aes_gcm -n 128 -b 256 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=256 bytes=524288 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=256 blocks=32768 bytes=524288 cycles=574368 instrs=139920 core_instrs=69960:69960 cycles_per_block=17.53 instrs_per_block=4.27 bytes_per_cycle=0.9128 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=139920, cycles=574368, IPC=0.244
+PASSED!
+
+$ aes_gcm -n 128 -b 256 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=256 bytes=524288 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=256 blocks=32768 bytes=524288 cycles=515061 instrs=139920 core_instrs=69960:69960 cycles_per_block=15.72 instrs_per_block=4.27 bytes_per_cycle=1.0179 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=139920, cycles=515061, IPC=0.272
+PASSED!
+
+$ aes_gcm -n 128 -b 256 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=256 bytes=524288 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=256 blocks=32768 bytes=524288 cycles=554916 instrs=139920 core_instrs=69960:69960 cycles_per_block=16.93 instrs_per_block=4.27 bytes_per_cycle=0.9448 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=139920, cycles=554916, IPC=0.252
+PASSED!
+
+$ aes_gcm -n 128 -b 256 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=256 bytes=524288 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=256 blocks=32768 bytes=524288 cycles=573791 instrs=139920 core_instrs=69960:69960 cycles_per_block=17.51 instrs_per_block=4.27 bytes_per_cycle=0.9137 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=139920, cycles=573791, IPC=0.244
+PASSED!
+
+$ aes_gcm -n 128 -b 256 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=256 bytes=524288 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=256 blocks=32768 bytes=524288 cycles=576704 instrs=139920 core_instrs=69960:69960 cycles_per_block=17.60 instrs_per_block=4.27 bytes_per_cycle=0.9091 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=139920, cycles=576704, IPC=0.243
+PASSED!
+
+$ aes_gcm -n 128 -b 256 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=256 bytes=524288 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=256 blocks=32768 bytes=524288 cycles=663619 instrs=139920 core_instrs=69960:69960 cycles_per_block=20.25 instrs_per_block=4.27 bytes_per_cycle=0.7900 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=139920, cycles=663619, IPC=0.211
+PASSED!
+
+$ aes_gcm -n 128 -b 256 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=256 bytes=524288 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=256 blocks=32768 bytes=524288 cycles=579914 instrs=139920 core_instrs=69960:69960 cycles_per_block=17.70 instrs_per_block=4.27 bytes_per_cycle=0.9041 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=139920, cycles=579914, IPC=0.241
+PASSED!
+
+$ aes_gcm -n 128 -b 256 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=256 bytes=524288 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=256 blocks=32768 bytes=524288 cycles=568320 instrs=139920 core_instrs=69960:69960 cycles_per_block=17.34 instrs_per_block=4.27 bytes_per_cycle=0.9225 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=139920, cycles=568320, IPC=0.246
+PASSED!
+
+$ aes_gcm -n 128 -b 256 -i 10
+reference matches FIPS-197 C.1 and the NIST GCM vector
+messages=128 blocks/msg=256 bytes=524288 cores=2 warps=4 threads=16
+AES_GCM_PERF: impl=hw_s2 key_bits=128 mode=gcm msgs=128 blocks_per_msg=256 blocks=32768 bytes=524288 cycles=571177 instrs=139920 core_instrs=69960:69960 cycles_per_block=17.43 instrs_per_block=4.27 bytes_per_cycle=0.9179 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=139920, cycles=571177, IPC=0.245
+PASSED!
+

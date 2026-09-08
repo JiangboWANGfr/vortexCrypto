@@ -1,0 +1,91 @@
+$ chacha_poly -n 128 -b 1 -i 12
+reference matches the RFC 8439 block, stream, Poly1305 and AEAD vectors
+messages=128 blocks/msg=1 bytes=8192 cores=2 warps=4 threads=16
+CHACHA_POLY_PERF: impl=sg16 key_bits=256 mode=aead msgs=128 blocks_per_msg=1 blocks=128 bytes=8192 cycles=526626 instrs=305864 core_instrs=152932:152932 cycles_per_block=4114.27 instrs_per_block=2389.56 bytes_per_cycle=0.0156 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=305864, cycles=526626, IPC=0.581
+PASSED!
+
+$ chacha_poly -n 128 -b 1 -i 12
+reference matches the RFC 8439 block, stream, Poly1305 and AEAD vectors
+messages=128 blocks/msg=1 bytes=8192 cores=2 warps=4 threads=16
+CHACHA_POLY_PERF: impl=sg16 key_bits=256 mode=aead msgs=128 blocks_per_msg=1 blocks=128 bytes=8192 cycles=539665 instrs=305864 core_instrs=152932:152932 cycles_per_block=4216.13 instrs_per_block=2389.56 bytes_per_cycle=0.0152 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=305864, cycles=539665, IPC=0.567
+PASSED!
+
+$ chacha_poly -n 128 -b 1 -i 12
+reference matches the RFC 8439 block, stream, Poly1305 and AEAD vectors
+messages=128 blocks/msg=1 bytes=8192 cores=2 warps=4 threads=16
+CHACHA_POLY_PERF: impl=sg16 key_bits=256 mode=aead msgs=128 blocks_per_msg=1 blocks=128 bytes=8192 cycles=526816 instrs=305864 core_instrs=152932:152932 cycles_per_block=4115.75 instrs_per_block=2389.56 bytes_per_cycle=0.0156 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=305864, cycles=526816, IPC=0.581
+PASSED!
+
+$ chacha_poly -n 128 -b 1 -i 12
+reference matches the RFC 8439 block, stream, Poly1305 and AEAD vectors
+messages=128 blocks/msg=1 bytes=8192 cores=2 warps=4 threads=16
+CHACHA_POLY_PERF: impl=sg16 key_bits=256 mode=aead msgs=128 blocks_per_msg=1 blocks=128 bytes=8192 cycles=521774 instrs=305864 core_instrs=152932:152932 cycles_per_block=4076.36 instrs_per_block=2389.56 bytes_per_cycle=0.0157 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=305864, cycles=521774, IPC=0.586
+PASSED!
+
+$ chacha_poly -n 128 -b 1 -i 12
+reference matches the RFC 8439 block, stream, Poly1305 and AEAD vectors
+messages=128 blocks/msg=1 bytes=8192 cores=2 warps=4 threads=16
+CHACHA_POLY_PERF: impl=sg16 key_bits=256 mode=aead msgs=128 blocks_per_msg=1 blocks=128 bytes=8192 cycles=532684 instrs=305864 core_instrs=152932:152932 cycles_per_block=4161.59 instrs_per_block=2389.56 bytes_per_cycle=0.0154 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=305864, cycles=532684, IPC=0.574
+PASSED!
+
+$ chacha_poly -n 128 -b 1 -i 12
+reference matches the RFC 8439 block, stream, Poly1305 and AEAD vectors
+messages=128 blocks/msg=1 bytes=8192 cores=2 warps=4 threads=16
+CHACHA_POLY_PERF: impl=sg16 key_bits=256 mode=aead msgs=128 blocks_per_msg=1 blocks=128 bytes=8192 cycles=522478 instrs=305864 core_instrs=152932:152932 cycles_per_block=4081.86 instrs_per_block=2389.56 bytes_per_cycle=0.0157 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=305864, cycles=522478, IPC=0.585
+PASSED!
+
+$ chacha_poly -n 128 -b 1 -i 12
+reference matches the RFC 8439 block, stream, Poly1305 and AEAD vectors
+messages=128 blocks/msg=1 bytes=8192 cores=2 warps=4 threads=16
+CHACHA_POLY_PERF: impl=sg16 key_bits=256 mode=aead msgs=128 blocks_per_msg=1 blocks=128 bytes=8192 cycles=524464 instrs=305864 core_instrs=152932:152932 cycles_per_block=4097.38 instrs_per_block=2389.56 bytes_per_cycle=0.0156 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=305864, cycles=524464, IPC=0.583
+PASSED!
+
+$ chacha_poly -n 128 -b 1 -i 12
+reference matches the RFC 8439 block, stream, Poly1305 and AEAD vectors
+messages=128 blocks/msg=1 bytes=8192 cores=2 warps=4 threads=16
+CHACHA_POLY_PERF: impl=sg16 key_bits=256 mode=aead msgs=128 blocks_per_msg=1 blocks=128 bytes=8192 cycles=542474 instrs=305864 core_instrs=152932:152932 cycles_per_block=4238.08 instrs_per_block=2389.56 bytes_per_cycle=0.0151 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=305864, cycles=542474, IPC=0.564
+PASSED!
+
+$ chacha_poly -n 128 -b 1 -i 12
+reference matches the RFC 8439 block, stream, Poly1305 and AEAD vectors
+messages=128 blocks/msg=1 bytes=8192 cores=2 warps=4 threads=16
+CHACHA_POLY_PERF: impl=sg16 key_bits=256 mode=aead msgs=128 blocks_per_msg=1 blocks=128 bytes=8192 cycles=540257 instrs=305864 core_instrs=152932:152932 cycles_per_block=4220.76 instrs_per_block=2389.56 bytes_per_cycle=0.0152 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=305864, cycles=540257, IPC=0.566
+PASSED!
+
+$ chacha_poly -n 128 -b 1 -i 12
+reference matches the RFC 8439 block, stream, Poly1305 and AEAD vectors
+messages=128 blocks/msg=1 bytes=8192 cores=2 warps=4 threads=16
+CHACHA_POLY_PERF: impl=sg16 key_bits=256 mode=aead msgs=128 blocks_per_msg=1 blocks=128 bytes=8192 cycles=527071 instrs=305864 core_instrs=152932:152932 cycles_per_block=4117.74 instrs_per_block=2389.56 bytes_per_cycle=0.0155 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=305864, cycles=527071, IPC=0.580
+PASSED!
+
+$ chacha_poly -n 128 -b 1 -i 12
+reference matches the RFC 8439 block, stream, Poly1305 and AEAD vectors
+messages=128 blocks/msg=1 bytes=8192 cores=2 warps=4 threads=16
+CHACHA_POLY_PERF: impl=sg16 key_bits=256 mode=aead msgs=128 blocks_per_msg=1 blocks=128 bytes=8192 cycles=534900 instrs=305864 core_instrs=152932:152932 cycles_per_block=4178.91 instrs_per_block=2389.56 bytes_per_cycle=0.0153 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=305864, cycles=534900, IPC=0.572
+PASSED!
+
+$ chacha_poly -n 128 -b 1 -i 12
+reference matches the RFC 8439 block, stream, Poly1305 and AEAD vectors
+messages=128 blocks/msg=1 bytes=8192 cores=2 warps=4 threads=16
+CHACHA_POLY_PERF: impl=sg16 key_bits=256 mode=aead msgs=128 blocks_per_msg=1 blocks=128 bytes=8192 cycles=535993 instrs=305864 core_instrs=152932:152932 cycles_per_block=4187.45 instrs_per_block=2389.56 bytes_per_cycle=0.0153 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=305864, cycles=535993, IPC=0.571
+PASSED!
+
+$ chacha_poly -n 128 -b 1 -i 12
+reference matches the RFC 8439 block, stream, Poly1305 and AEAD vectors
+messages=128 blocks/msg=1 bytes=8192 cores=2 warps=4 threads=16
+CHACHA_POLY_PERF: impl=sg16 key_bits=256 mode=aead msgs=128 blocks_per_msg=1 blocks=128 bytes=8192 cycles=531574 instrs=305864 core_instrs=152932:152932 cycles_per_block=4152.92 instrs_per_block=2389.56 bytes_per_cycle=0.0154 repeats=1 cores=2 warps=4 threads=16
+PERF: instrs=305864, cycles=531574, IPC=0.575
+PASSED!
+
